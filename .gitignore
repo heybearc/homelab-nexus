@@ -1,0 +1,65 @@
+# Homelab Nexus - Git Ignore File
+
+# Sensitive Information
+*.key
+*.pem
+*.crt
+credentials
+passwords.txt
+secrets/
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+/var/log/
+
+# Temporary Files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Backup Files
+*.bak
+*.backup
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Container Specific
+*.tar.lzo
+*.tar.gz
+dumps/
+backups/
+
+# Local Configuration Overrides
+local-config/
+personal-settings/
