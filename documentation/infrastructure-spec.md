@@ -1,423 +1,541 @@
 # Proxmox Infrastructure Specification
 
-## Table of Contents
-1. [Executive Summary](#executive-summary)
-2. [Network Architecture](#network-architecture)
-3. [Infrastructure Inventory](#infrastructure-inventory)
-4. [Automation Framework](#automation-framework)
-5. [Service Configuration](#service-configuration)
-6. [Security & Access Control](#security--access-control)
-7. [Monitoring & Management](#monitoring--management)
-8. [Change Management](#change-management)
-9. [Task Management](#task-management)
-10. [Human TODOs](#human-todos)
-
----
-
-## Executive Summary
-
-### Infrastructure Overview
-- **Proxmox Host**: 10.92.0.5 (Debian GNU/Linux)
-- **Total Containers**: 16 LXC containers
-- **Total VMs**: 12 virtual machines
-- **Storage Capacity**: 20.62TB total across 4 storage pools
-- **Network Segments**: Management (10.92.0.0/23) and Services (10.92.3.0/24)
-
-### Key Services
-- **Media Management**: Complete *arr stack with download clients
-- **Infrastructure**: DNS, proxy management, monitoring
-- **IPAM**: Netbox for IP address and asset management
-- **Automation**: Community scripts integration for rapid deployment
-
----
-
 ## Network Architecture
 
-### Network Topology
-```
-Internet
-    ↓
-Gateway (10.92.0.1/10.92.3.1)
-    ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Management Network (10.92.0.0/23)                          │
-│ ├── Proxmox Host: 10.92.0.5                               │
-│ ├── DNS Server: 10.92.0.10                               │
-│ └── Jump Host: 10.92.0.6 (Container 119)                 │
-└─────────────────────────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Services Network (10.92.3.0/24)                            │
-│ ├── Docker Host: 10.92.3.2 (Legacy)                       │
-│ ├── LXC Containers: 10.92.3.3 - 10.92.3.18               │
-│ └── Windows VMs: Various IPs                               │
-└─────────────────────────────────────────────────────────────┘
-```
+### Core Network Configuration
+- **Proxmox Host**: 10.92.0.5 (credentials: root/Cl0udy!!(@)
+- **Internal DNS Server**: 10.92.0.10
+- **Network Subnet**: 10.92.3.0/24
+- **Docker Host**: 10.92.3.2 (docker-01, credentials: root/!Snowfa11)
 
-### Virtual Bridges
-- **vmbr920**: Management network bridge
-- **vmbr923**: Services network bridge  
-- **vmbr924**: Additional network bridge
+### Storage Configuration
+- **NFS Share**: `/mnt/pve/nfs-data` (Proxmox host)
+- **Bind Mount Pattern**: `mp=/mnt/data` (in LXC containers)
+- **Data Structure**: 
+  - `/mnt/data/media/` (Sonarr, Radarr content)
+  - `/mnt/data/usenet/` (SABnzbd downloads)
+  - `/mnt/data/torrents/` (Transmission downloads)
 
-### DNS Configuration
-- **Primary DNS**: 10.92.0.10 (AdGuard Home)
-- **Internal Resolution**: All services use internal DNS
-- **External DNS**: Cloudflare DDNS for external access
+## LXC Container Configuration
 
----
+### Container Management
+- **Unprivileged Containers**: Default approach for security
+- **TUN Device Support**: Required for VPN functionality
+  ```
+  lxc.cgroup2.devices.allow: c 10:200 rwm
+  lxc.mount.entry: /dev/net dev/net none bind,create=dir
+  ```
 
-## Infrastructure Inventory
-
-### LXC Container Inventory
+### Complete Container Inventory
 
 #### Media Management Stack
-| Service | ID | IP | Resources | Storage | Status |
-|---------|----|----|-----------|---------|--------|
-| Transmission | 126 | 10.92.3.9 | 2C/2GB/8GB | hdd-pool | ✅ Running + VPN |
-| SABnzbd | 127 | 10.92.3.16 | 2C/2GB/5GB | hdd-pool | ✅ Running, VPN pending |
-| Sonarr | 125 | 10.92.3.8 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Radarr | 124 | 10.92.3.7 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Readarr | 120 | 10.92.3.4 | 2C/1GB/4GB | hdd-pool | ⚠️ Service issues |
-| Bazarr | 117 | 10.92.3.15 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Prowlarr | 123 | 10.92.3.6 | 2C/2GB/8GB | hdd-pool | ✅ Running |
+1. **Transmission LXC** (ID: 126, IP: 10.92.3.9)
+   - Hostname: transmission
+   - Resources: 2 cores, 2048MB RAM, 8GB storage
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data
+   - Status: Running with VPN routing
+   - Storage: hdd-pool:subvol-126-disk-0
+
+2. **SABnzbd LXC** (ID: 127, IP: 10.92.3.16)
+   - Hostname: sabnzbd
+   - Resources: 2 cores, 2048MB RAM, 5GB storage
+   - Status: Running, VPN setup in progress
+   - Storage: hdd-pool:subvol-127-disk-0
+   - Note: Missing NFS mount configuration
+
+3. **Readarr LXC** (ID: 120, IP: 10.92.3.4)
+   - Hostname: readarr
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - Status: Running but service issues
+   - Storage: hdd-pool:subvol-120-disk-0
+
+4. **Sonarr LXC** (ID: 125, IP: 10.92.3.8)
+   - Hostname: sonarr
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data
+   - Status: Running
+   - Storage: hdd-pool:subvol-125-disk-0
+
+5. **Radarr LXC** (ID: 124, IP: 10.92.3.7)
+   - Hostname: radarr
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data
+   - Status: Running
+   - Storage: hdd-pool:subvol-124-disk-0
+
+6. **Bazarr LXC** (ID: 117, IP: 10.92.3.15)
+   - Hostname: bazarr
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - Status: Running
+   - Storage: hdd-pool:subvol-117-disk-0
+
+7. **Prowlarr LXC** (ID: 123, IP: 10.92.3.6)
+   - Hostname: prowlarr
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - Status: Running
+   - Storage: hdd-pool:subvol-123-disk-0
 
 #### Infrastructure Services
-| Service | ID | IP | Resources | Storage | Status |
-|---------|----|----|-----------|---------|--------|
-| Netbox IPAM | 118 | 10.92.3.18 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Nginx Proxy Manager | 121 | 10.92.3.3 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| AdGuard Home | 113 | 10.92.3.11 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Jump Host | 119 | 10.92.0.6 | 1C/512MB/2GB | hdd-pool | ✅ Running |
+8. **Netbox IPAM** (ID: 118, IP: 10.92.3.18)
+   - Hostname: netbox-ipam
+   - Resources: 2 cores, 2048MB RAM, 8GB storage
+   - Status: Running (HTTP/1.1 accessible)
+   - Storage: hdd-pool:subvol-118-disk-0
+   - Web Interface: http://10.92.3.18:8000
 
-#### Monitoring & Management
-| Service | ID | IP | Resources | Storage | Status |
-|---------|----|----|-----------|---------|--------|
-| Homarr Dashboard | 112 | 10.92.3.10 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Tautulli | 116 | 10.92.3.14 | 2C/2GB/8GB | hdd-pool | ✅ Running |
-| Overseerr | 122 | 10.92.3.5 | 2C/2GB/8GB | hdd-pool | ✅ Running |
+9. **Nginx Proxy Manager** (ID: 121, IP: 10.92.3.3)
+   - Hostname: npm
+   - Resources: 2 cores, 1024MB RAM, 4GB storage
+   - Status: Running
+   - Storage: hdd-pool:subvol-121-disk-0
+
+10. **AdGuard Home** (ID: 113, IP: 10.92.3.11)
+    - Hostname: adguard
+    - Resources: 1 core, 512MB RAM, 2GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-113-disk-0
+
+11. **Jump Host** (ID: 119, IP: 10.92.0.6)
+    - Hostname: jump-host
+    - Resources: 1 core, 512MB RAM, 8GB storage
+    - Network: vmbr920 (management network)
+    - Status: Running
+    - Storage: local-lvm:vm-119-disk-0
+
+#### Monitoring and Management
+12. **Homarr Dashboard** (ID: 112, IP: 10.92.3.10)
+    - Hostname: homarr
+    - Resources: 3 cores, 6144MB RAM, 8GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-112-disk-0
+    - Note: Duplicate container 111 (stopped)
+
+13. **Tautulli** (ID: 116, IP: 10.92.3.14)
+    - Hostname: tautulli
+    - Resources: 2 cores, 1024MB RAM, 4GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-116-disk-0
+
+14. **Overseerr** (ID: 122, IP: 10.92.3.5)
+    - Hostname: overseerr
+    - Resources: 2 cores, 2048MB RAM, 8GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-122-disk-0
 
 #### Utility Services
-| Service | ID | IP | Resources | Storage | Status |
-|---------|----|----|-----------|---------|--------|
-| FlareSolverr | 115 | 10.92.3.13 | 2C/1GB/8GB | hdd-pool | ✅ Running |
-| Cloudflare DDNS | 114 | 10.92.3.12 | 1C/512MB/2GB | hdd-pool | ✅ Running |
+15. **FlareSolverr** (ID: 115, IP: 10.92.3.13)
+    - Hostname: flaresolverr
+    - Resources: 2 cores, 2048MB RAM, 4GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-115-disk-0
+
+16. **Cloudflare DDNS** (ID: 114, IP: 10.92.3.12)
+    - Hostname: cloudflare-ddns
+    - Resources: 1 core, 512MB RAM, 3GB storage
+    - Status: Running
+    - Storage: hdd-pool:subvol-114-disk-0
 
 ### Virtual Machine Inventory
 
 #### Production VMs (Running)
-| VM Name | ID | Resources | Purpose | Status |
-|---------|----|-----------|---------|---------| 
-| docker-01 | 109 | 16GB/500GB | Legacy Docker host | ✅ Running |
-| dc-01 | 108 | 12GB RAM | Domain Controller | ✅ Running |
-| alexa-win | 102 | 24GB/512GB | Windows workstation | ✅ Running |
-| aby-win | 104 | 24GB RAM | Windows workstation | ✅ Running |
-| cory-win | 107 | 131GB RAM | Windows workstation | ✅ Running |
-| kennedy-win | 110 | 24GB RAM | Windows workstation | ✅ Running |
-| win10-test | 200 | 4GB/82GB | Test environment | ✅ Running |
-| cloudy-renvis01 | 106 | 16GB RAM | Infrastructure service | ✅ Running |
+1. **Docker Host** (ID: 109, docker-01)
+   - Resources: 16384MB RAM, 500GB storage
+   - Status: Running (PID: 138203)
+   - Purpose: Legacy Docker containers (SABnzbd source)
+   - IP: 10.92.3.2
+
+2. **Domain Controller** (ID: 108, dc-01)
+   - Resources: 12288MB RAM
+   - Status: Running (PID: 37584)
+   - Purpose: Active Directory services
+
+3. **Windows Workstations**
+   - **alexa-win** (ID: 102): 24576MB RAM, 512GB storage (PID: 37802)
+   - **aby-win** (ID: 104): 24576MB RAM (PID: 39393)
+   - **cory-win** (ID: 107): 131072MB RAM (PID: 69122)
+   - **kennedy-win** (ID: 110): 24576MB RAM (PID: 55685)
+   - **win10-test** (ID: 200): 4096MB RAM, 82GB storage (PID: 958501)
+
+4. **Infrastructure Services**
+   - **cloudy-renvis01** (ID: 106): 16384MB RAM (PID: 43750)
 
 #### Stopped VMs
-| VM Name | ID | Resources | Purpose | Status |
-|---------|----|-----------|---------|---------| 
-| veeam-worker | 100 | 6GB/100GB | Backup worker | ⏹️ Stopped |
-| Cloudy-Lab-Win11-01 | 101 | 24GB/512GB | Lab environment | ⏹️ Stopped |
-| Cloudy-Lab-Srv-01 | 103 | 16GB/250GB | Lab server | ⏹️ Stopped |
-| Cloudy-Lab-Win11-01a | 105 | 12GB/250GB | Lab environment | ⏹️ Stopped |
+- **veeam-worker** (ID: 100): 6144MB RAM, 100GB storage
+- **Cloudy-Lab-Win11-01** (ID: 101): 24576MB RAM, 512GB storage
+- **Cloudy-Lab-Srv-01** (ID: 103): 16384MB RAM, 250GB storage
+- **Cloudy-Lab-Win11-01a** (ID: 105): 12288MB RAM, 250GB storage
 
 ### Storage Infrastructure
 
-| Pool Name | Type | Total | Used | Available | Usage | Purpose |
-|-----------|------|-------|------|-----------|-------|---------|
-| hdd-pool | ZFS | 16.89TB | 5.15TB | 11.74TB | 30.51% | Primary LXC storage |
-| ssd2-lvm | LVM Thin | 1.95TB | 220.72GB | 1.73TB | 11.30% | High-performance storage |
-| local | Directory | 98.50GB | 42.91GB | 50.54GB | 43.56% | System/ISO storage |
-| local-lvm | LVM Thin | 1.79TB | 4.30GB | 1.79TB | 0.24% | VM storage pool |
+#### Storage Pools
+1. **hdd-pool (ZFS)**
+   - Type: ZFS Pool
+   - Total: 16.89TB
+   - Used: 5.15TB (30.51%)
+   - Available: 11.74TB
+   - Primary storage for LXC containers
 
----
+2. **ssd2-lvm (LVM Thin)**
+   - Type: LVM Thin Pool
+   - Total: 1.95TB
+   - Used: 220.72GB (11.30%)
+   - Available: 1.73TB
+   - High-performance storage
 
-## Automation Framework
+3. **local (Directory)**
+   - Type: Directory storage
+   - Total: 98.50GB
+   - Used: 42.91GB (43.56%)
+   - Available: 50.54GB
+   - System and ISO storage
 
-### Proxmox Community Scripts Integration
+4. **local-lvm (LVM Thin)**
+   - Type: LVM Thin Pool
+   - Total: 1.79TB
+   - Used: 4.30GB (0.24%)
+   - Available: 1.79TB
+   - VM storage pool
 
-#### Overview
-Automated deployment and management system using tteck/Proxmox community scripts repository with 200+ available services.
+## Docker Infrastructure (Legacy/Migration Source)
 
-#### Implementation
-- **Script Location**: `/Users/cory/Documents/cascade/CascadeProjects/2048/proxmox-automation-scripts.py`
-- **Repository**: https://github.com/tteck/Proxmox
-- **Available Services**: 200+ container and install scripts
-- **Integration Method**: Direct API calls to GitHub + SSH execution on Proxmox host
+### Docker Host (10.92.3.2)
+- **SABnzbd Containers**: 
+  - `sabnzbd` (port 38080)
+  - `sabnzbd-2` (port 38081)
+  - Both using `binhex/arch-sabnzbdvpn:latest`
+- **Configuration Paths**:
+  - `/home/docker/docker/appdata/sabnzbd/config`
+  - `/home/docker/docker/appdata/sabnzbd-2/config`
 
-#### Key Features
-1. **Automated Deployment**
-   ```bash
-   python3 proxmox-automation-scripts.py --deploy sabnzbd
-   ```
+## VPN Configuration
 
-2. **Configuration Management**
-   ```bash
-   python3 proxmox-automation-scripts.py --container-id 127 --add-nfs
-   python3 proxmox-automation-scripts.py --container-id 127 --enable-tun
-   ```
+### Private Internet Access (PIA) Setup
+- **Credentials**: p5100894/v3QzWLpFPB
+- **Server**: 185.242.4.2:1198 (UDP)
+- **Certificates**: 
+  - `ca.rsa.2048.crt`
+  - `crl.rsa.2048.pem`
 
-3. **Service Discovery**
-   ```bash
-   python3 proxmox-automation-scripts.py --list
-   ```
-
-#### Supported Services (Media Stack)
-- ✅ **sabnzbd.sh**: SABnzbd download client
-- ✅ **transmission.sh**: Transmission BitTorrent client  
-- ✅ **sonarr.sh**: TV series management
-- ✅ **radarr.sh**: Movie management
-- ✅ **readarr.sh**: Book management
-- ✅ **bazarr.sh**: Subtitle management
-- ✅ **prowlarr.sh**: Indexer management
-- ✅ **overseerr.sh**: Request management
-- ✅ **tautulli.sh**: Plex monitoring
-- ✅ **homarr.sh**: Dashboard
-- ✅ **nginxproxymanager.sh**: Reverse proxy
-- ✅ **adguard.sh**: DNS filtering
-
-#### Automation Capabilities
-1. **Container Lifecycle**
-   - Automated deployment from community scripts
-   - Resource allocation and configuration
-   - Network and storage setup
-
-2. **Post-Deployment Configuration**
-   - NFS mount addition (`/mnt/pve/nfs-data → /mnt/data`)
-   - TUN device enablement for VPN support
-   - Container resource updates
-
-3. **Integration Points**
-   - Proxmox API integration
-   - GitHub repository synchronization
-   - SSH-based remote execution
-
----
-
-## Service Configuration
-
-### Container Configuration Standards
-
-#### Base Configuration
+### VPN Routing Strategy
 ```bash
-# Standard LXC container settings
-cores: 2
-memory: 2048MB
-storage: 8GB (hdd-pool)
-network: vmbr923
-unprivileged: true
+# Keep local network traffic local
+route 10.92.3.0 255.255.255.0 net_gateway
+# Route external traffic through VPN
+route 0.0.0.0 128.0.0.0 vpn_gateway
+route 128.0.0.0 128.0.0.0 vpn_gateway
 ```
 
-#### NFS Mount Configuration
-```bash
-# Standard NFS mount for media services
-mp0: /mnt/pve/nfs-data,mp=/mnt/data
+### DNS Configuration
+- **Internal DNS**: 10.92.0.10 (must be preserved during VPN connection)
+- **DNS Persistence**: Required to prevent OpenVPN from overwriting
+
+## Service Dependencies
+
+### Media Stack Integration
+- **Download Clients**: SABnzbd, Transmission
+- **Media Managers**: Sonarr, Radarr, Readarr
+- **Remote Path Mappings**: Required between Docker and LXC environments
+
+### Systemd Service Ordering
+```
+OpenVPN → Download Clients → Media Managers
 ```
 
-#### VPN Support Configuration
+## Security Considerations
+
+### Firewall/Killswitch Requirements
+- **SSH Access**: Must remain available from local network (10.92.3.0/24)
+- **VPN Killswitch**: Prevent data leaks if VPN disconnects
+- **Local Network Bypass**: Essential for management access
+
+### Access Credentials Summary
+- **Proxmox**: root/Cl0udy!!(@
+- **Docker Host**: root/!Snowfa11
+- **LXC Containers**: root/Cloudy_92!
+
+## Migration Status
+
+### Completed
+- [x] SABnzbd configuration migration from Docker to LXC
+- [x] NFS mount configuration in LXC containers
+- [x] TUN device enablement for VPN support
+
+### In Progress
+- [ ] SABnzbd VPN setup (killswitch blocking SSH issue)
+- [ ] Readarr service restoration
+- [ ] Complete Docker to LXC migration
+
+### Planned
+- [ ] Transmission optimization and cleanup
+- [ ] Full Docker container decommissioning
+- [ ] Backup and disaster recovery procedures
+
+## Troubleshooting Patterns
+
+### Common Issues
+1. **SSH Connectivity**: Often blocked by overly restrictive killswitch rules
+2. **DNS Resolution**: OpenVPN tends to overwrite internal DNS settings
+3. **Service Dependencies**: Improper startup order causes failures
+4. **File Permissions**: NFS mount permission issues between containers
+
+### Recovery Procedures
+1. **SSH Recovery**: Reset iptables rules via console access
+2. **DNS Recovery**: Restore `/etc/resolv.conf` from backup
+3. **Service Recovery**: Systematic restart in dependency order
+
+## Scripts and Automation
+
+### Available Scripts (Proxmox HDD Pool)
+- `install_readarr.sh`
+- `repair_readarr.sh` 
+- `update_readarr.sh`
+
+### Custom Configurations
+- OpenVPN configurations with custom routing
+- Systemd service files with proper dependencies
+- Killswitch scripts (needs SSH-safe version)
+
+## Future Considerations
+
+### Potential Improvements
+1. **Privileged LXC**: For better network control
+2. **Container Orchestration**: Systematic service management
+3. **Monitoring**: Health checks and alerting
+4. **Backup Strategy**: Automated configuration backups
+
+### Scalability
+- Additional VPN endpoints
+- Load balancing for download clients
+- Redundant storage configurations
+
+## Validation Rules and Automated Tests
+
+### Pre-Change Validation Rules
+
+#### Network Connectivity Rules
+1. **SSH Access Preservation**
+   - Rule: SSH must remain accessible from local network (10.92.3.0/24)
+   - Test: `ssh -o ConnectTimeout=5 root@<container_ip> 'echo "SSH OK"'`
+   - Failure Action: Abort change, restore previous state
+
+2. **DNS Resolution Integrity**
+   - Rule: Internal DNS (10.92.0.10) must remain primary resolver
+   - Test: `nslookup google.com 10.92.0.10`
+   - Validation: `/etc/resolv.conf` must contain `nameserver 10.92.0.10`
+
+3. **NFS Mount Availability**
+   - Rule: `/mnt/data` must remain accessible with proper permissions
+   - Test: `ls -la /mnt/data && touch /mnt/data/test_write && rm /mnt/data/test_write`
+   - Failure Action: Restore mount configuration
+
+#### Service Dependency Rules
+4. **Service Startup Order**
+   - Rule: VPN → Download Clients → Media Managers
+   - Test: Check systemd dependencies with `systemctl list-dependencies`
+   - Validation: Ensure `Before=` and `After=` directives are correct
+
+5. **Port Accessibility**
+   - Rule: Required service ports must remain accessible
+   - Test: `curl -s http://localhost:7777` (SABnzbd), `curl -s http://localhost:9091` (Transmission)
+   - Timeout: 10 seconds maximum
+
+### Post-Change Validation Tests
+
+#### Automated Test Suite
 ```bash
-# TUN device support for VPN
-lxc.cgroup2.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
+#!/bin/bash
+# infrastructure-validation.sh
+
+set -e
+
+echo "=== Infrastructure Validation Suite ==="
+
+# Test 1: SSH Connectivity
+echo "Testing SSH connectivity..."
+for ip in 10.92.3.4 10.92.3.16; do
+    if ! timeout 5 ssh -o StrictHostKeyChecking=no root@$ip 'echo "SSH OK"' 2>/dev/null; then
+        echo "FAIL: SSH to $ip failed"
+        exit 1
+    fi
+done
+echo "PASS: SSH connectivity"
+
+# Test 2: DNS Resolution
+echo "Testing DNS resolution..."
+for ip in 10.92.3.4 10.92.3.16; do
+    if ! ssh root@$ip 'nslookup google.com 10.92.0.10 >/dev/null 2>&1'; then
+        echo "FAIL: DNS resolution on $ip"
+        exit 1
+    fi
+done
+echo "PASS: DNS resolution"
+
+# Test 3: VPN Routing (if VPN active)
+echo "Testing VPN routing..."
+for ip in 10.92.3.4 10.92.3.16; do
+    # Check if VPN is active
+    if ssh root@$ip 'ip addr show tun0 >/dev/null 2>&1'; then
+        # Test external IP is VPN IP (not local)
+        external_ip=$(ssh root@$ip 'curl -s --max-time 10 ifconfig.me')
+        if [[ $external_ip == 10.92.* ]]; then
+            echo "FAIL: VPN not routing traffic on $ip (IP: $external_ip)"
+            exit 1
+        fi
+        echo "PASS: VPN routing on $ip (External IP: $external_ip)"
+    fi
+done
+
+# Test 4: Service Health
+echo "Testing service health..."
+services=("sabnzbd:7777" "transmission-daemon:9091")
+for service_port in "${services[@]}"; do
+    service=${service_port%:*}
+    port=${service_port#*:}
+    for ip in 10.92.3.4 10.92.3.16; do
+        if ssh root@$ip "systemctl is-active $service >/dev/null 2>&1"; then
+            if ! ssh root@$ip "curl -s --max-time 5 http://localhost:$port >/dev/null"; then
+                echo "FAIL: $service not responding on $ip:$port"
+                exit 1
+            fi
+        fi
+    done
+done
+echo "PASS: Service health"
+
+# Test 5: NFS Mount Integrity
+echo "Testing NFS mounts..."
+for ip in 10.92.3.4 10.92.3.16; do
+    if ! ssh root@$ip 'ls /mnt/data >/dev/null 2>&1'; then
+        echo "FAIL: NFS mount not accessible on $ip"
+        exit 1
+    fi
+    if ! ssh root@$ip 'touch /mnt/data/test_write_$ip && rm /mnt/data/test_write_$ip'; then
+        echo "FAIL: NFS mount not writable on $ip"
+        exit 1
+    fi
+done
+echo "PASS: NFS mount integrity"
+
+echo "=== All tests passed ==="
 ```
 
-### Service-Specific Configurations
+### Change Management Rules
 
-#### Download Clients (VPN-Enabled)
-- **Transmission**: OpenVPN + killswitch active
-- **SABnzbd**: OpenVPN configuration pending
+#### Before Any Infrastructure Change
+1. **Backup Current State**
+   - Export LXC configurations: `pct config <id> > /backup/lxc-<id>-$(date +%Y%m%d).conf`
+   - Backup service configurations: `tar -czf /backup/services-$(date +%Y%m%d).tar.gz /etc/systemd/system/`
+   - Document current routing: `ip route show > /backup/routes-$(date +%Y%m%d).txt`
 
-#### Media Management
-- **Sonarr/Radarr/Readarr**: Connected to download clients
-- **Bazarr**: Subtitle management for all media
-- **Prowlarr**: Centralized indexer management
+2. **Run Pre-Change Validation**
+   - Execute validation suite
+   - Verify all services are healthy
+   - Confirm SSH access from management station
 
-#### Infrastructure Services
-- **Nginx Proxy Manager**: Reverse proxy for all services
-- **AdGuard Home**: DNS filtering and internal resolution
-- **Netbox**: IPAM and infrastructure documentation
+3. **Prepare Rollback Plan**
+   - Document exact steps to revert changes
+   - Identify rollback triggers (SSH loss, service failure)
+   - Set maximum change window (30 minutes)
 
----
+#### During Changes
+4. **Incremental Testing**
+   - Test SSH after each network/firewall change
+   - Verify DNS resolution after VPN modifications
+   - Check service status after configuration updates
 
-## Security & Access Control
+5. **Change Boundaries**
+   - **Never modify**: Core network configuration without console access
+   - **Always preserve**: SSH access from 10.92.3.0/24
+   - **Always backup**: Service configurations before modification
+   - **Always test**: Each change incrementally
 
-### Access Credentials
-- **Proxmox Host**: root / Cl0udy!!(@
-- **SSH Access**: All containers accessible via SSH
-- **VPN Credentials**: Service-specific (PIA for download clients)
-
-### Network Security
-- **Internal DNS**: 10.92.0.10 (AdGuard Home)
-- **VPN Routing**: Download clients route through VPN
-- **Firewall**: Container-level iptables rules
-- **Access Control**: SSH key-based authentication recommended
-
-### VPN Configuration
-- **Provider**: Private Internet Access (PIA)
-- **Protocol**: OpenVPN
-- **Killswitch**: Implemented for download clients
-- **DNS Leak Protection**: Internal DNS preservation
-
----
-
-## Monitoring & Management
-
-### Monitoring Stack
-- **Homarr**: Central dashboard (10.92.3.10)
-- **Tautulli**: Plex monitoring (10.92.3.14)
-- **Netbox**: Infrastructure tracking (10.92.3.18)
-
-### Management Interfaces
-- **Proxmox**: https://10.92.0.5:8006
-- **Nginx Proxy Manager**: http://10.92.3.3:81
-- **AdGuard Home**: http://10.92.3.11:3000
-
-### Backup Strategy
-- **Container Backups**: Proxmox built-in backup system
-- **Configuration Backups**: Service-specific config exports
-- **Data Protection**: NFS-based shared storage
-
----
-
-## Change Management
-
-### Validation Rules
-1. **Pre-Change Validation**
-   - Verify SSH connectivity to target container
-   - Check service dependencies
-   - Validate network routing
-   - Confirm DNS resolution
-
-2. **Post-Change Validation**
-   - SSH access verification
-   - Service functionality check
-   - Network connectivity test
-   - DNS resolution validation
+#### After Changes
+6. **Full Validation Suite**
+   - Run complete automated test suite
+   - Verify all services are functional
+   - Test end-to-end workflows (download → processing)
+   - Monitor for 24 hours for stability
 
 ### Emergency Recovery Procedures
-1. **SSH Access Lost**
-   - Use Proxmox console access
-   - Check firewall rules (iptables)
-   - Verify network configuration
-   - Restore from backup if necessary
 
-2. **Service Failure**
-   - Check service logs
-   - Verify configuration files
-   - Restart container if needed
-   - Restore from known good state
-
-### Change Documentation
-- All changes documented in this specification
-- Netbox updated with infrastructure changes
-- Version control for configuration files
-
----
-
-## Task Management
-
-### Completed Tasks ✅
-- [x] Complete infrastructure audit and documentation
-- [x] SABnzbd Docker to LXC migration
-- [x] Netbox IPAM setup and configuration
-- [x] Proxmox community scripts automation framework
-- [x] Infrastructure specification reorganization
-
-### In Progress Tasks 🔄
-- [ ] SABnzbd VPN configuration (OpenVPN + killswitch)
-- [ ] Readarr service troubleshooting
-- [ ] Infrastructure monitoring enhancement
-
-### Pending Tasks 📋
-- [ ] Complete Docker to LXC migration for remaining services
-- [ ] Implement automated backup procedures
-- [ ] Enhanced security hardening
-- [ ] Performance optimization
-- [ ] Disaster recovery testing
-
-### Technical Debt 🔧
-- [ ] Legacy Docker containers cleanup
-- [ ] Standardize container resource allocation
-- [ ] Implement centralized logging
-- [ ] Network segmentation improvements
-- [ ] SSL certificate management
-
----
-
-## Human TODOs
-
-### Immediate Actions Required 🚨
-1. **Review and approve** the reorganized infrastructure specification
-2. **Test the automation framework** by deploying a test service
-3. **Validate VPN configuration** for SABnzbd container
-4. **Update Netbox** with any missing infrastructure details
-
-### Weekly Maintenance Tasks 📅
-1. **Monitor storage utilization** across all pools
-2. **Review container resource usage** and optimize as needed
-3. **Check backup status** for all critical services
-4. **Update community scripts** to latest versions
-5. **Validate network connectivity** and DNS resolution
-
-### Monthly Review Tasks 📊
-1. **Infrastructure capacity planning** review
-2. **Security audit** of all services and access controls
-3. **Performance optimization** opportunities
-4. **Disaster recovery procedure** testing
-5. **Documentation updates** and accuracy verification
-
-### Strategic Planning 🎯
-1. **Migration roadmap** for remaining Docker services
-2. **Scalability planning** for future service additions
-3. **Security enhancement** strategy
-4. **Automation expansion** opportunities
-5. **Monitoring and alerting** improvements
-
-### Decision Points 🤔
-1. **Privileged vs Unprivileged** containers for VPN services
-2. **Storage optimization** strategy (SSD vs HDD allocation)
-3. **Network segmentation** enhancement approach
-4. **Backup retention** policies and procedures
-5. **External access** security model
-
----
-
-## Quick Reference
-
-### Essential Commands
+#### SSH Access Lost
 ```bash
-# List all containers
-pct list
-
-# Container management
-pct start <id>
-pct stop <id>
-pct enter <id>
-
-# Automation framework
-python3 proxmox-automation-scripts.py --list
-python3 proxmox-automation-scripts.py --deploy <service>
-python3 proxmox-automation-scripts.py --container-id <id> --add-nfs
+# Via Proxmox console
+iptables -F
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+systemctl restart ssh
 ```
 
-### Key IP Addresses
-- Proxmox Host: 10.92.0.5
-- DNS Server: 10.92.0.10
-- Netbox IPAM: 10.92.3.18
-- Nginx Proxy: 10.92.3.3
-- SABnzbd: 10.92.3.16
-- Transmission: 10.92.3.9
+#### DNS Resolution Broken
+```bash
+# Restore internal DNS
+cp /etc/resolv.conf.backup /etc/resolv.conf
+# Or manually set
+echo "nameserver 10.92.0.10" > /etc/resolv.conf
+```
 
-### Important File Locations
-- Container configs: `/etc/pve/lxc/`
-- NFS mount: `/mnt/pve/nfs-data`
-- Automation script: `proxmox-automation-scripts.py`
-- This specification: `proxmox-infrastructure-spec.md`
+#### Service Dependencies Broken
+```bash
+# Reset service order
+systemctl disable openvpn-pia.service
+systemctl disable sabnzbd.service
+systemctl enable openvpn-pia.service
+systemctl enable sabnzbd.service
+# Restart in order
+systemctl start openvpn-pia.service
+sleep 10
+systemctl start sabnzbd.service
+```
 
----
+### Project Boundary Enforcement
 
-*Last Updated: 2025-07-11*
-*Version: 2.0 (Reorganized with Automation Framework)*
+#### Scope Limitations
+1. **No changes to Proxmox host network configuration** without explicit approval
+2. **No modifications to core NFS storage** without backup
+3. **No firewall rules that could block SSH** from management network
+4. **No DNS changes** that break internal resolution
+5. **No service modifications** without dependency analysis
+
+#### Change Approval Matrix
+- **Low Risk**: Service configuration tweaks, log level changes
+- **Medium Risk**: New service installation, port changes
+- **High Risk**: Network configuration, VPN setup, firewall rules
+- **Critical Risk**: Storage configuration, core service removal
+
+All Medium+ risk changes require validation suite execution and rollback plan.
+
+## GitHub Integration and Repository Management
+
+### GitHub Connectivity
+- **Authentication Method**: Personal Access Token (PAT)
+- **Storage Location**: `~/.git-credentials`
+- **Username**: heybearc
+- **Connection Type**: HTTPS
+- **Repository URL Pattern**: https://github.com/heybearc/[repo-name].git
+
+### Repository Structure
+- **Primary Infrastructure Repository**: [homelab-nexus](https://github.com/heybearc/homelab-nexus)
+  - **Local Path**: `/Users/cory/Documents/cascade/CascadeProjects/2048/personal/github/infrastructure/homelab-nexus`
+  - **Content**: Automation scripts, documentation, configuration templates, utility scripts
+
+### Connectivity Verification
+
+```bash
+# Verify GitHub API connectivity using stored PAT
+curl -H "Authorization: token $(cat ~/.git-credentials | grep github | cut -d: -f3 | cut -d@ -f1)" https://api.github.com/user
+
+# List repositories
+curl -H "Authorization: token $(cat ~/.git-credentials | grep github | cut -d: -f3 | cut -d@ -f1)" https://api.github.com/user/repos
+```
+
+### Repository Management Rules
+1. **Always verify GitHub PAT connectivity** before repository operations
+2. **Use simple commit messages** to avoid potential issues
+3. **Configure local git user settings** to match GitHub username:
+   ```bash
+   git config --local user.name "heybearc"
+   git config --local user.email "cory.allen@dewdropsai.com"
+   ```
+4. **Backup repository configurations** before major changes
