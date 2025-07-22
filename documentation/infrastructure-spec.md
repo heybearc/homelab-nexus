@@ -4,9 +4,23 @@
 
 ### Core Network Configuration
 - **Proxmox Host**: 10.92.0.5 (credentials: root/Cl0udy!!(@)
-- **Internal DNS Server**: 10.92.0.10
+- **Internal DNS Server**: 10.92.0.10 (CRITICAL: All containers must use this as primary DNS)
 - **Network Subnet**: 10.92.3.0/24
-- **Docker Host**: 10.92.3.2 (docker-01, credentials: root/!Snowfa11)
+- **Nextcloud VM**: 10.92.3.2 (VMID 109, deployed 2025-07-22)
+- **Retired Infrastructure**: docker-01 (previously at 10.92.3.2) - REMOVED 2025-07-22
+
+### DNS Configuration Standards (Updated 2025-07-20)
+- **Primary DNS**: 10.92.0.10 (REQUIRED for all LXC containers)
+- **Fallback DNS**: 8.8.8.8, 1.1.1.1
+- **Configuration File**: `/etc/resolv.conf` in each container
+- **Standard Format**:
+  ```
+  nameserver 10.92.0.10
+  nameserver 8.8.8.8
+  nameserver 1.1.1.1
+  ```
+- **Issue**: Many containers had incorrect DNS (10.92.0.177) causing resolution failures
+- **Resolution**: All containers audited and corrected to use 10.92.0.10
 
 ### Storage Configuration
 - **NFS Share**: `/mnt/pve/nfs-data` (Proxmox host)
@@ -39,15 +53,29 @@
 2. **SABnzbd LXC** (ID: 127, IP: 10.92.3.16)
    - Hostname: sabnzbd
    - Resources: 2 cores, 2048MB RAM, 5GB storage
-   - Status: Running, VPN setup in progress
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data (VERIFIED: Added 2025-07-20)
+   - Status: Running with full VPN configuration
    - Storage: hdd-pool:subvol-127-disk-0
-   - Note: Missing NFS mount configuration
+   - **Migration Status**: COMPLETE (Docker → LXC migration successful)
+   - **VPN Configuration**: PIA VPN active with SSH preservation
+   - **DNS Configuration**: Fixed to use 10.92.0.10 (was causing Usenet connectivity issues)
+   - **Config Migration**: Docker configs from docker-01 successfully merged
+   - **Web Interface**: http://10.92.3.16:7777
+   - **Download Paths**: /mnt/data/downloads/incomplete, /mnt/data/downloads/complete
 
 3. **Readarr LXC** (ID: 120, IP: 10.92.3.4)
    - Hostname: readarr
    - Resources: 2 cores, 1024MB RAM, 4GB storage
-   - Status: Running but service issues
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data (VERIFIED: Added 2025-07-20)
+   - Status: Running and service healthy
    - Storage: hdd-pool:subvol-120-disk-0
+   - **API Status**: Healthy (authentication fixed with new API key)
+   - **VPN Configuration**: PIA VPN active with DNS resolution
+   - **DNS Configuration**: Fixed to use 10.92.0.10
+   - **Service Issues**: 521 errors are external (upstream metadata provider outage)
+   - **Root Cause**: api.bookinfo.club unavailable (not a local issue)
+   - **Local Service**: Fully operational, API endpoints responding correctly
+   - **Recommendation**: Monitor upstream provider status for resolution
 
 4. **Sonarr LXC** (ID: 125, IP: 10.92.3.8)
    - Hostname: sonarr
@@ -66,8 +94,37 @@
 6. **Bazarr LXC** (ID: 117, IP: 10.92.3.15)
    - Hostname: bazarr
    - Resources: 2 cores, 1024MB RAM, 4GB storage
-   - Status: Running
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data (FIXED: Added 2025-07-20)
+   - Status: Running with full media storage access
    - Storage: hdd-pool:subvol-117-disk-0
+   - **Issue Resolved**: Missing NFS mount prevented media library access
+   - **DNS Configuration**: Verified correct (10.92.0.10)
+
+10. **Overseerr LXC** (ID: 122, IP: 10.92.3.5)
+    - Hostname: overseerr
+    - Resources: 2 cores, 1024MB RAM, 4GB storage
+    - NFS Mount: /mnt/pve/nfs-data → /mnt/data (VERIFIED: Added 2025-07-21)
+    - Status: Running
+    - Storage: hdd-pool:subvol-122-disk-0
+    - **DNS Configuration**: Fixed to use 10.92.0.10 (was causing GitHub connectivity issues)
+    - **Version Status**: Currently on beta branch, ready to switch to main/stable
+    - **Network Connectivity**: GitHub.com resolution and HTTPS access verified
+
+11. **Calibre-Web LXC** (ID: 129, IP: 10.92.3.19)
+    - Hostname: calibre-web
+    - Resources: 2 cores, 2048MB RAM, 4GB storage
+    - NFS Mount: /mnt/pve/nfs-data → /mnt/data (CONFIGURED: Added 2025-07-21)
+    - Status: Running and fully functional
+    - Storage: hdd-pool:subvol-129-disk-0
+    - **Migration Status**: COMPLETE (Docker → LXC migration successful)
+    - **Docker Config Source**: /home/docker/docker/appdata/calibre-web (docker-01)
+    - **Configuration**: app.db, gdrive.db, gmail.json successfully migrated
+    - **Book Library**: /mnt/data/books/library (NFS mounted)
+    - **Upload Directory**: /mnt/data/books/uploads
+    - **Web Interface**: http://10.92.3.19:8083 (fully accessible)
+    - **DNS Configuration**: Fixed to use 10.92.0.10
+    - **Service Status**: Running as cps process on port 8083
+    - **Existing Books Found**: Multiple ebooks detected in /mnt/data (ready for import)
 
 7. **Prowlarr LXC** (ID: 123, IP: 10.92.3.6)
    - Hostname: prowlarr
@@ -75,12 +132,61 @@
    - Status: Running
    - Storage: hdd-pool:subvol-123-disk-0
 
+8. **Plex Media Server LXC** (ID: 128, IP: 10.92.3.17)
+   - Hostname: plex
+   - Resources: 4 cores, 4096MB RAM, 10GB storage
+   - NFS Mount: /mnt/pve/nfs-data → /mnt/data (VERIFIED: Added 2025-07-20)
+   - Status: Running and fully functional
+   - Storage: hdd-pool:subvol-128-disk-0
+   - **GPU Configuration**: NVIDIA RTX 2080 SUPER (TU104) passthrough ACTIVE
+     - Device passthrough: /dev/nvidia0, /dev/nvidiactl, /dev/nvidia-uvm, /dev/nvidia-uvm-tools
+     - LXC GPU permissions: c 195:0, c 195:255, c 243:0, c 243:1 (rwm)
+     - Hardware transcoding: Enabled for Plex
+     - NVIDIA drivers: DKMS modules built and loaded successfully
+   - **Migration Status**: COMPLETE (Docker → LXC migration successful)
+   - **Database Migration**: 212MB Plex database successfully migrated from Docker
+   - **Claim Status**: Successfully claimed and linked to Plex account
+   - **Server Name**: allens_media (configured in setup wizard)
+   - **DNS Configuration**: Fixed to use 10.92.0.10 (primary)
+   - **Plex Installation**: Complete via official repository
+   - **Web Interface**: http://10.92.3.17:32400/web (fully accessible)
+   - **Config Source**: /opt/community-scripts/plex.conf (Proxmox host)
+   - **Features**: nesting=1, fuse=1, USB passthrough, GPU passthrough
+   - **Tags**: community-script, media, gpu-transcoding
+    - **Library Status**: Ready for manual library recreation in web UI
+    - **Next Steps**: Complete setup wizard and recreate libraries pointing to /mnt/data paths
+
+15. **Nextcloud VM** (ID: 109, IP: 10.92.3.2)
+    - Hostname: nextcloud
+    - Resources: 4 cores, 8192MB RAM
+    - Storage: 
+      - scsi0: 100GB (system drive)
+      - scsi1: 825MB (EFI/boot)
+      - scsi2: 2TB (data drive - mounted at /mnt/data)
+    - Status: Running (deployed 2025-07-22)
+    - SSH: Key-based authentication configured
+    - Data Mount: /mnt/data (2TB dedicated storage, separate from Synology NFS)
+    - Web Interface: http://10.92.3.2 (if configured)
+    - **Migration Notes**: Replaced docker-01 VM at same IP address
+    - **Storage Configuration**: New data drive requires fstab configuration for permanent mounting
+    - **DNS Configuration**: Should use 10.92.0.10 (primary) per infrastructure standards
+    - **Deployment Date**: 2025-07-22
+    - **SSH Key Location**: /root/.ssh/id_rsa (Proxmox host)
+
 #### Infrastructure Services
-8. **Netbox IPAM** (ID: 118, IP: 10.92.3.18)
+9. **Netbox IPAM** (ID: 118, IP: 10.92.3.18)
    - Hostname: netbox-ipam
    - Resources: 2 cores, 2048MB RAM, 8GB storage
-   - Status: Running (HTTP/1.1 accessible)
+   - Status: Running and fully functional
    - Storage: hdd-pool:subvol-118-disk-0
+   - **Static Media Issue**: RESOLVED (2025-07-21)
+   - **Django Configuration**: STATIC_ROOT set to /opt/netbox/netbox/static/
+   - **Static Files**: 123+ files collected (21 CSS, 30 JS, 72 fonts)
+   - **Nginx Configuration**: Fixed invalid proxy_set_header directives
+   - **Service Status**: Gunicorn on port 8000, Nginx on port 80
+   - **Web Interface**: http://10.92.3.18/ (fully functional with static assets)
+   - **DNS Configuration**: Verified correct (10.92.0.10)
+   - **Proxy Configuration**: NPM forwards netbox.cloudigan.net → 10.92.3.3 → 10.92.3.18
    - Web Interface: http://10.92.3.18:8000
 
 9. **Nginx Proxy Manager** (ID: 121, IP: 10.92.3.3)
@@ -119,8 +225,13 @@
 14. **Overseerr** (ID: 122, IP: 10.92.3.5)
     - Hostname: overseerr
     - Resources: 2 cores, 2048MB RAM, 8GB storage
-    - Status: Running
+    - NFS Mount: /mnt/pve/nfs-data → /mnt/data (FIXED: Added 2025-07-20)
+    - Status: Running with full media storage access
     - Storage: hdd-pool:subvol-122-disk-0
+    - **Issue Resolved**: Missing NFS mount prevented media library scanning
+    - **DNS Configuration**: Fixed to use 10.92.0.10 (was 10.92.0.177, causing GitHub access failures)
+    - **Branch Status**: Switching from develop (beta) to master (stable) branch
+    - **Web Interface**: http://10.92.3.5:5055
 
 #### Utility Services
 15. **FlareSolverr** (ID: 115, IP: 10.92.3.13)
@@ -455,6 +566,186 @@ echo "=== All tests passed ==="
    - Verify all services are functional
    - Test end-to-end workflows (download → processing)
    - Monitor for 24 hours for stability
+
+## Critical Issues and Resolutions (Updated 2025-07-20)
+
+### DNS Configuration Issues
+**Problem**: Multiple containers had incorrect DNS configuration (10.92.0.177) causing:
+- GitHub repository access failures ("Could not resolve host: github.com")
+- Usenet server connectivity failures in SABnzbd
+- General external service resolution issues
+
+**Root Cause**: Proxmox automatically configured containers with non-functional DNS server
+
+**Resolution**: Systematic audit and correction of all container DNS configurations
+- **Standard Fix**: Update `/etc/resolv.conf` in each container:
+  ```
+  nameserver 10.92.0.10
+  nameserver 8.8.8.8
+  nameserver 1.1.1.1
+  ```
+- **Affected Containers**: SABnzbd (127), Overseerr (122), and others
+- **Verification**: `nslookup github.com` and `curl -s https://github.com`
+
+### NFS Mount Configuration Gaps
+**Problem**: Critical media containers missing NFS mounts preventing media library access:
+- Bazarr (117): Could not access media for subtitle management
+- Overseerr (122): Could not scan existing media library
+
+**Root Cause**: Infrastructure deployment scripts did not consistently apply NFS mounts
+
+**Resolution**: Added missing mount points to container configurations
+- **Command**: `pct set <id> --mp0 /mnt/pve/nfs-data,mp=/mnt/data`
+- **Verification**: Container restart, `mountpoint /mnt/data`, `df -h /mnt/data`
+- **Result**: 42TB NFS storage now accessible in all media containers
+
+### SABnzbd Docker-to-LXC Migration
+**Challenge**: Migrate SABnzbd from Docker container on docker-01 to LXC container 127
+
+**Complications Encountered**:
+1. **SSH Access Issues**: docker-01 initially unreachable (wrong IP used)
+2. **VPN Killswitch Conflicts**: Existing VPN configuration blocked all traffic
+3. **Package Manager Locks**: dpkg/apt locks prevented software installation
+4. **DNS Resolution**: Container couldn't resolve external hostnames
+5. **Config File Locations**: Docker configs in nested subdirectories
+6. **Disk Space**: /tmp full on source system during extraction
+
+**Successful Resolution Process**:
+1. **Network Connectivity**: Fixed DNS to 10.92.0.10
+2. **VPN Configuration**: Implemented PIA VPN with SSH preservation
+3. **Config Migration**: Direct extraction from docker-01:/home/docker/docker/appdata/
+4. **Intelligent Merge**: Combined Docker configs with LXC installation
+5. **Path Updates**: Migrated to /mnt/data/downloads/ structure
+6. **Service Verification**: Confirmed web interface and API functionality
+
+**Final State**: SABnzbd fully operational in LXC with VPN, NFS, and migrated configurations
+
+### Plex Media Server Docker-to-LXC Migration (2025-07-21)
+**Challenge**: Migrate Plex Media Server from Docker container on docker-01 to LXC container 128
+
+**Migration Process**:
+1. **LXC Container Setup**: Created with NVIDIA GPU passthrough and NFS mount
+2. **Database Migration**: Successfully copied 212MB Plex database from Docker
+3. **Service Configuration**: Plex Media Server installed via official repository
+4. **Claim Process**: Server successfully claimed and linked to Plex account
+5. **GPU Passthrough**: NVIDIA drivers built and loaded successfully
+6. **DNS Configuration**: Fixed to use 10.92.0.10 for proper resolution
+
+**Final State**: Plex fully operational in LXC with GPU transcoding, ready for library recreation
+
+### Readarr API and Service Resolution (2025-07-21)
+**Problem**: Readarr experiencing HTTP 521 errors and API authentication failures
+
+**Troubleshooting Process**:
+1. **Service Health Check**: Confirmed Readarr service running properly
+2. **API Authentication**: Fixed by generating new API key and updating config
+3. **VPN Configuration**: Ensured PIA VPN active with DNS resolution
+4. **External Dependencies**: Identified upstream metadata provider outage
+
+**Root Cause**: External service (api.bookinfo.club) unavailable - not a local issue
+**Resolution**: Local service fully operational, monitoring upstream provider for resolution
+
+### Netbox Static Media Resolution (2025-07-21)
+**Problem**: Netbox web interface failing to load static assets (CSS, JS, fonts)
+
+**Root Causes Identified**:
+1. **Missing Static Directory**: /opt/netbox/netbox/static/ not created
+2. **Django Configuration**: STATIC_ROOT not set in Django settings
+3. **Static Files Collection**: collectstatic never run
+4. **Nginx Configuration**: Invalid proxy_set_header directives
+
+**Resolution Process**:
+1. **Static Directory**: Created /opt/netbox/netbox/static/ with proper permissions
+2. **Django STATIC_ROOT**: Added to configuration file
+3. **File Collection**: Successfully ran collectstatic (123+ files: 21 CSS, 30 JS, 72 fonts)
+4. **Nginx Fix**: Corrected invalid proxy_set_header directives
+5. **Service Restart**: Nginx and Gunicorn restarted successfully
+6. **Verification**: Static file serving confirmed working (HTTP 200 responses)
+
+**Final State**: Netbox fully functional with all static assets loading properly
+
+### Calibre-Web Docker-to-LXC Migration (2025-07-21)
+**Challenge**: Migrate Calibre-Web from Docker container on docker-01 to LXC container 129
+
+**Migration Process**:
+1. **Container Discovery**: Located new Calibre-Web LXC container (ID 129, IP 10.92.3.19)
+2. **Docker Config Extraction**: Retrieved configuration from /home/docker/docker/appdata/calibre-web
+3. **Configuration Files Migrated**:
+   - app.db (main database with user settings and library metadata)
+   - gdrive.db (Google Drive integration database)
+   - gmail.json (email configuration)
+   - client_secrets.json (OAuth credentials)
+4. **NFS Mount Configuration**: Added /mnt/data mount for book library storage
+5. **Book Directory Setup**: Created /mnt/data/books/library and /mnt/data/books/uploads
+6. **DNS Configuration**: Fixed to use 10.92.0.10 for proper resolution
+7. **Service Verification**: Confirmed Calibre-Web running on port 8083
+
+**Key Findings**:
+- **Existing Books Discovered**: Multiple ebook files found in /mnt/data (ready for import)
+- **Service Method**: Calibre-Web runs as 'cps' process (not systemd service)
+- **Configuration Location**: Uses /root/.calibre-web/ for config storage
+- **Web Interface**: Fully accessible at http://10.92.3.19:8083
+
+**Final State**: Calibre-Web fully operational in LXC with migrated configuration and NFS book storage
+
+### VPN Configuration Best Practices
+**Lessons from SABnzbd VPN Setup**:
+
+**SSH Preservation Rules**:
+- Always allow local network traffic (10.92.3.0/24) before VPN routing
+- Test SSH connectivity after each VPN configuration change
+- Implement killswitch exceptions for management traffic
+
+**DNS Handling with VPN**:
+- VPN can override DNS settings - verify resolution after VPN activation
+- Use IP fallbacks for critical services when DNS fails
+- Monitor for DNS leaks that could expose local network
+
+**Service Integration**:
+- VPN must start before application services
+- Application should bind to VPN interface (tun0) when available
+- Implement health checks for both VPN and application
+
+### Container Branch Management (Overseerr Example)
+**Issue**: Overseerr running beta/develop branch instead of stable/master
+
+**Investigation Process**:
+1. **Installation Method**: Identified Proxmox community script source
+2. **Default Behavior**: Script clones without specifying branch (defaults to develop)
+3. **DNS Prerequisite**: Fixed DNS before attempting git operations
+
+**Branch Switch Process**:
+```bash
+cd /opt/overseerr
+systemctl stop overseerr
+git fetch origin
+git checkout master
+git pull origin master
+yarn install
+yarn build
+systemctl start overseerr
+```
+
+**Key Requirements**:
+- DNS must be functional for GitHub access
+- Service must be stopped during rebuild
+- Dependencies may need reinstallation
+- Build process can take several minutes
+
+### Infrastructure Audit Methodology
+**Systematic Approach Developed**:
+
+1. **DNS Verification**: Check `/etc/resolv.conf` and test resolution
+2. **NFS Mount Verification**: Confirm mount points and accessibility
+3. **Service Status**: Verify systemd services and web interfaces
+4. **Network Connectivity**: Test internal and external access
+5. **Configuration Consistency**: Compare against infrastructure spec
+
+**Automation Scripts Created**:
+- DNS audit and remediation scripts
+- NFS mount verification and addition scripts
+- Service migration and configuration merge scripts
+- Network connectivity validation scripts
 
 ### Emergency Recovery Procedures
 
