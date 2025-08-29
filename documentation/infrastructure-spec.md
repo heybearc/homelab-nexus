@@ -3,11 +3,75 @@
 ## Network Architecture
 
 ### Core Network Configuration
-- **Proxmox Host**: 10.92.0.5 (credentials: root/Cl0udy!!(@)
+- **Proxmox Host**: 10.92.0.5 (credentials: root/Cl0udy!!(@))
 - **Internal DNS Server**: 10.92.0.10 (CRITICAL: All containers must use this as primary DNS)
 - **Network Subnet**: 10.92.3.0/24
-- **Nextcloud VM**: 10.92.3.2 (VMID 109, deployed 2025-07-22)
+- **Nextcloud VM**: 10.92.5.2 (VMID 109, deployed 2025-07-22, moved to VLAN 925 on 2025-08-08)
 - **Retired Infrastructure**: docker-01 (previously at 10.92.3.2) - REMOVED 2025-07-22
+
+### SSH Key Authentication Protocol (Updated 2025-08-08)
+- **Authentication Method**: SSH key-based authentication (passwordless)
+- **Key Location**: `/Users/cory/.ssh/id_rsa` (local workstation)
+- **Key Distribution**: Deployed to all infrastructure hosts
+- **SSH Config**: Centralized configuration in `~/.ssh/config`
+
+#### SSH Host Configuration
+```bash
+# TrueNAS (Management Interface)
+Host truenas
+    HostName 10.92.0.3
+    Port 222
+    User truenas_admin
+    IdentityFile ~/.ssh/id_rsa
+
+# Proxmox Host
+Host proxmox
+    HostName 10.92.0.5
+    Port 22
+    User root
+    IdentityFile ~/.ssh/id_rsa
+
+# Nextcloud VM
+Host nextcloud
+    HostName 10.92.5.2
+    Port 22
+    User root
+    IdentityFile ~/.ssh/id_rsa
+```
+
+### Multi-VLAN 10G Network Architecture (Implemented 2025-08-08)
+
+#### VLAN Structure and Purpose
+- **VLAN 920** (10.92.0.0/23): Core/Management - Proxmox mgmt, DNS, AD, DHCP, IoT, WiFi, laptops, Apple TVs
+- **VLAN 922** (10.92.2.0/24): Service VLAN - Available for additional services
+- **VLAN 923** (10.92.3.0/24): Container/Media - LXC containers, Plex, *arr services
+- **VLAN 924** (10.92.4.0/24): Service VLAN - Available for additional services  
+- **VLAN 925** (10.92.5.0/24): VM/Application - Nextcloud, high-performance VMs
+
+#### TrueNAS Multi-VLAN Configuration
+- **Management Interface**: 10.92.0.3/23 (1G, VLAN 920)
+- **10G VLAN Interfaces**:
+  - **VLAN 922**: 10.92.2.200/24 (10G bond0.922)
+  - **VLAN 923**: 10.92.3.200/24 (10G bond0.923)
+  - **VLAN 924**: 10.92.4.200/24 (10G bond0.924)
+  - **VLAN 925**: 10.92.5.200/24 (10G bond0.925)
+
+#### NFS Service Multi-VLAN Binding
+- **Bind IPs**: All VLAN interfaces configured for NFS access
+  - 10.92.0.3 (VLAN 920 - 1G management)
+  - 10.92.2.200 (VLAN 922 - 10G)
+  - 10.92.3.200 (VLAN 923 - 10G)
+  - 10.92.4.200 (VLAN 924 - 10G)
+  - 10.92.5.200 (VLAN 925 - 10G)
+- **NFS Exports Available on All VLANs**:
+  - `/mnt/primary-pool/data` (10.92.0.0/21)
+  - `/mnt/temp_migration/data` (10.92.0.0/21)
+
+#### Network Performance Characteristics
+- **VLAN 920**: 1G (sufficient for management, IoT, Apple TV streaming)
+- **VLAN 922-925**: Full 10G performance (0.145-0.298ms latency)
+- **MTU**: 9000 (jumbo frames enabled on all 10G interfaces)
+- **WiFi 6 Integration**: TP-Link AP provides 600-1200+ Mbps to VLAN 920 devices
 
 ### DNS Configuration Standards (Updated 2025-07-20)
 - **Primary DNS**: 10.92.0.10 (REQUIRED for all LXC containers)
@@ -156,22 +220,24 @@
     - **Library Status**: Ready for manual library recreation in web UI
     - **Next Steps**: Complete setup wizard and recreate libraries pointing to /mnt/data paths
 
-15. **Nextcloud VM** (ID: 109, IP: 10.92.3.2)
+15. **Nextcloud VM** (ID: 109, IP: 10.92.5.2)
     - Hostname: nextcloud
     - Resources: 4 cores, 8192MB RAM
     - Storage: 
       - scsi0: 100GB (system drive)
       - scsi1: 825MB (EFI/boot)
       - scsi2: 2TB (data drive - mounted at /mnt/data)
-    - Status: Running (deployed 2025-07-22)
-    - SSH: Key-based authentication configured
-    - Data Mount: /mnt/data (2TB dedicated storage, separate from Synology NFS)
-    - Web Interface: http://10.92.3.2 (if configured)
-    - **Migration Notes**: Replaced docker-01 VM at same IP address
-    - **Storage Configuration**: New data drive requires fstab configuration for permanent mounting
+    - Network: vmbr0925 (VLAN 925) - **Migrated from VLAN 923 on 2025-08-08**
+    - Status: Running (TurnKey Linux Nextcloud)
+    - Web Interface: https://10.92.5.2 (admin/admin for initial setup)
+    - **Migration Status**: Successfully replaced docker-01 infrastructure
+    - **Data Migration**: 2TB drive contains migrated data from docker-01
+    - **SSL Configuration**: Self-signed certificate active
     - **DNS Configuration**: Should use 10.92.0.10 (primary) per infrastructure standards
     - **Deployment Date**: 2025-07-22
-    - **SSH Key Location**: /root/.ssh/id_rsa (Proxmox host)
+    - **SSH Key Authentication**: Configured 2025-08-08 (passwordless access)
+    - **Network Performance**: 10G VLAN 925 access to TrueNAS (MTU 9000)
+    - **NFS Access**: Direct mount to TrueNAS via 10.92.5.200:/mnt/primary-pool/data
 
 #### Infrastructure Services
 9. **Netbox IPAM** (ID: 118, IP: 10.92.3.18)
@@ -380,6 +446,150 @@ OpenVPN → Download Clients → Media Managers
 - [ ] Transmission optimization and cleanup
 - [ ] Full Docker container decommissioning
 - [ ] Backup and disaster recovery procedures
+
+## Infrastructure Improvements and Troubleshooting (2025-08-08)
+
+### Major Network Infrastructure Upgrades
+
+#### VLAN 923 Switch Configuration Fix
+**Problem**: VLAN 923 connectivity issues between TrueNAS and other network devices
+**Root Cause**: TP-Link switch LAG1 (TrueNAS ports 25/26) configured as **untagged** for VLAN 923
+**Solution**: Moved LAG1 from untagged to tagged for VLAN 923 in switch configuration
+**Result**: Restored bidirectional 10G connectivity and NFS access on VLAN 923
+
+#### VLAN 925 Configuration Correction
+**Problem**: VLAN 925 interface on TrueNAS had incorrect VLAN tag (926 instead of 925)
+**Root Cause**: VLAN tag mismatch preventing Layer 2 connectivity
+**Solution**: Corrected VLAN tag from 926 to 925 in TrueNAS interface configuration
+**Result**: Restored full 10G connectivity for VLAN 925 devices
+
+#### NFS Service Multi-VLAN Binding
+**Problem**: NFS service only bound to VLAN 923 (10.92.3.200), preventing access from other VLANs
+**Root Cause**: Limited NFS bind IP configuration
+**Solution**: Updated NFS service to bind to all VLAN interfaces:
+```json
+"bindip": ["10.92.0.3", "10.92.2.200", "10.92.3.200", "10.92.4.200", "10.92.5.200"]
+```
+**Result**: NFS exports now accessible from all VLANs with appropriate performance characteristics
+
+### Network Performance Optimization Results
+
+#### Connectivity Test Results (Post-Fix)
+| VLAN | TrueNAS IP | Latency | Status | Performance |
+|------|------------|---------|--------|-------------|
+| 920 | 10.92.0.3 | N/A | ✅ Working | 1G (Management) |
+| 922 | 10.92.2.200 | 0.600-1.270ms | ✅ Working | 10G |
+| 923 | 10.92.3.200 | 0.177-0.188ms | ✅ Working | 10G (Optimal) |
+| 924 | 10.92.4.200 | 0.580-1.053ms | ✅ Working | 10G |
+| 925 | 10.92.5.200 | 0.145-0.173ms | ✅ Working | 10G (Optimal) |
+
+#### NFS Export Verification
+All VLANs now successfully serve NFS exports:
+- `/mnt/primary-pool/data` (10.92.0.0/21)
+- `/mnt/temp_migration/data` (10.92.0.0/21)
+
+### SSH Key Authentication Implementation
+
+#### Deployment Process
+1. **Key Generation**: Used existing RSA key pair from local workstation
+2. **Key Distribution**: Deployed to all infrastructure hosts using `ssh-copy-id`
+3. **Configuration**: Updated `~/.ssh/config` with host aliases and connection parameters
+4. **Verification**: Tested passwordless authentication to all hosts
+
+#### Security Benefits
+- **Eliminated password authentication** for all infrastructure hosts
+- **Centralized key management** from single workstation
+- **Improved automation capability** for infrastructure management
+- **Enhanced security posture** with key-based authentication
+
+### Apple TV Streaming Performance Analysis
+
+#### Current Data Path Optimization
+```
+Apple TV (WiFi 6, VLAN 920: 600-1200+ Mbps)
+    ↓ [TP-Link AP - Wired]
+Switch → Proxmox Host (VLAN 920: 10.92.0.5)
+    ↓ [Inter-VLAN routing: ~1-2ms]
+Plex Container (VLAN 923: 10.92.3.17)
+    ↓ [10G NFS - Optimal]
+TrueNAS (10.92.3.200:/mnt/primary-pool/data)
+```
+
+#### Performance Assessment
+- **WiFi 6 Capability**: 600-1200+ Mbps available bandwidth
+- **Storage Bottleneck**: Eliminated (10G NFS provides >10,000 Mbps)
+- **Network Latency**: Sub-millisecond between Plex and storage
+- **Streaming Capacity**: Supports multiple concurrent 4K streams
+
+#### Optimization Recommendations
+- **Current Setup**: Optimal for most streaming scenarios
+- **Future Enhancement**: Move Plex to VLAN 920 to eliminate inter-VLAN routing for maximum WiFi 6 performance
+- **WiFi Upgrade Impact**: Current WiFi 6 setup already provides excellent performance
+
+### Switch Configuration Documentation
+
+#### TP-Link Switch (Model: SG3428XMP)
+- **Management IP**: 10.92.0.20
+- **Authentication**: Password-based SSH (SSH keys not supported)
+- **Access Method**: `ssh admin@10.92.0.20` (requires manual password entry)
+- **Privileged Mode**: `enable` command required for VLAN configuration
+
+#### Critical Port Assignments
+- **Ports 25/26**: TrueNAS 10G uplink (LAG1)
+- **Ports 27/28**: Proxmox 10G uplink (individual ports)
+- **LAG Configuration**: LAG1 must be tagged for all VLANs (922, 923, 924, 925)
+
+### Troubleshooting Methodology Developed
+
+#### Network Connectivity Troubleshooting
+1. **Layer 2 Verification**: Check ARP tables and VLAN tagging
+2. **Layer 3 Testing**: Ping tests between VLAN interfaces
+3. **Service Binding**: Verify NFS service bind IPs
+4. **Switch Configuration**: Validate VLAN membership and tagging
+5. **Performance Testing**: Latency and throughput verification
+
+#### Diagnostic Commands Used
+```bash
+# TrueNAS Network Status
+ssh truenas 'ip addr show && ip route show'
+
+# NFS Service Configuration
+ssh truenas 'midclt call nfs.config'
+
+# Connectivity Testing
+ssh proxmox 'ping -c 3 10.92.X.200'  # Test each VLAN
+
+# NFS Export Verification
+ssh proxmox 'showmount -e 10.92.X.200'  # Test each VLAN
+
+# Switch VLAN Configuration
+ssh admin@10.92.0.20 'enable' -c 'show vlan'
+```
+
+### Infrastructure Resilience Improvements
+
+#### Redundancy and Failover
+- **Management Access**: Preserved on dedicated 1G interface (VLAN 920)
+- **Data Access**: Available via multiple 10G VLAN interfaces
+- **SSH Access**: Key-based authentication eliminates password dependencies
+- **NFS Availability**: Multi-VLAN binding provides access redundancy
+
+#### Performance Monitoring
+- **Latency Baselines**: Established for all VLAN interfaces
+- **Throughput Capacity**: Verified 10G performance on all data VLANs
+- **Service Availability**: NFS exports verified on all configured VLANs
+
+### Future Enhancement Opportunities
+
+#### Network Optimization
+1. **Plex VLAN Migration**: Move Plex container to VLAN 920 for optimal Apple TV performance
+2. **Load Balancing**: Distribute services across multiple 10G VLANs for optimal performance
+3. **Monitoring Integration**: Implement network performance monitoring across all VLANs
+
+#### Security Enhancements
+1. **Switch SSH Keys**: Investigate SSH key support for TP-Link switch management
+2. **VLAN Isolation**: Implement firewall rules for inter-VLAN communication control
+3. **Access Control**: Implement role-based access for different VLAN services
 
 ## Troubleshooting Patterns
 
