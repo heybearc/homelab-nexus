@@ -63,3 +63,4 @@ backups/
 # Local Configuration Overrides
 local-config/
 personal-settings/
+.windsurf/workflows/*.md
