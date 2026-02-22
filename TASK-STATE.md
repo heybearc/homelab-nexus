@@ -1,28 +1,37 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-02-22 (7:50 AM)  
+**Last updated:** 2026-02-22 (8:20 AM)  
 **Current branch:** main  
-**Working on:** Governance compliance - restructuring tracking files
+**Working on:** Container Naming Convention Audit - Phase 1 Documentation
 
 ---
 
 ## Current Task
-**Governance Compliance** - ⏳ IN PROGRESS
+**Container Naming Convention Audit** - ⏳ IN PROGRESS (Phase 1 of 3)
 
 ### What I'm doing right now
-Reorganizing TASK-STATE.md and IMPLEMENTATION-PLAN.md to follow control plane governance standards. Consolidating all tracking information from README, CHANGELOG, and scattered planning docs into proper structure. IMPLEMENTATION-PLAN.md now serves as single source of truth for all work items (backlog, roadmap, bugs, deferred items).
+Working through Phase 1 (Documentation) of the Container Naming Convention Audit. Created comprehensive naming standard document including both container naming conventions AND CTID/VMID numbering ranges. Analyzed all 23 containers, identified 8 needing rename, and established ID ranges by function (100-109 Bots, 110-119 Dev, 120-129 Media, etc.).
 
 ### Today's completions (2026-02-22)
 **Governance Compliance:**
 - ✅ Ran /start-day workflow - loaded full governance and context
 - ✅ Updated .cloudy-work submodule (020f626 → 800cd1d)
 - ✅ Reorganized IMPLEMENTATION-PLAN.md to match control plane standard
-  - Added proper sections: Active Work, Backlog (prioritized), Known Bugs, Infrastructure Improvements, Roadmap, Deferred Items, Recently Completed
-  - Added effort sizing (S/M/L/XL) to all items
-  - Consolidated tracking from README, CHANGELOG, and old plan
-  - Added infrastructure reference section
-- ✅ Reorganizing TASK-STATE.md to focus on current session only
-- ⏳ Need to commit governance-compliant files
+- ✅ Reorganized TASK-STATE.md to focus on current session only
+- ✅ Committed governance-compliant files (commit cdb57b8)
+
+**Infrastructure Operations:**
+- ✅ Silenced TrueNAS disk failure alerts in Alertmanager (14-day silence until RMA arrives)
+
+**Container Naming Convention Audit - Phase 1:**
+- ✅ Audited all 23 container names
+- ✅ Identified 4 naming patterns (simple, hyphenated, blue-green, abbreviations)
+- ✅ Found 8 inconsistencies needing rename
+- ✅ Created standard naming convention: `{function}-{role}[-{instance}]`
+- ✅ Defined CTID/VMID numbering ranges by function
+- ✅ Created `documentation/container-naming-standard.md`
+- ✅ Updated IMPLEMENTATION-PLAN.md with detailed 3-phase breakdown
+- ⏳ Need to commit new standard document
 
 ---
 
@@ -47,9 +56,12 @@ Reorganizing TASK-STATE.md and IMPLEMENTATION-PLAN.md to follow control plane go
 2. Commit .cloudy-work submodule update
 3. Push to GitHub
 
-**Next session (choose one):**
-1. **Automated Container Provisioning Pipeline** (high priority, L effort) - See IMPLEMENTATION-PLAN.md for details
-2. **Container Naming Convention Audit** (high priority, S effort) - Quick win before larger automation
+**Next (this session):**
+1. Commit container naming standard document
+2. Continue to Phase 2: Planning (assess blast radius, dependencies)
+
+**Or pause and choose different task:**
+1. **Automated Container Provisioning Pipeline** (high priority, L effort)
 
 ---
 
@@ -69,18 +81,19 @@ None - All systems operational for development work.
 ## Exact Next Command
 
 ```bash
-# Commit governance-compliant files
-git add IMPLEMENTATION-PLAN.md TASK-STATE.md .cloudy-work
-git commit -m "feat: reorganize tracking to follow control plane governance
+# Commit container naming standard
+git add documentation/container-naming-standard.md IMPLEMENTATION-PLAN.md TASK-STATE.md
+git commit -m "docs: add container naming and CTID/VMID numbering standard
 
-- Restructured IMPLEMENTATION-PLAN.md with proper sections and effort sizing
-- Consolidated all tracking from README/CHANGELOG into single source of truth
-- Updated TASK-STATE.md to focus on current session only
-- Synced .cloudy-work submodule to latest (020f626 → 800cd1d)
-- Now compliant with implementation-plan-standard.md policy"
+- Created comprehensive naming convention standard
+- Defined CTID/VMID ranges by function (100-109 Bots, 110-119 Dev, etc.)
+- Audited all 23 containers, identified 8 needing rename
+- Documented rename procedure with blast radius assessment
+- Updated IMPLEMENTATION-PLAN.md with 3-phase breakdown
+- Phase 1 (Documentation) complete"
 git push origin main
 ```
 
 **After commit:**
-- Repository is governance-compliant and ready for Phase 2 automation work
-- Choose next task from IMPLEMENTATION-PLAN.md backlog
+- Continue to Phase 2: Planning (blast radius, dependencies)
+- Or pause and work on different task

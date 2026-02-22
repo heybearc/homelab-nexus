@@ -25,6 +25,26 @@
 - [ ] **Automated Container Provisioning Pipeline** (effort: L) - End-to-end automation for new container deployment. Components: auto-assign CTID, Netbox IPAM registration, NPM reverse proxy entry, AdGuard DNS entry, Proxmox LXC creation. Reduces deployment from 30+ minutes to <5 minutes. Dependencies: Netbox API, Proxmox API, NPM API.
 
 - [ ] **Container Naming Convention Audit** (effort: S) - Review all 23 container names for consistency. Document current patterns, establish standard naming convention (function-role pattern), identify containers needing rename, create migration plan. Quick win before larger automation work.
+  - **Phase 1: Documentation** (30 min)
+    - [x] Audit current container names (23 containers)
+    - [x] Identify naming patterns and inconsistencies
+    - [x] Create standard naming convention document
+    - [x] Define CTID/VMID numbering ranges by function
+    - [ ] Document rationale for each proposed change
+  - **Phase 2: Planning** (1 hour)
+    - [ ] Categorize containers by rename priority (8 need rename)
+    - [ ] Assess blast radius for each rename (NPM, monitoring, DNS)
+    - [ ] Create step-by-step rename procedure
+    - [ ] Identify all dependencies per container
+  - **Phase 3: Implementation** (2-3 hours)
+    - [ ] High priority: Rename 4 containers (theoshift, npm, sandbox)
+    - [ ] Update Netbox IPAM records
+    - [ ] Update NPM proxy host entries
+    - [ ] Update Grafana/Prometheus monitoring configs
+    - [ ] Update infrastructure-spec.md
+    - [ ] Test each rename before moving to next
+  - **Standard Created:** `documentation/container-naming-standard.md`
+  - **ID Ranges Defined:** 100-109 Bots, 110-119 Dev, 120-129 Media, 130-139 Core, 140-149 Network, 150-159 Monitoring
 
 ### Medium Priority
 
