@@ -202,10 +202,54 @@ This document provides the detailed execution plan for renaming 8 containers to 
 
 ---
 
+## DNS Management Requirements
+
+**CRITICAL:** Container renames require DNS updates across multiple systems. See `dns-management-for-renames.md` for full details.
+
+### Systems Requiring DNS/Hostname Updates
+
+1. **DC-01 (10.92.0.10)** - Windows Active Directory DNS (PRIMARY)
+2. **AdGuard Home (10.92.3.11)** - DNS filtering and local resolution
+3. **Netbox IPAM (10.92.3.18)** - Infrastructure inventory
+4. **NPM (10.92.3.3)** - Reverse proxy (verify if hostname-based)
+5. **Prometheus (10.92.3.2)** - Monitoring labels (if needed)
+6. **HAProxy (10.92.3.26)** - Load balancer backends (TheoShift only)
+7. **SSH Config (~/.ssh/config)** - Local aliases
+8. **Documentation** - All .md files
+9. **Windsurf Workflows** - .windsurf/ and .cloudy-work/
+10. **MCP Servers** - Hardcoded references
+
+### DNS Update Automation Options
+
+**Option 1: Manual (Recommended for First Rename)**
+- RDP to DC-01, update DNS Manager
+- AdGuard Web UI for DNS rewrites
+- Netbox Web UI for VM names
+- Manual verification at each step
+- **Time:** ~30-45 min per container
+
+**Option 2: Semi-Automated (Recommended for Batch)**
+- DC-01: PowerShell via WinRM
+- AdGuard: API calls
+- Netbox: API calls (pynetbox)
+- NPM: API calls (if needed)
+- **Time:** ~15-20 min per container
+
+**Option 3: Fully Automated (Future)**
+- Python script updates all systems
+- See `dns-management-for-renames.md` for template
+- **Time:** ~5 min per container
+
+---
+
 ## Pre-Execution Checklist
 
 ### Before Starting ANY Rename
 
+- [ ] **Review DNS management document:** `dns-management-for-renames.md`
+- [ ] **Verify DC-01 access:** RDP or PowerShell remoting to 10.92.0.10
+- [ ] **Verify AdGuard access:** Web UI at http://10.92.3.11:3000
+- [ ] **Verify Netbox access:** Web UI at http://netbox.cloudigan.net
 - [ ] Backup all container configs: `vzdump <CTID> --mode snapshot`
 - [ ] Export Netbox data: API backup or manual export
 - [ ] Screenshot current Prometheus targets page
@@ -259,7 +303,37 @@ ssh prox "pct exec <CTID> -- hostname"
 # Should show new name
 ```
 
-### Step 6: Update Netbox IPAM
+### Step 6: Update DNS Systems
+
+**6a. Update DC-01 DNS (CRITICAL - Primary DNS Server)**
+```powershell
+# RDP to DC-01 (10.92.0.10) or use PowerShell remoting
+# Open DNS Manager or use PowerShell:
+
+Remove-DnsServerResourceRecord -ZoneName "cloudigan.net" -Name "<old-name>" -RRType A -Force
+Add-DnsServerResourceRecord -ZoneName "cloudigan.net" -Name "<new-name>" -A -IPv4Address "<IP>"
+
+# Verify
+nslookup <new-name>.cloudigan.net 10.92.0.10
+```
+
+**6b. Update AdGuard DNS (if DNS rewrite exists)**
+```bash
+# Check for existing rewrites
+curl http://10.92.3.11:3000/control/rewrite/list
+
+# Remove old (if exists)
+curl -X POST http://10.92.3.11:3000/control/rewrite/delete \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "<old-name>.cloudigan.net", "answer": "<IP>"}'
+
+# Add new
+curl -X POST http://10.92.3.11:3000/control/rewrite/add \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "<new-name>.cloudigan.net", "answer": "<IP>"}'
+```
+
+**6c. Update Netbox IPAM**
 1. Navigate to http://netbox.cloudigan.net
 2. Find VM/Device by IP or old name
 3. Update name field to new name
@@ -292,11 +366,19 @@ ssh prox "pct exec 150 -- systemctl reload prometheus"
 # Test service is running
 ssh prox "pct exec <CTID> -- systemctl status <service>"
 
-# Test network connectivity
+# Test network connectivity by IP
 ping <IP>
+
+# Test DNS resolution
+nslookup <new-name>.cloudigan.net 10.92.0.10
+
+# Test connectivity by hostname
+ping <new-name>.cloudigan.net
+ssh root@<new-name>.cloudigan.net hostname
 
 # Test web interface (if applicable)
 curl http://<IP>:<port>
+curl http://<new-name>.cloudigan.net:<port>
 
 # Check Prometheus targets (if monitored)
 # Navigate to http://10.92.3.2:9090/targets
@@ -317,20 +399,35 @@ If a rename causes issues:
 # 1. Stop container
 ssh prox "pct stop <CTID>"
 
-# 2. Revert hostname
+# 2. Revert hostname in Proxmox
 ssh prox "pct set <CTID> --hostname <old-name>"
 
 # 3. Start container
 ssh prox "pct start <CTID>"
 
-# 4. Revert Netbox changes
+# 4. Revert DC-01 DNS
+# RDP to DC-01 or PowerShell:
+Remove-DnsServerResourceRecord -ZoneName "cloudigan.net" -Name "<new-name>" -RRType A -Force
+Add-DnsServerResourceRecord -ZoneName "cloudigan.net" -Name "<old-name>" -A -IPv4Address "<IP>"
+
+# 5. Revert AdGuard DNS (if changed)
+curl -X POST http://10.92.3.11:3000/control/rewrite/delete \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "<new-name>.cloudigan.net", "answer": "<IP>"}'
+curl -X POST http://10.92.3.11:3000/control/rewrite/add \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "<old-name>.cloudigan.net", "answer": "<IP>"}'
+
+# 6. Revert Netbox changes
 # (Manual: restore old name in Netbox UI)
 
-# 5. Revert Prometheus config (if changed)
+# 7. Revert Prometheus config (if changed)
 ssh prox "pct exec 150 -- nano /etc/prometheus/prometheus.yml"
 ssh prox "pct exec 150 -- systemctl reload prometheus"
 
-# 6. Test service functionality
+# 8. Test service functionality
+nslookup <old-name>.cloudigan.net 10.92.0.10
+ping <old-name>.cloudigan.net
 ```
 
 ---
