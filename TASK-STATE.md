@@ -1,16 +1,16 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-02-22 (8:20 AM)  
+**Last updated:** 2026-02-22 (9:40 AM)  
 **Current branch:** main  
-**Working on:** Container Naming Convention Audit - Phase 1 Documentation
+**Working on:** Container Naming Convention Audit - Phase 2 Complete, Ready for Phase 3
 
 ---
 
 ## Current Task
-**Container Naming Convention Audit** - ⏳ IN PROGRESS (Phase 1 of 3)
+**Container Naming Convention Audit** - ✅ PHASE 2 COMPLETE (Ready for Phase 3)
 
 ### What I'm doing right now
-Working through Phase 1 (Documentation) of the Container Naming Convention Audit. Created comprehensive naming standard document including both container naming conventions AND CTID/VMID numbering ranges. Analyzed all 23 containers, identified 8 needing rename, and established ID ranges by function (100-109 Bots, 110-119 Dev, 120-129 Media, etc.).
+Completed Phase 2 (Planning) of the Container Naming Convention Audit. Analyzed all dependencies, assessed blast radius for each of 8 containers needing rename, created detailed execution plan with 3 batches ordered by risk level. Discovered Prometheus uses IP-based targeting (safe), NPM uses IP-based proxies (safe), main updates needed are Netbox IPAM and documentation.
 
 ### Today's completions (2026-02-22)
 **Governance Compliance:**
@@ -31,7 +31,18 @@ Working through Phase 1 (Documentation) of the Container Naming Convention Audit
 - ✅ Defined CTID/VMID numbering ranges by function
 - ✅ Created `documentation/container-naming-standard.md`
 - ✅ Updated IMPLEMENTATION-PLAN.md with detailed 3-phase breakdown
-- ⏳ Need to commit new standard document
+- ✅ Committed standard document (commit b7e4a58)
+
+**Container Naming Convention Audit - Phase 2:**
+- ✅ Analyzed Prometheus configurations (IP-based targeting, safe)
+- ✅ Analyzed NPM proxy configurations (IP-based, safe)
+- ✅ Checked Proxmox LXC configs for hostname dependencies
+- ✅ Assessed blast radius for all 8 containers (Low to Medium risk)
+- ✅ Created 3-batch execution order (low risk → infrastructure → production)
+- ✅ Documented dependencies: Netbox IPAM, documentation, SSH config, HAProxy
+- ✅ Created detailed rename procedure with rollback steps
+- ✅ Created `documentation/container-rename-plan.md`
+- ⏳ Need to commit rename plan document
 
 ---
 
@@ -57,11 +68,14 @@ Working through Phase 1 (Documentation) of the Container Naming Convention Audit
 3. Push to GitHub
 
 **Next (this session):**
-1. Commit container naming standard document
-2. Continue to Phase 2: Planning (assess blast radius, dependencies)
+1. Commit container rename plan document
+2. Choose: Start Phase 3 (Implementation) or pause
 
-**Or pause and choose different task:**
-1. **Automated Container Provisioning Pipeline** (high priority, L effort)
+**Phase 3 Options:**
+- **Batch 1:** Rename 3 low-risk containers (sandbox, quantshift bots)
+- **Batch 2:** Rename 3 infrastructure containers (npm, netbox, monitor)
+- **Batch 3:** Rename 2 production apps (theoshift blue/green)
+- **Or pause:** Work on different task from IMPLEMENTATION-PLAN.md
 
 ---
 
@@ -81,19 +95,18 @@ None - All systems operational for development work.
 ## Exact Next Command
 
 ```bash
-# Commit container naming standard
-git add documentation/container-naming-standard.md IMPLEMENTATION-PLAN.md TASK-STATE.md
-git commit -m "docs: add container naming and CTID/VMID numbering standard
+# Commit container rename plan
+git add documentation/container-rename-plan.md TASK-STATE.md
+git commit -m "docs: complete phase 2 planning for container renames
 
-- Created comprehensive naming convention standard
-- Defined CTID/VMID ranges by function (100-109 Bots, 110-119 Dev, etc.)
-- Audited all 23 containers, identified 8 needing rename
-- Documented rename procedure with blast radius assessment
-- Updated IMPLEMENTATION-PLAN.md with 3-phase breakdown
-- Phase 1 (Documentation) complete"
+- Analyzed all dependencies (Prometheus, NPM, Netbox, HAProxy)
+- Assessed blast radius for 8 containers (Low to Medium risk)
+- Created 3-batch execution order by risk level
+- Documented detailed rename procedure with rollback steps
+- Key finding: Prometheus/NPM use IP-based configs (safe to rename)
+- Phase 2 (Planning) complete, ready for Phase 3"
 git push origin main
 ```
 
 **After commit:**
-- Continue to Phase 2: Planning (blast radius, dependencies)
-- Or pause and work on different task
+- Ready to start Phase 3 (Implementation) or pause for different task
