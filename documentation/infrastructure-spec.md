@@ -267,10 +267,14 @@ Host nextcloud
     - Status: Running
     - Storage: hdd-pool:subvol-113-disk-0
 
-11. **Jump Host** (ID: 119, IP: 10.92.0.6)
-    - Hostname: jump-host
+11. **BNI Chapter Toolkit (Dev)** (ID: 119, IP: 10.92.3.13)
+    - Hostname: bni-toolkit-dev
     - Resources: 1 core, 512MB RAM, 8GB storage
-    - Network: vmbr920 (management network)
+    - Network: vmbr0923 (services network)
+    - Port: 3001
+    - Database: bni_toolkit on shared PostgreSQL (10.92.3.21)
+    - Status: Running (PM2 managed Next.js app)
+    - **Renamed:** 2026-02-23 (was sandbox-01)
     - Status: Running
     - Storage: local-lvm:vm-119-disk-0
 

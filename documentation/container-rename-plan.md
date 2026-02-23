@@ -435,7 +435,7 @@ ping <old-name>.cloudigan.net
 ## Rename Progress Tracker
 
 ### Batch 1: Low Risk, Non-Production
-- [ ] CT119: sandbox-01 → bni-toolkit-dev
+- [x] CT119: sandbox-01 → bni-toolkit-dev (✅ Completed 2026-02-23)
 - [ ] CT101: quantshift-standby → quantshift-bot-standby
 - [ ] CT100: quantshift-primary → quantshift-bot-primary
 
