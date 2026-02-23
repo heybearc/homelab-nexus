@@ -240,11 +240,12 @@ Host nextcloud
     - **NFS Access**: Direct mount to TrueNAS via 10.92.5.200:/mnt/primary-pool/data
 
 #### Infrastructure Services
-9. **Netbox IPAM** (ID: 118, IP: 10.92.3.18)
-   - Hostname: netbox-ipam
+9. **Netbox IPAM** (ID: 141, IP: 10.92.3.18)
+   - Hostname: netbox
    - Resources: 2 cores, 2048MB RAM, 8GB storage
    - Status: Running and fully functional
-   - Storage: hdd-pool:subvol-118-disk-0
+   - Storage: hdd-pool:subvol-141-disk-0
+   - **Migrated:** CTID changed from 118 to 141 on 2026-02-23 (moved to Network Services range)
    - **Static Media Issue**: RESOLVED (2025-07-21)
    - **Django Configuration**: STATIC_ROOT set to /opt/netbox/netbox/static/
    - **Static Files**: 123+ files collected (21 CSS, 30 JS, 72 fonts)
