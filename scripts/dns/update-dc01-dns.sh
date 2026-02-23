@@ -19,7 +19,7 @@ set -euo pipefail
 
 # Configuration
 DC01_HOST="10.92.0.10"
-DC01_USER="Administrator"
+DC01_USER="cory@cloudigan.com"
 DNS_ZONE="cloudigan.net"
 SSH_KEY="${HOME}/.ssh/id_rsa"
 

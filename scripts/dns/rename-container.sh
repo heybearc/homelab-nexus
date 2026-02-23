@@ -15,6 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROXMOX_HOST="prox"
 NETBOX_URL="http://10.92.3.18"
 NETBOX_TOKEN="${NETBOX_TOKEN:-}"
+DC01_USER="cory@cloudigan.com"
 
 # Colors for output
 RED='\033[0;31m'
