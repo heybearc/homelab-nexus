@@ -261,11 +261,12 @@ Host nextcloud
    - Status: Running
    - Storage: hdd-pool:subvol-121-disk-0
 
-10. **AdGuard Home** (ID: 113, IP: 10.92.3.11)
+10. **AdGuard Home** (ID: 140, IP: 10.92.3.11)
     - Hostname: adguard
-    - Resources: 1 core, 512MB RAM, 2GB storage
+    - Resources: 1 core, 512MB RAM, 4GB storage
     - Status: Running
-    - Storage: hdd-pool:subvol-113-disk-0
+    - Storage: hdd-pool:subvol-140-disk-0
+    - **Migrated:** CTID changed from 113 to 140 on 2026-02-23 (moved to Network Services range)
 
 11. **BNI Chapter Toolkit (Dev)** (ID: 119, IP: 10.92.3.13)
     - Hostname: bni-toolkit-dev
