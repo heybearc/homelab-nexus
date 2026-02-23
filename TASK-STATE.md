@@ -1,16 +1,16 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-02-22 (9:40 AM)  
+**Last updated:** 2026-02-23 (8:30 AM)  
 **Current branch:** main  
-**Working on:** Container Naming Convention Audit - Phase 2 Complete, Ready for Phase 3
+**Working on:** Container Naming Convention Audit - Phase 3 DNS Automation Ready
 
 ---
 
 ## Current Task
-**Container Naming Convention Audit** - ✅ PHASE 2 COMPLETE (Ready for Phase 3)
+**Container Naming Convention Audit - Phase 3** - ✅ DNS AUTOMATION COMPLETE
 
 ### What I'm doing right now
-Completed Phase 2 (Planning) of the Container Naming Convention Audit. Analyzed all dependencies, assessed blast radius for each of 8 containers needing rename, created detailed execution plan with 3 batches ordered by risk level. Discovered Prometheus uses IP-based targeting (safe), NPM uses IP-based proxies (safe), main updates needed are Netbox IPAM and documentation.
+Created full DNS automation suite for container renames. Built 3 bash scripts that handle DC-01 (Windows Server) via SSH and AdGuard Home via API. Master orchestration script automates entire rename process including Proxmox, DNS updates, and verification. Ready to install OpenSSH on DC-01 and test automation.
 
 ### Today's completions (2026-02-22)
 **Governance Compliance:**
@@ -53,7 +53,26 @@ Completed Phase 2 (Planning) of the Container Naming Convention Audit. Analyzed 
 - ✅ Added DNS update procedures to rename plan
 - ✅ Documented 3 automation options (manual, semi-auto, full-auto)
 - ✅ Created `documentation/dns-management-for-renames.md`
-- ⏳ Need to commit DNS management documentation
+- ✅ Committed DNS management documentation (commit 1f6b552)
+
+**Phase 3 Execution Preparation:**
+- ✅ Created detailed execution guide for Batch 1
+- ✅ Documented step-by-step procedures for 3 containers
+- ✅ Added pre-flight checks (Proxmox, DC-01, Netbox, AdGuard)
+- ✅ Included DNS update procedures for each container
+- ✅ Added verification steps and troubleshooting guide
+- ✅ Created `documentation/phase3-execution-guide.md`
+- ✅ Committed Phase 3 execution guide (commit 1f6b552)
+
+**DNS Automation Scripts:**
+- ✅ Created `scripts/dns/update-dc01-dns.sh` (Windows AD DNS via SSH)
+- ✅ Created `scripts/dns/update-adguard-dns.sh` (AdGuard API)
+- ✅ Created `scripts/dns/rename-container.sh` (master orchestration)
+- ✅ Documented OpenSSH Server installation for DC-01
+- ✅ Created comprehensive setup guide (SETUP.md)
+- ✅ Created usage documentation (README.md)
+- ✅ Made all scripts executable
+- ⏳ Need to commit DNS automation scripts
 
 ---
 
@@ -79,14 +98,18 @@ Completed Phase 2 (Planning) of the Container Naming Convention Audit. Analyzed 
 3. Push to GitHub
 
 **Next (this session):**
-1. Commit DNS management documentation
-2. Choose: Start Phase 3 (Implementation) or pause
+1. Commit DNS automation scripts
+2. Install OpenSSH Server on DC-01
+3. Configure SSH key authentication
+4. Test automation scripts
+5. Begin Batch 1 execution
 
-**Phase 3 Options:**
-- **Batch 1:** Rename 3 low-risk containers (sandbox, quantshift bots)
-- **Batch 2:** Rename 3 infrastructure containers (npm, netbox, monitor)
-- **Batch 3:** Rename 2 production apps (theoshift blue/green)
-- **Or pause:** Work on different task from IMPLEMENTATION-PLAN.md
+**Batch 1 Containers (Automation Ready):**
+- **CT119:** `./rename-container.sh 119 sandbox-01 bni-toolkit-dev 10.92.3.13`
+- **CT101:** `./rename-container.sh 101 quantshift-standby quantshift-bot-standby 10.92.3.28`
+- **CT100:** `./rename-container.sh 100 quantshift-primary quantshift-bot-primary 10.92.3.27`
+
+**Estimated Time with Automation:** ~30-45 min total (vs 1.5-2.5 hours manual)
 
 ---
 
@@ -106,21 +129,22 @@ None - All systems operational for development work.
 ## Exact Next Command
 
 ```bash
-# Commit DNS management documentation
-git add documentation/dns-management-for-renames.md documentation/container-rename-plan.md TASK-STATE.md
-git commit -m "docs: add comprehensive DNS management strategy for container renames
+# Commit DNS automation scripts
+git add scripts/dns/ TASK-STATE.md
+git commit -m "feat: add DNS automation scripts for container renames
 
-- Identified 10 systems requiring DNS/hostname updates
-- DC-01 (Windows AD DNS) - PowerShell automation via WinRM
-- AdGuard Home - API-based DNS rewrite management
-- Netbox IPAM - API-based VM name updates
-- NPM, Prometheus, HAProxy, SSH config, docs, workflows
-- Created 3 automation options (manual, semi-auto, full-auto)
-- Updated rename plan with DNS update procedures
-- Added DNS verification and rollback procedures"
+- Created update-dc01-dns.sh (Windows AD DNS via SSH)
+- Created update-adguard-dns.sh (AdGuard Home API)
+- Created rename-container.sh (master orchestration)
+- Automates Proxmox rename + DC-01 DNS + AdGuard DNS + verification
+- Includes dry-run mode and automatic rollback on failure
+- Documented OpenSSH Server setup for DC-01
+- Added comprehensive setup guide and usage docs
+- Reduces rename time from 30-45 min to ~10 min per container"
 git push origin main
 ```
 
 **After commit:**
-- Phase 2 complete with full DNS management strategy
-- Ready to start Phase 3 (Implementation) or pause
+- Install OpenSSH Server on DC-01 (follow scripts/dns/SETUP.md)
+- Test automation with dry-run mode
+- Execute Batch 1 renames
