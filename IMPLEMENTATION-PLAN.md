@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-02-22  
+**Last Updated:** 2026-02-25  
 **Current Phase:** Phase 2 - Automation (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management
 
@@ -8,13 +8,13 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** Repository setup complete. Ready to start Phase 2 automation work.
+**Current Focus:** Container infrastructure optimization - Phase 3 renames complete, CTID renumbering in progress.
 
-- [x] Create IMPLEMENTATION-PLAN.md with governance structure (effort: S)
-- [x] Create TASK-STATE.md for session tracking (effort: S)
-- [x] Sync .cloudy-work submodule to latest (effort: S)
-- [x] Consolidate all tracking from README/CHANGELOG (effort: S)
-- [ ] Commit new governance-compliant files (effort: S)
+- [x] Complete Phase 3 container renames (8/8 containers) (effort: M)
+- [x] NPM proxy host audit and cleanup (effort: S)
+- [x] NPM automated backup system (effort: M)
+- [x] CTID renumbering: CT113→CT140, CT118→CT141 (effort: S)
+- [ ] CTID renumbering: CT121→CT142 (scheduled for tonight) (effort: S)
 
 ---
 
@@ -24,31 +24,30 @@
 
 - [ ] **Automated Container Provisioning Pipeline** (effort: L) - End-to-end automation for new container deployment. Components: auto-assign CTID, Netbox IPAM registration, NPM reverse proxy entry, AdGuard DNS entry, Proxmox LXC creation. Reduces deployment from 30+ minutes to <5 minutes. Dependencies: Netbox API, Proxmox API, NPM API.
 
-- [ ] **Container Naming Convention Audit** (effort: S) - Review all 23 container names for consistency. Document current patterns, establish standard naming convention (function-role pattern), identify containers needing rename, create migration plan. Quick win before larger automation work.
-  - **Phase 1: Documentation** (30 min)
+- [x] **Container Naming Convention Audit** (effort: M) - ✅ COMPLETE - All 8 containers renamed and promoted to control plane. All containers now follow standard naming convention.
+  - **Phase 1: Documentation** ✅ COMPLETE
     - [x] Audit current container names (23 containers)
     - [x] Identify naming patterns and inconsistencies
     - [x] Create standard naming convention document
     - [x] Define CTID/VMID numbering ranges by function
-    - [ ] Document rationale for each proposed change
-  - **Phase 2: Planning** (1 hour)
-    - [ ] Categorize containers by rename priority (8 need rename)
-    - [ ] Assess blast radius for each rename (NPM, monitoring, DNS)
-    - [ ] Create step-by-step rename procedure
-    - [ ] Identify all dependencies per container
-  - **Phase 3: Implementation** (2-3 hours)
-    - [ ] High priority: Rename 4 containers (theoshift, npm, sandbox)
-    - [ ] Update Netbox IPAM records
-    - [ ] Update NPM proxy host entries
-    - [ ] Update Grafana/Prometheus monitoring configs
-    - [ ] Update infrastructure-spec.md
-    - [ ] Test each rename before moving to next
+  - **Phase 2: Planning** ✅ COMPLETE
+    - [x] Categorize containers by rename priority (8 need rename)
+    - [x] Assess blast radius for each rename (NPM, monitoring, DNS)
+    - [x] Create step-by-step rename procedure
+    - [x] Identify all dependencies per container
+  - **Phase 3: Implementation** ✅ COMPLETE
+    - [x] Renamed all 8 containers (CT119, CT100, CT101, CT118, CT121, CT132, CT134, CT150)
+    - [x] Updated Netbox IPAM records (all 8 containers)
+    - [x] Updated NPM proxy hosts (verified all 32 working)
+    - [x] Updated DNS on DC-01 and AdGuard
+    - [x] Updated infrastructure-spec.md and APP-MAP.md
+    - [x] Promoted all changes to control plane
   - **Standard Created:** `documentation/container-naming-standard.md`
   - **ID Ranges Defined:** 100-109 Bots, 110-119 Dev, 120-129 Media, 130-139 Core, 140-149 Network, 150-159 Monitoring
 
 ### Medium Priority
 
-- [ ] **Container Renumbering Strategy** (effort: M) - Group containers by function using CTID ranges (100-109: Bot/automation, 110-119: Development/sandbox, 130-139: Core infrastructure, 140-149: Media services, 150-159: Monitoring). Assess blast radius, create migration scripts, test in non-production, document rollback. High risk - requires careful planning.
+- [ ] **Container Renumbering Strategy** (effort: M) - ⏳ IN PROGRESS - Migrating containers to correct CTID ranges. Completed: CT113→CT140 (adguard), CT118→CT141 (netbox). Remaining: CT121→CT142 (nginx-proxy) scheduled for tonight. Method: Stop container, rename ZFS volume, rename config file, update rootfs reference, start container. Downtime: ~30 seconds per container.
 
 - [ ] **Infrastructure-as-Code Templates** (effort: L) - Create Terraform/Ansible templates for container provisioning. Enables version-controlled infrastructure, repeatable deployments, disaster recovery.
 
@@ -142,6 +141,20 @@ None currently.
 
 ## ✅ Recently Completed (Last 30 Days)
 
+### 2026-02-25
+- [x] CTID Migration: CT113 → CT140 (adguard) to Network Services range (Date: 2026-02-25)
+- [x] CTID Migration: CT118 → CT141 (netbox) to Network Services range (Date: 2026-02-25)
+- [x] Created CT121 → CT142 migration plan for nginx-proxy (Date: 2026-02-25)
+- [x] Updated infrastructure-spec.md for CTID migrations (Date: 2026-02-25)
+
+### 2026-02-23
+- [x] NPM proxy host audit and cleanup - deleted 35 obsolete hosts (Date: 2026-02-23)
+- [x] NPM SSL force enabled for all 32 proxy hosts with certificates (Date: 2026-02-23)
+- [x] NPM automated backup system to TrueNAS NFS (Date: 2026-02-23)
+- [x] Phase 3 container renames - all 8 containers completed (Date: 2026-02-23)
+- [x] Control plane sync - APP-MAP.md updated with all renames (Date: 2026-02-23)
+- [x] Created NPM-BACKUP-RECOVERY-PLAN.md documentation (Date: 2026-02-23)
+
 ### 2026-02-22
 - [x] Created governance-compliant IMPLEMENTATION-PLAN.md (Date: 2026-02-22)
 - [x] Created TASK-STATE.md for session tracking (Date: 2026-02-22)
@@ -186,6 +199,6 @@ None currently.
 
 ---
 
-**Last Updated:** 2026-02-22  
+**Last Updated:** 2026-02-25  
 **Maintained By:** Infrastructure Team  
 **Status:** Active - Following control plane governance standards
