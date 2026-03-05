@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-03-05  
+**Last Updated:** 2026-03-05 (9:32 AM)  
 **Current Phase:** Phase 2 - Automation (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management
 
@@ -8,9 +8,10 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** No active work. Ready to start next infrastructure project.
+**Current Focus:** TrueNAS disk replacement resilver in progress (8-12 hours).
 
 **Recent Completions:**
+- [x] TrueNAS disk replacement (effort: S) - Mar 5
 - [x] Complete Phase 3 container renames (8/8 containers) (effort: M) - Feb 23-25
 - [x] NPM proxy host audit and cleanup (effort: S) - Feb 23-25
 - [x] NPM automated backup system (effort: M) - Feb 23-25
@@ -136,11 +137,16 @@ None currently.
 
 **Items explicitly deferred with rationale:**
 
-- [ ] **TrueNAS Disk Replacement** - **Deferred because:** RMA in progress, waiting for physical disk arrival. **Revisit:** When replacement disk arrives (expected next week). **Action Required:** Replace `/dev/sde` (Seagate ST12000DM0007, serial `ZJV28SCB`). Current state: media-pool DEGRADED with zero redundancy. Steps: (1) Hot-swap disk in Supermicro chassis, (2) TrueNAS UI → Storage → media-pool → Manage Disks → Replace, (3) Wait for resilver (several hours), (4) Verify Prometheus alert resolves, (5) Apply TrueNAS OS update.
+- [ ] **TrueNAS OS Update** - **Deferred because:** Resilver in progress (started Mar 5, 8-12 hours to complete). **Revisit:** After resilver completes and pool returns to ONLINE status. **Action Required:** Apply TrueNAS SCALE Fangtooth update. Current state: media-pool RESILVERING with 0 errors. Steps: (1) Wait for resilver completion, (2) Verify pool ONLINE status, (3) Verify Prometheus alerts cleared, (4) Monitor new drive for 24-48 hours, (5) Apply OS update via TrueNAS UI.
 
 ---
 
 ## ✅ Recently Completed (Last 30 Days)
+
+### 2026-03-05
+- [x] TrueNAS disk replacement - replaced failed drive (serial ZJV28SCB) with enterprise SAS drive (serial WV70FDPJ) (Date: 2026-03-05)
+- [x] SMART health verification - new drive passed all tests with 0 errors, 0 power-on hours (Date: 2026-03-05)
+- [x] Resilver initiated - 32TB to process, 0 errors, 8-12 hour ETA (Date: 2026-03-05)
 
 ### 2026-02-25
 - [x] CTID Migration: CT113 → CT140 (adguard) to Network Services range (Date: 2026-02-25)

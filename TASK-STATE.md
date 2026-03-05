@@ -1,21 +1,29 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-03-05 (end of day)  
+**Last updated:** 2026-03-05 (9:32 AM)  
 **Current branch:** main  
-**Working on:** Governance Sync - Ready for Next Infrastructure Project
+**Working on:** TrueNAS Disk Replacement - Resilver in Progress
 
 ---
 
 ## Current Task
-**Governance Sync Complete** - Ready for Next Phase
+**TrueNAS Disk Replacement** - ✅ COMPLETE, Resilver in Progress
 
 ### What I'm doing right now
-Ran governance sync across all repos on Mar 3. Container Naming Convention Audit fully complete from Feb 23-25. All infrastructure stable and operational. No active development work since Feb 28. Ready to start next high-priority infrastructure project: Automated Container Provisioning Pipeline.
+Replaced failed TrueNAS drive (serial ZJV28SCB) with renewed enterprise drive (serial WV70FDPJ). SMART tests passed with zero errors. Resilver started successfully and is running in background (8-12 hour process). Pool will return to ONLINE status when complete. All systems operational during resilver.
 
-### Recent completions (2026-03-03 to 2026-03-05)
+### Recent completions (2026-03-05)
 
-**Governance Sync:**
-- ✅ Ran `/sync-governance` across all 5 repos (Mar 3)
+**TrueNAS Disk Replacement (Mar 5):**
+- ✅ Identified failed drive location (Bay 2, serial ZJV28SCB)
+- ✅ Verified new drive health (serial WV70FDPJ - Seagate Exos X12 enterprise SAS)
+- ✅ SMART test passed with zero errors (0 power-on hours, brand new condition)
+- ✅ Replaced failed drive in media-pool
+- ✅ Resilver started successfully (0 errors, ~8-12 hours to complete)
+- ✅ Pool status: SCANNING/RESILVERING (32TB to process)
+
+**Governance Sync (Mar 3):**
+- ✅ Ran `/sync-governance` across all 5 repos
 - ✅ Updated LDC Tools, BNI Chapter Toolkit, homelab-nexus submodules
 - ✅ TheoShift and QuantShift already current
 - ✅ All repos now at governance commit `64dc113` or later
@@ -103,7 +111,7 @@ Ran governance sync across all repos on Mar 3. Container Naming Convention Audit
 None - All systems operational for development work.
 
 **Infrastructure issues (see IMPLEMENTATION-PLAN.md for full list):**
-- TrueNAS disk failure (DEFERRED - RMA in progress)
+- TrueNAS resilver in progress (8-12 hours remaining, 0 errors so far)
 - Readarr service issues (non-critical)
 - SABnzbd VPN configuration incomplete (non-critical)
 
@@ -116,15 +124,20 @@ None - All systems operational for development work.
 ```bash
 # Run start-day to load context
 /start-day
+
+# Check resilver status
+ssh truenas "midclt call pool.query | jq -r '.[] | select(.name == \"media-pool\") | .scan | \"State: \\(.state)\\nProgress: \\(.percentage)%\\nErrors: \\(.errors)\"'"
 ```
+
+**After resilver completes:**
+
+1. Verify pool status is ONLINE
+2. Check Prometheus alerts cleared (TrueNASPoolDegraded)
+3. Apply TrueNAS OS update (Fangtooth - currently deferred)
+4. Monitor new drive for 24-48 hours
 
 **Then choose next infrastructure project:**
 
 1. **Automated Container Provisioning Pipeline** (RECOMMENDED - high priority, high impact)
-   - Design API integration flow
-   - Create Python automation scripts
-   - Test with non-production container
-   
 2. **Backup Automation for All Containers** (medium priority)
 3. **Infrastructure-as-Code Templates** (medium priority)
-4. **Complete CT121→CT142 migration** (optional, low priority)
