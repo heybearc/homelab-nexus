@@ -1,18 +1,31 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-03-13 (4:51 PM)  
+**Last updated:** 2026-03-16 (1:52 PM)  
 **Current branch:** main  
-**Working on:** Infrastructure Maintenance Complete - Ready for Next Project
+**Working on:** Proxmox MCP Integration & CT180 Scrypted NVR Deployment - ✅ COMPLETE
 
 ---
 
 ## Current Task
-**Infrastructure Maintenance** - ✅ COMPLETE
+**Proxmox MCP Integration & CT180 Scrypted NVR** - ✅ COMPLETE
 
 ### What I'm doing right now
-Completed infrastructure maintenance tasks. TrueNAS resilver verified complete (finished Mar 9, pool ONLINE, 0 errors). Resolved stuck VM 107 (cory-win) reboot loop. All systems operational. Ready to start next high-priority project: Automated Container Provisioning Pipeline or TrueNAS OS update.
+Completed Proxmox MCP server integration into Windsurf and deployed CT180 (Scrypted NVR) with 87.5% automation compliance. MCP server now visible in Windsurf with 11 tools. Scrypted accessible at https://scrypted.cloudigan.net. Updated .env with actual Netbox and NPM credentials. Ready for camera configuration or next infrastructure project.
 
-### Recent completions (2026-03-09 to 2026-03-13)
+### Recent completions (2026-03-09 to 2026-03-16)
+
+**Proxmox MCP Integration & CT180 Scrypted NVR (Mar 16):**
+- ✅ Integrated Proxmox MCP server into Windsurf
+- ✅ Deployed CT180 (Scrypted NVR) using official Proxmox installer
+- ✅ Configured static IP 10.92.3.15/24 on vmbr0923
+- ✅ DNS: scrypted.cloudigan.net → 10.92.3.3 (NPM)
+- ✅ Netbox: Auto-registered via Proxmox→Netbox sync (VM ID 32)
+- ✅ NPM reverse proxy: Proxy ID 81, SSL enabled
+- ✅ Monitoring: node_exporter installed
+- ✅ Backup: Daily at 02:00 configured
+- ✅ Updated .env with Netbox token and NPM credentials
+- ✅ Automation compliance: 7/8 components (87.5%)
+- 📝 Documentation: CT180-SCRYPTED-DEPLOYMENT.md, CT180-AUTOMATION-STATUS.md
 
 **TrueNAS Resilver Complete (Mar 9):**
 - ✅ Resilver finished successfully (100.98%, 0 errors)
@@ -100,30 +113,35 @@ Completed infrastructure maintenance tasks. TrueNAS resilver verified complete (
 
 ## Next Steps
 
+**Immediate (CT180 Scrypted):**
+1. Configure Google Nest cameras in Scrypted web interface
+2. Mount TrueNAS NFS for camera recordings storage
+3. Optional: Fix promtail (install unzip dependency)
+
 **Optional (Low Priority):**
 1. Complete CT121 → CT142 (nginx-proxy) migration
    - Migration plan exists: `documentation/CT121-NGINX-PROXY-MIGRATION-PLAN.md`
    - Expected downtime: 1-2 minutes
    - Not critical - CT121 works fine in current range
 
-**Next Session (Choose One):**
+**Next Infrastructure Project (Choose One):**
 1. **Automated Container Provisioning Pipeline** (High Priority)
-   - End-to-end automation for new container deployment
-   - Auto-assign CTID, Netbox registration, NPM proxy, AdGuard DNS
+   - MCP server now integrated and functional
+   - Enhance with full end-to-end automation
+   - Auto-assign CTID, Netbox registration, NPM proxy, DNS
    - Reduces deployment from 30+ min to <5 min
 
 2. **Backup Automation for All Containers** (Medium Priority)
-   - Extend NPM backup approach to all 25 containers
+   - Extend NPM backup approach to all 25+ containers
    - Automated backup schedule, retention, verification
 
 3. **Infrastructure-as-Code Templates** (Medium Priority)
    - Terraform/Ansible templates for container provisioning
    - Version-controlled infrastructure, repeatable deployments
 
-4. **Testing & Verification** (Medium Priority)
-   - Test blue-green switching for TheoShift and QuantShift
-   - Update Prometheus labels (CT150 still uses "monitor")
-   - Verify all infrastructure changes
+4. **TrueNAS OS Update** (Medium Priority)
+   - Pool healthy, resilver complete
+   - Update to latest Fangtooth release
 
 ---
 
