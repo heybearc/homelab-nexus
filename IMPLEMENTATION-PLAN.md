@@ -1,22 +1,30 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-03-13 (4:51 PM)  
-**Current Phase:** Phase 2 - Automation (Q2 2026)  
-**Repository:** Proxmox infrastructure automation and management
+**Last Updated:** 2026-03-14 (6:56 PM)  
+**Current Phase:** Phase 2 - MCP-Powered Automation (Q2 2026)  
+**Repository:** Proxmox infrastructure automation and management  
+**Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) - MCP server with full provisioning capabilities
 
 ---
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** No active work. Infrastructure maintenance complete. Ready for next project.
+**Current Focus:** Proxmox Infrastructure Manager (PIM) - MCP-First Development
+
+**Phase 1: MCP Server with Full Provisioning** (2-3 weeks)
+- [ ] Merge automation pipeline into mcp-server-proxmox
+- [ ] Add `create_container` tool with full provisioning
+- [ ] Add `provision_stack` tool for templates
+- [ ] Test with CT180 (Scrypted NVR) deployment
+- [ ] Document MCP usage patterns
 
 **Recent Completions:**
+- [x] Automation pipeline scripts created (provision-container.sh + helpers) - Mar 14
+- [x] Pipeline components: Netbox, NPM, DNS, monitoring, backup integration - Mar 14
+- [x] Strategic analysis: MCP + automation = unique product opportunity - Mar 14
 - [x] TrueNAS resilver verification (effort: S) - Mar 13
 - [x] VM 107 stuck reboot troubleshooting (effort: S) - Mar 13
-- [x] TrueNAS disk replacement (effort: S) - Mar 5
-- [x] Complete Phase 3 container renames (8/8 containers) (effort: M) - Feb 23-25
-- [x] NPM proxy host audit and cleanup (effort: S) - Feb 23-25
-- [x] Governance sync across all repos (effort: S) - Mar 3
+- [x] Container naming convention audit complete (8/8 containers) - Feb 23-25
 
 ---
 
@@ -24,7 +32,27 @@
 
 ### High Priority
 
-- [ ] **Automated Container Provisioning Pipeline** (effort: L) - End-to-end automation for new container deployment. Components: auto-assign CTID, Netbox IPAM registration, NPM reverse proxy entry, AdGuard DNS entry, Proxmox LXC creation. Reduces deployment from 30+ minutes to <5 minutes. Dependencies: Netbox API, Proxmox API, NPM API.
+- [ ] **Proxmox Infrastructure Manager (PIM)** (effort: XL) - **IN PROGRESS** - MCP server with full container provisioning capabilities. Natural language interface: "Create a media server with 4GB RAM and Plex". AI handles: CTID assignment, Netbox registration, NPM proxy, DNS, monitoring, backups. Merges mcp-server-proxmox + automation pipeline. **Strategic Goal:** Validate as potential commercial product.
+  - **Phase 1: Core MCP Integration** (Mar 14-31)
+    - [ ] Merge automation scripts into mcp-server-proxmox
+    - [ ] Add `create_container` MCP tool
+    - [ ] Add `provision_stack` MCP tool (templates)
+    - [ ] Test with CT180 deployment
+  - **Phase 2: Polish & Validate** (Apr 1-14)
+    - [ ] Error handling & rollback
+    - [ ] Template system (media, dev, monitoring stacks)
+    - [ ] Documentation & examples
+    - [ ] Demo video
+  - **Phase 3: Open Source Release** (Apr 15-21)
+    - [ ] Clean up code, add tests
+    - [ ] Publish to GitHub/NPM
+    - [ ] Community validation (r/homelab, r/selfhosted)
+  - **Phase 4: Platform (Optional)** (Q3 2026)
+    - [ ] Web dashboard (if community demand exists)
+    - [ ] Template marketplace
+    - [ ] Multi-user support
+
+- [x] **Automated Container Provisioning Pipeline** (effort: L) - ✅ SCRIPTS COMPLETE (Mar 14) - Bash scripts for end-to-end automation. Now being integrated into MCP server. Components: auto-assign CTID, Netbox IPAM, NPM proxy, DNS, monitoring, backups. Scripts location: `scripts/provisioning/`.
 
 - [x] **Container Naming Convention Audit** (effort: M) - ✅ COMPLETE - All 8 containers renamed and promoted to control plane. All containers now follow standard naming convention.
   - **Phase 1: Documentation** ✅ COMPLETE
