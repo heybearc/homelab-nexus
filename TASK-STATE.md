@@ -1,18 +1,31 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-03-16 (1:52 PM)  
+**Last updated:** 2026-03-17 (7:01 AM)  
 **Current branch:** main  
-**Working on:** Proxmox MCP Integration & CT180 Scrypted NVR Deployment - ✅ COMPLETE
+**Working on:** Cloudigan API - Stripe to Datto RMM Webhook Integration - ✅ COMPLETE
 
 ---
 
 ## Current Task
-**Proxmox MCP Integration & CT180 Scrypted NVR** - ✅ COMPLETE
+**Cloudigan API - Stripe to Datto RMM Webhook Integration** - ✅ COMPLETE
 
 ### What I'm doing right now
-Completed Proxmox MCP server integration into Windsurf and deployed CT180 (Scrypted NVR) with 87.5% automation compliance. MCP server now visible in Windsurf with 11 tools. Scrypted accessible at https://scrypted.cloudigan.net. Updated .env with actual Netbox and NPM credentials. Ready for camera configuration or next infrastructure project.
+Completed full Stripe-Datto-Wix integration for automated RMM agent download link delivery. Webhook creates Datto sites, generates multi-platform download links, stores data in Wix CMS. OAuth token auto-refreshes. Infrastructure: CT181 container with HAProxy blue-green routing and NPM SSL termination. Ready for Wix thank-you page setup and optional SendGrid email integration.
 
-### Recent completions (2026-03-09 to 2026-03-16)
+### Recent completions (2026-03-09 to 2026-03-17)
+
+**Cloudigan API - Stripe to Datto RMM Webhook Integration (Mar 17):**
+- ✅ Deployed CT181 (cloudigan-api-blue) with HAProxy blue-green routing
+- ✅ Implemented Stripe webhook handler for checkout.session.completed events
+- ✅ Integrated Datto RMM API with Playwright OAuth automation
+- ✅ Auto-refresh OAuth token (100-hour expiry, 1-hour safety buffer)
+- ✅ Multi-platform download link generation (Windows, macOS, Linux)
+- ✅ Wix CMS integration for customer download data storage
+- ✅ Fixed Wix MCP authentication and site ID configuration
+- ✅ Infrastructure: NPM SSL termination, HAProxy VIP routing, DNS configured
+- ✅ Verified end-to-end: Stripe → Datto → Download Links → Wix CMS
+- 📝 Documentation: CLOUDIGAN-WEBHOOK-INTEGRATION-COMPLETE.md, WIX-CMS-COLLECTION-SETUP.md
+- ⏳ Pending: Wix thank-you page setup, optional SendGrid email integration
 
 **Proxmox MCP Integration & CT180 Scrypted NVR (Mar 16):**
 - ✅ Integrated Proxmox MCP server into Windsurf
@@ -113,7 +126,12 @@ Completed Proxmox MCP server integration into Windsurf and deployed CT180 (Scryp
 
 ## Next Steps
 
-**Immediate (CT180 Scrypted):**
+**Immediate (Cloudigan API):**
+1. Update Stripe checkout success URL to include `?session={CHECKOUT_SESSION_ID}`
+2. Set up Wix thank-you page with dynamic content (query CMS by session ID)
+3. Optional: Add SendGrid email integration for backup delivery
+
+**Optional (CT180 Scrypted):**
 1. Configure Google Nest cameras in Scrypted web interface
 2. Mount TrueNAS NFS for camera recordings storage
 3. Optional: Fix promtail (install unzip dependency)
