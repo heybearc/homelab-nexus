@@ -2,30 +2,34 @@
 
 > **Your Central Command Center for Proxmox Infrastructure Management**
 
-Homelab Nexus is a comprehensive automation and management framework for Proxmox-based homelabs. It provides automated deployment, configuration management, and infrastructure documentation tools to streamline your homelab operations.
+Homelab Nexus is a comprehensive automation and management framework for Proxmox-based homelabs. It provides MCP-powered automated deployment, blue-green infrastructure management, and complete infrastructure documentation tools to streamline your homelab operations.
 
 ## 🚀 Features
 
-- **🤖 Automated Service Deployment** - Deploy 200+ services with community scripts
-- **📊 Infrastructure Documentation** - Comprehensive specs and asset tracking
-- **🔧 Configuration Management** - Standardized container and VM setup
-- **🌐 Network Management** - IPAM integration with Netbox
-- **🔒 VPN Integration** - Automated VPN setup for download clients
-- **📋 Task Management** - Organized workflows and human TODOs
+- **🤖 MCP-Powered Automation** - Natural language container provisioning via Model Context Protocol
+- **🔄 Blue-Green Deployments** - Zero-downtime deployments for production apps (TheoShift, LDC Tools, QuantShift, Cloudigan API)
+- **📦 Automated Provisioning Pipeline** - End-to-end container deployment (CTID, Netbox, NPM, DNS, monitoring, backups)
+- **📊 Infrastructure Documentation** - Comprehensive specs and asset tracking with Netbox IPAM
+- **🔧 Configuration Management** - Standardized container and VM setup with governance
+- **🌐 Network Management** - Full IPAM integration with Netbox, AdGuard DNS, NPM reverse proxy
+- **📋 Task Management** - Control plane governance with durable context management
 
 ## 🏗️ Infrastructure Overview
 
 ### Current Setup
-- **Proxmox Host**: 10.92.0.5
-- **LXC Containers**: 16 services (Media stack, Infrastructure, Monitoring)
+- **Proxmox Host**: 10.92.0.5 (pve)
+- **LXC Containers**: 25+ services (Media, Infrastructure, Monitoring, Production Apps, Bots)
 - **Virtual Machines**: 12 VMs (Windows workstations, Domain controller)
-- **Storage**: 20.62TB across 4 storage pools
+- **Storage**: TrueNAS (32TB media-pool) + Proxmox pools
 - **Networks**: Management (10.92.0.0/23) + Services (10.92.3.0/24)
+- **MCP Integration**: Proxmox MCP server + Blue-Green Deployment MCP server
 
 ### Key Services
+- **Production Apps**: TheoShift, LDC Tools, QuantShift, Cloudigan API (blue-green deployment)
 - **Media Management**: Complete *arr stack with VPN-enabled download clients
-- **Infrastructure**: DNS (AdGuard), Proxy (Nginx), IPAM (Netbox)
-- **Monitoring**: Homarr dashboard, Tautulli, Overseerr
+- **Infrastructure**: AdGuard DNS, NPM Proxy, Netbox IPAM, HAProxy (blue-green routing)
+- **Monitoring**: Grafana, Prometheus, Loki, Alertmanager, Uptime Kuma
+- **Bots**: QuantShift trading bots (blue-green deployment)
 
 ## 🛠️ Quick Start
 
@@ -34,23 +38,46 @@ Homelab Nexus is a comprehensive automation and management framework for Proxmox
 # Install required dependencies
 pip3 install -r requirements.txt
 
-# Ensure sshpass is available (macOS)
-brew install sshpass
+# Configure environment
+cp .env.example .env
+# Edit .env with your Proxmox, Netbox, NPM, and DNS credentials
 ```
 
-### Basic Usage
+### Automated Container Provisioning
 ```bash
-# List all available services
-python3 automation/proxmox-automation-scripts.py --list
+# Deploy a new container with full automation
+./scripts/provisioning/provision-container.sh \
+  --name my-service \
+  --function utility \
+  --ip 10.92.3.50 \
+  --domain my-service.cloudigan.net \
+  --ssl
 
-# Deploy a new service
-python3 automation/proxmox-automation-scripts.py --deploy jellyfin
+# This automatically:
+# - Assigns CTID from appropriate range
+# - Creates Proxmox LXC container
+# - Registers in Netbox IPAM
+# - Creates NPM reverse proxy with SSL
+# - Adds DNS record to AdGuard
+# - Installs monitoring (node_exporter, promtail)
+# - Configures backup schedule
+```
 
-# Add NFS mount to container
-python3 automation/proxmox-automation-scripts.py --container-id 127 --add-nfs
+### MCP-Powered Deployment (via Windsurf)
+```
+Create a media server container with 4GB RAM and Plex at 10.92.3.60
+```
 
-# Enable VPN support
-python3 automation/proxmox-automation-scripts.py --container-id 127 --enable-tun
+### Blue-Green Deployment Management
+```python
+# Check deployment status
+mcp0_get_deployment_status(app='theoshift')
+
+# Deploy to STANDBY
+mcp0_deploy_to_standby(app='theoshift')
+
+# Switch traffic (with approval)
+mcp0_switch_traffic(app='theoshift', requireApproval=True)
 ```
 
 ## 📁 Repository Structure
@@ -58,47 +85,58 @@ python3 automation/proxmox-automation-scripts.py --container-id 127 --enable-tun
 ```
 homelab-nexus/
 ├── 📄 README.md                          # This file
+├── 📋 TASK-STATE.md                      # Current work and next steps
+├── 📋 IMPLEMENTATION-PLAN.md             # Backlog and roadmap
+├── 📋 DECISIONS.md                       # Architectural decisions
 ├── 📋 requirements.txt                   # Python dependencies
-├── 🤖 automation/                        # Automation scripts and tools
-│   ├── proxmox-automation-scripts.py     # Main automation framework
-│   └── deployment-templates/             # Service deployment templates
+├── 🔄 .cloudy-work/                      # Control plane governance (submodule)
+├── 🔄 .windsurf/                         # Workflows (/start-day, /end-day, etc.)
+├── 🤖 automation/                        # Legacy automation scripts
 ├── 📚 documentation/                     # Infrastructure documentation
 │   ├── infrastructure-spec.md            # Complete infrastructure specification
-│   ├── netbox-ipam-spec.md              # Netbox IPAM management guide
-│   └── network-topology.md              # Network architecture details
-├── ⚙️ configuration/                     # Configuration templates and examples
-│   ├── container-configs/               # LXC container configurations
-│   ├── vpn-configs/                     # VPN configuration templates
-│   └── service-configs/                 # Service-specific configurations
-├── 📊 monitoring/                        # Monitoring and alerting
-│   ├── dashboards/                      # Grafana/Homarr dashboards
-│   └── alerts/                          # Alert configurations
-└── 🔧 scripts/                          # Utility scripts and helpers
-    ├── backup-scripts/                  # Backup automation
-    ├── maintenance/                     # Maintenance procedures
-    └── troubleshooting/                 # Common fixes and diagnostics
+│   ├── container-naming-standard.md      # Container naming conventions
+│   ├── CT180-SCRYPTED-DEPLOYMENT.md      # Deployment records
+│   └── dns-management-for-renames.md     # DNS automation guides
+├── ⚙️ configuration/                     # Configuration templates
+├── 🔧 scripts/                          # Automation and utility scripts
+│   ├── provisioning/                    # **NEW** Automated provisioning pipeline
+│   │   ├── provision-container.sh       # Master orchestration script
+│   │   ├── netbox-register.sh           # Netbox IPAM integration
+│   │   ├── npm-create-proxy.sh          # NPM reverse proxy setup
+│   │   ├── dns-add-record.sh            # AdGuard DNS registration
+│   │   ├── install-monitoring.sh        # Monitoring stack setup
+│   │   └── configure-backup.sh          # Backup configuration
+│   ├── dns/                             # DNS automation (DC-01, AdGuard)
+│   ├── cloudigan-api/                   # Cloudigan API deployment scripts
+│   ├── backup/                          # Backup automation
+│   ├── maintenance/                     # Maintenance procedures
+│   └── troubleshooting/                 # Diagnostic scripts
+└── 📦 archive/                          # Archived promotions and old docs
 ```
 
 ## 🎯 Current Status
 
-### ✅ Completed
-- [x] Infrastructure audit and documentation
-- [x] Proxmox community scripts automation framework
-- [x] SABnzbd Docker to LXC migration
-- [x] Netbox IPAM setup and integration
-- [x] Comprehensive infrastructure specification
+### ✅ Recently Completed (Mar 2026)
+- [x] **Automated Container Provisioning Pipeline** - Full end-to-end automation (Mar 14)
+- [x] **Proxmox MCP Server Integration** - Natural language container deployment (Mar 16)
+- [x] **Cloudigan API Production Deployment** - Stripe→Datto→Wix integration (Mar 17)
+- [x] **Blue-Green MCP Server** - Automated deployment management for 4 apps (Mar 18)
+- [x] **Container Naming Convention Audit** - All 8 containers renamed and standardized (Feb 23-25)
+- [x] **TrueNAS Disk Replacement** - Pool healthy, resilver complete (Mar 5-9)
+- [x] **Netbox IPAM Full Buildout** - 25+ VMs, IPs, physical layer, VLANs (Feb 21)
+- [x] **HAProxy VRRP** - Blue-green traffic routing with VIP (Feb 21)
+- [x] **Monitoring Stack** - Grafana, Prometheus, Loki, Alertmanager (Feb 21)
 
-### 🔄 In Progress
-- [ ] SABnzbd VPN configuration (OpenVPN + killswitch)
-- [ ] Readarr service troubleshooting
-- [ ] Enhanced monitoring and alerting
+### � In Progress
+- [ ] **Proxmox Infrastructure Manager (PIM)** - MCP server with full provisioning capabilities
+  - Phase 1: Merge automation pipeline into mcp-server-proxmox (Mar 14-31)
+  - Strategic goal: Validate as potential commercial product
 
-### 📋 Planned
-- [ ] Complete Docker to LXC migration
-- [ ] Automated backup procedures
-- [ ] Security hardening implementation
-- [ ] Performance optimization
-- [ ] Disaster recovery testing
+### 📋 High Priority Backlog
+- [ ] Wix thank-you page setup for Cloudigan API
+- [ ] TrueNAS OS update (Fangtooth - safe to apply)
+- [ ] Backup automation for all containers
+- [ ] Infrastructure-as-Code templates (Terraform/Ansible)
 
 ## 🏠 Services Inventory
 
