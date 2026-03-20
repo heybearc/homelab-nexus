@@ -1,18 +1,32 @@
 # homelab-nexus Task State
 
-**Last updated:** 2026-03-17 (7:01 AM)  
+**Last updated:** 2026-03-20 (12:09 PM)  
 **Current branch:** main  
-**Working on:** Cloudigan API - Stripe to Datto RMM Webhook Integration - ✅ COMPLETE
+**Working on:** Scrypted NVR - Camera Recording Setup - ✅ COMPLETE
 
 ---
 
 ## Current Task
-**Cloudigan API - Stripe to Datto RMM Webhook Integration** - ✅ COMPLETE
+**Scrypted NVR - Camera Recording Setup** - ✅ COMPLETE
 
 ### What I'm doing right now
-Completed full Stripe-Datto-Wix integration for automated RMM agent download link delivery. Webhook creates Datto sites, generates multi-platform download links, stores data in Wix CMS. OAuth token auto-refreshes. Infrastructure: CT181 container with HAProxy blue-green routing and NPM SSL termination. Ready for Wix thank-you page setup and optional SendGrid email integration.
+Completed Scrypted NVR setup with 4 Nest cameras, Google Device Access integration, 20TB TrueNAS NFS storage for recordings, motion detection, and automated backups. Fixed startup script to prevent configuration loss. System ready for production use with $50/year NVR license vs $156-300/year for Ring+Nest subscriptions. Ring doorbell integration deferred for later.
 
-### Recent completions (2026-03-09 to 2026-03-17)
+### Recent completions (2026-03-20)
+
+**Scrypted NVR - Camera Recording Setup (Mar 20):**
+- ✅ Installed Google Device Access plugin and configured OAuth credentials
+- ✅ Connected 4 Nest cameras (Front Porch, Garage, Driveway, Backyard)
+- ✅ Installed Scrypted NVR plugin ($50/year license purchased)
+- ✅ Configured 20TB TrueNAS NFS storage at /mnt/recordings
+- ✅ Set up NFS mount on Proxmox host with bind mount to container
+- ✅ Fixed docker-compose.sh startup script (removed --force-recreate flag)
+- ✅ Configured automated backups (Proxmox daily + database backup to TrueNAS)
+- ✅ Configured motion detection recording for all cameras
+- ✅ Cost analysis: $50/year vs $156-300/year for Ring+Nest subscriptions
+- ✅ Verified remote access via https://scrypted.cloudigan.net
+- 📝 Documentation: SCRYPTED-GOOGLE-NEST-SETUP.md, SCRYPTED-RECORDING-SETUP.md
+- ⏳ Deferred: Ring doorbell integration (ready when needed)
 
 **Cloudigan API - Stripe to Datto RMM Webhook Integration (Mar 17):**
 - ✅ Deployed CT181 (cloudigan-api-blue) with HAProxy blue-green routing
@@ -126,15 +140,18 @@ Completed full Stripe-Datto-Wix integration for automated RMM agent download lin
 
 ## Next Steps
 
-**Immediate (Cloudigan API):**
+**Optional (Scrypted NVR):**
+1. Add Ring doorbell to Scrypted (when ready)
+   - Install @scrypted/ring plugin
+   - Configure with Ring account credentials
+   - Enable NVR recording with motion detection
+2. Test camera recordings and verify storage usage
+3. Optional: Install HomeKit plugin to expose cameras to Apple Home/Apple TV
+
+**Optional (Cloudigan API):**
 1. Update Stripe checkout success URL to include `?session={CHECKOUT_SESSION_ID}`
 2. Set up Wix thank-you page with dynamic content (query CMS by session ID)
 3. Optional: Add SendGrid email integration for backup delivery
-
-**Optional (CT180 Scrypted):**
-1. Configure Google Nest cameras in Scrypted web interface
-2. Mount TrueNAS NFS for camera recordings storage
-3. Optional: Fix promtail (install unzip dependency)
 
 **Optional (Low Priority):**
 1. Complete CT121 → CT142 (nginx-proxy) migration
@@ -187,20 +204,21 @@ None - All systems operational for development work.
 
 **Immediate Options:**
 
-1. **Apply TrueNAS OS Update** (RECOMMENDED - unblocks deferred work)
-   - Pool is healthy, resilver complete, new drive stable (8 days)
-   - Update: TrueNAS SCALE Fangtooth
-   - Quick process via TrueNAS UI
+1. **Add Ring Doorbell to Scrypted** (Optional)
+   - Install @scrypted/ring plugin in Scrypted
+   - Configure with Ring account credentials
+   - Enable NVR recording with motion detection
+   - Test two-way audio and doorbell notifications
 
 2. **Automated Container Provisioning Pipeline** (High Priority)
    - End-to-end automation for new container deployment
    - Auto-assign CTID, Netbox registration, NPM proxy, AdGuard DNS
    - Reduces deployment from 30+ min to <5 min
 
-3. **Backup Automation for All Containers** (Medium Priority)
-4. **Infrastructure-as-Code Templates** (Medium Priority)
-   - Terraform/Ansible templates for container provisioning
-   - Version-controlled infrastructure
+3. **Apply TrueNAS OS Update** (Medium Priority)
+   - Pool is healthy, resilver complete, new drive stable (11 days)
+   - Update: TrueNAS SCALE Fangtooth
+   - Quick process via TrueNAS UI
 
-**Optional:**
-- Apply TrueNAS OS update (Fangtooth - currently deferred)
+4. **Backup Automation for All Containers** (Medium Priority)
+5. **Infrastructure-as-Code Templates** (Medium Priority)
