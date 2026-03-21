@@ -1,9 +1,9 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-03-14 (6:56 PM)  
-**Current Phase:** Phase 2 - MCP-Powered Automation (Q2 2026)  
+**Last Updated:** 2026-03-21 (2:55 PM)  
+**Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Planning (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
-**Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) - MCP server with full provisioning capabilities
+**Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform
 
 ---
 
@@ -94,6 +94,10 @@
 - [ ] **Enhanced VPN Killswitch** (effort: S) - SSH-preserving VPN killswitch for download clients. Prevents accidental exposure while maintaining management access.
 
 ### Low Priority
+
+- [ ] **MSP Platform - Identity Provider Architecture** (effort: L) - Design hybrid SSO with Microsoft Entra ID (primary) + Authentik (fallback). Research Entra ID compatibility for each service, plan migration for NextAuth apps, document app registration process. Reference: `documentation/MSP-PLATFORM-ANALYSIS.md`.
+
+- [ ] **MSP Platform - 3-Node Proxmox Cluster** (effort: XL) - Expand from single host to 3-node cluster for HA. Evaluate TrueNAS as second Proxmox node, design network topology, plan storage strategy (Ceph vs NFS), configure quorum and fencing. Target: 30-day timeline.
 
 - [ ] **Disaster Recovery Runbooks** (effort: M) - Document recovery procedures for each critical service. Container recovery, network restoration, service rollback, infrastructure validation.
 
@@ -186,6 +190,23 @@ None currently.
 - [x] Teams notifications integrated with Semaphore task completion (Date: 2026-03-21)
 - [x] PostgreSQL infrastructure discovery - identified single server configuration (Date: 2026-03-21)
 - [x] Ansible connectivity established to 11 infrastructure hosts (Date: 2026-03-21)
+- [x] Consolidated all tracking into IMPLEMENTATION-PLAN.md (removed BACKLOG.md, TASK-STATE.md archived) (Date: 2026-03-21)
+
+### 2026-03-20
+- [x] Scrypted NVR setup complete - 4 Nest cameras, 20TB NFS storage, motion detection (Date: 2026-03-20)
+- [x] Fixed docker-compose.sh startup script to prevent configuration loss (Date: 2026-03-20)
+- [x] Configured automated backups (Proxmox daily + database to TrueNAS) (Date: 2026-03-20)
+- [x] Cost analysis: $50/year NVR license vs $156-300/year Ring+Nest subscriptions (Date: 2026-03-20)
+
+### 2026-03-17
+- [x] Cloudigan API - Stripe to Datto RMM webhook integration deployed (Date: 2026-03-17)
+- [x] Auto-refresh OAuth token system (100-hour expiry, 1-hour safety buffer) (Date: 2026-03-17)
+- [x] Wix CMS integration for customer download data storage (Date: 2026-03-17)
+
+### 2026-03-16
+- [x] Integrated Proxmox MCP server into Windsurf (Date: 2026-03-16)
+- [x] Deployed CT180 (Scrypted NVR) using official Proxmox installer (Date: 2026-03-16)
+- [x] Automation compliance: 7/8 components (87.5%) (Date: 2026-03-16)
 
 ### 2026-03-13
 - [x] TrueNAS resilver verification - confirmed complete (100.98%, 0 errors, pool ONLINE) (Date: 2026-03-13)
