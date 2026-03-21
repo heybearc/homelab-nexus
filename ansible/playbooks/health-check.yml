@@ -1,0 +1,45 @@
+---
+- name: Health Check - Verify system health across all hosts
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Check disk usage
+      shell: df -h / | tail -1 | awk "{print \}" | sed "s/%//"
+      register: disk_usage
+      changed_when: false
+      
+    - name: Check memory usage
+      shell: free | grep Mem | awk "{printf \"%.0f\", \/\ * 100}"
+      register: memory_usage
+      changed_when: false
+      
+    - name: Check CPU load
+      shell: uptime | awk -F"load average:" "{print \}" | awk "{print \}" | sed "s/,//"
+      register: cpu_load
+      changed_when: false
+      
+    - name: Check if PM2 is running (Node.js apps)
+      shell: systemctl is-active pm2-root || echo "not-running"
+      register: pm2_status
+      changed_when: false
+      ignore_errors: yes
+      
+    - name: Display health status
+      debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Disk Usage: {{ disk_usage.stdout }}%"
+          - "Memory Usage: {{ memory_usage.stdout }}%"
+          - "CPU Load: {{ cpu_load.stdout }}"
+          - "PM2 Status: {{ pm2_status.stdout }}"
+          
+    - name: Alert if disk usage is high
+      debug:
+        msg: "WARNING: High disk usage ({{ disk_usage.stdout }}%) on {{ inventory_hostname }}"
+      when: disk_usage.stdout | int > 80
+      
+    - name: Alert if memory usage is high
+      debug:
+        msg: "WARNING: High memory usage ({{ memory_usage.stdout }}%) on {{ inventory_hostname }}"
+      when: memory_usage.stdout | int > 90

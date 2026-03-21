@@ -1,0 +1,32 @@
+---
+- name: Node.js App Management - Restart PM2 applications
+  hosts: nodejs_apps
+  become: yes
+  gather_facts: no
+  
+  tasks:
+    - name: Check PM2 service status
+      systemd:
+        name: pm2-root
+        state: started
+      register: pm2_service
+      
+    - name: Get PM2 process list
+      shell: pm2 list
+      register: pm2_list
+      changed_when: false
+      
+    - name: Display current PM2 processes
+      debug:
+        msg: "{{ pm2_list.stdout_lines }}"
+        
+    - name: Restart all PM2 processes
+      shell: pm2 restart all
+      register: pm2_restart
+      
+    - name: Save PM2 process list
+      shell: pm2 save
+      
+    - name: Display restart results
+      debug:
+        msg: "PM2 processes restarted on {{ inventory_hostname }}"
