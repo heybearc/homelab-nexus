@@ -9,16 +9,20 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** Proxmox Infrastructure Manager (PIM) - MCP-First Development
+**Current Focus:** Infrastructure Automation & Monitoring
 
-**Phase 1: MCP Server with Full Provisioning** (2-3 weeks)
-- [ ] Merge automation pipeline into mcp-server-proxmox
-- [ ] Add `create_container` tool with full provisioning
-- [ ] Add `provision_stack` tool for templates
-- [ ] Test with CT180 (Scrypted NVR) deployment
-- [ ] Document MCP usage patterns
+**Semaphore Ansible Automation Platform** (Mar 21)
+- [x] Microsoft 365 SSO integration via OpenID Connect
+- [x] Ansible playbook repository created (github.com/heybearc/ansible-playbooks)
+- [x] Self-updating template system (auto-creates templates from playbooks)
+- [x] Teams notifications for task completion
+- [x] 6 operational playbooks deployed
+- [x] 11/20 hosts reachable and managed via Ansible
 
 **Recent Completions:**
+- [x] Semaphore automation platform fully operational - Mar 21
+- [x] Ansible playbooks: Fix Python, Health Check, PostgreSQL Status, Node.js Restart, System Update, Template Sync - Mar 21
+- [x] PostgreSQL infrastructure discovery: Single server (no replica configured) - Mar 21
 - [x] Automation pipeline scripts created (provision-container.sh + helpers) - Mar 14
 - [x] Pipeline components: Netbox, NPM, DNS, monitoring, backup integration - Mar 14
 - [x] Strategic analysis: MCP + automation = unique product opportunity - Mar 14
@@ -31,6 +35,8 @@
 ## 📋 Backlog (Prioritized)
 
 ### High Priority
+
+- [ ] **PostgreSQL High Availability Setup** (effort: L) - **DISCOVERED MAR 21** - Current state: Single PostgreSQL server (CT131). CT132 exists but has no PostgreSQL installed. Target: Primary-replica replication with automatic failover. Steps: (1) Install PostgreSQL 17 on CT132, (2) Configure streaming replication, (3) Set up Patroni/repmgr for failover, (4) Update Ansible playbooks, (5) Test failover scenarios. **Priority:** Single point of failure for all MSP platform databases (theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit).
 
 - [ ] **Proxmox Infrastructure Manager (PIM)** (effort: XL) - **IN PROGRESS** - MCP server with full container provisioning capabilities. Natural language interface: "Create a media server with 4GB RAM and Plex". AI handles: CTID assignment, Netbox registration, NPM proxy, DNS, monitoring, backups. Merges mcp-server-proxmox + automation pipeline. **Strategic Goal:** Validate as potential commercial product.
   - **Phase 1: Core MCP Integration** (Mar 14-31)
@@ -77,11 +83,13 @@
 
 ### Medium Priority
 
+- [x] **Semaphore Ansible Automation Platform** (effort: L) - ✅ COMPLETE (Mar 21) - Full automation platform with M365 SSO, self-updating templates, Teams notifications. 6 playbooks operational: Fix Python Modules, Health Check, PostgreSQL Status, Node.js App Restart, System Update, Template Sync. Managing 11 reachable hosts. Repository: github.com/heybearc/ansible-playbooks.
+
 - [ ] **Container Renumbering Strategy** (effort: M) - ⏳ IN PROGRESS - Migrating containers to correct CTID ranges. Completed: CT113→CT140 (adguard), CT118→CT141 (netbox). Remaining: CT121→CT142 (nginx-proxy) scheduled for tonight. Method: Stop container, rename ZFS volume, rename config file, update rootfs reference, start container. Downtime: ~30 seconds per container.
 
 - [ ] **Infrastructure-as-Code Templates** (effort: L) - Create Terraform/Ansible templates for container provisioning. Enables version-controlled infrastructure, repeatable deployments, disaster recovery.
 
-- [ ] **Backup Automation for All Containers** (effort: M) - Automated backup procedures for all 23 containers. Schedule, retention policy, verification, restore testing.
+- [ ] **Backup Automation for All Containers** (effort: M) - Automated backup procedures for all 28 containers. Schedule, retention policy, verification, restore testing. Reference: `documentation/BACKUP-IMPLEMENTATION-GUIDE.md`.
 
 - [ ] **Enhanced VPN Killswitch** (effort: S) - SSH-preserving VPN killswitch for download clients. Prevents accidental exposure while maintaining management access.
 
@@ -170,6 +178,14 @@ None currently.
 ---
 
 ## ✅ Recently Completed (Last 30 Days)
+
+### 2026-03-21
+- [x] Semaphore Ansible automation platform deployed with M365 SSO (Date: 2026-03-21)
+- [x] Created 6 operational Ansible playbooks for infrastructure management (Date: 2026-03-21)
+- [x] Self-updating template system - auto-creates Semaphore templates from playbooks (Date: 2026-03-21)
+- [x] Teams notifications integrated with Semaphore task completion (Date: 2026-03-21)
+- [x] PostgreSQL infrastructure discovery - identified single server configuration (Date: 2026-03-21)
+- [x] Ansible connectivity established to 11 infrastructure hosts (Date: 2026-03-21)
 
 ### 2026-03-13
 - [x] TrueNAS resilver verification - confirmed complete (100.98%, 0 errors, pool ONLINE) (Date: 2026-03-13)
