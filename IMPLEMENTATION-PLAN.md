@@ -44,7 +44,26 @@
 
 ### High Priority
 
-- [ ] **PostgreSQL High Availability Setup** (effort: L) - **DISCOVERED MAR 21** - Current state: Single PostgreSQL server (CT131). CT132 exists but has no PostgreSQL installed. Target: Primary-replica replication with automatic failover. Steps: (1) Install PostgreSQL 17 on CT132, (2) Configure streaming replication, (3) Set up Patroni/repmgr for failover, (4) Update Ansible playbooks, (5) Test failover scenarios. **Priority:** Single point of failure for all MSP platform databases (theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit).
+- [ ] **Cloudigan MSP Platform - Phase 1 Deployment** (effort: XL) - **PLANNING** - Deploy core MSP platform services. **Anchor Services:** BookStack (documentation/client hub), Plane (project management), Authentik/Entra ID (identity). **Reference:** `documentation/MSP-PLATFORM-ANALYSIS.md`
+  - **Phase 1: Anchor Services** (Priority 1)
+    - [ ] BookStack - Documentation & client hub (primary navigation)
+    - [ ] Plane - Project management (execution layer)
+    - [ ] Authentik - Identity provider (SSO foundation, if Entra ID insufficient)
+    - [ ] Research Entra ID compatibility for each service
+  - **Phase 2: Core Operations** (Priority 2)
+    - [ ] Zammad - Ticketing system (customer-facing, CRITICAL)
+    - [ ] Documenso - E-signature platform (customer-facing, CRITICAL)
+    - [ ] Twenty CRM - Customer relationship management
+    - [ ] Kimai - Time tracking
+  - **Phase 3: Automation & Integration** (Priority 3)
+    - [ ] n8n - Workflow automation (integrates with 1Password for client secrets)
+  - **Infrastructure Requirements:**
+    - [ ] PostgreSQL HA setup (see below - BLOCKER)
+    - [ ] Entra ID SSO research and app registrations
+    - [ ] Backup strategy extension to MSP containers
+    - [ ] Blue-green deployment pattern for MSP apps
+
+- [ ] **PostgreSQL High Availability Setup** (effort: L) - **DISCOVERED MAR 21** - **BLOCKER FOR MSP PLATFORM** - Current state: Single PostgreSQL server (CT131). CT132 exists but has no PostgreSQL installed. Target: Primary-replica replication with automatic failover. Steps: (1) Install PostgreSQL 17 on CT132, (2) Configure streaming replication, (3) Set up Patroni/repmgr for failover, (4) Update Ansible playbooks, (5) Test failover scenarios. **Priority:** Single point of failure for all MSP platform databases (theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit) + 8 new MSP databases (cloudigan_plane, cloudigan_zammad, cloudigan_bookstack, cloudigan_twenty, cloudigan_kimai, cloudigan_documenso, cloudigan_n8n, cloudigan_authentik).
 
 - [ ] **Proxmox Infrastructure Manager (PIM)** (effort: XL) - **IN PROGRESS** - MCP server with full container provisioning capabilities. Natural language interface: "Create a media server with 4GB RAM and Plex". AI handles: CTID assignment, Netbox registration, NPM proxy, DNS, monitoring, backups. Merges mcp-server-proxmox + automation pipeline. **Strategic Goal:** Validate as potential commercial product.
   - **Phase 1: Core MCP Integration** (Mar 14-31)
