@@ -63,7 +63,7 @@
     - [ ] Backup strategy extension to MSP containers
     - [ ] Blue-green deployment pattern for MSP apps
 
-- [ ] **PostgreSQL High Availability Setup** (effort: L) - **DISCOVERED MAR 21** - **BLOCKER FOR MSP PLATFORM** - Current state: Single PostgreSQL server (CT131). CT132 exists but has no PostgreSQL installed. Target: Primary-replica replication with automatic failover. Steps: (1) Install PostgreSQL 17 on CT132, (2) Configure streaming replication, (3) Set up Patroni/repmgr for failover, (4) Update Ansible playbooks, (5) Test failover scenarios. **Priority:** Single point of failure for all MSP platform databases (theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit) + 8 new MSP databases (cloudigan_plane, cloudigan_zammad, cloudigan_bookstack, cloudigan_twenty, cloudigan_kimai, cloudigan_documenso, cloudigan_n8n, cloudigan_authentik).
+- [ ] **PostgreSQL High Availability Setup** (effort: M) - **BLOCKER FOR MSP PLATFORM** - Current state: PostgreSQL 17 streaming replication configured (CT131 primary → CT151 replica). Target: Add automatic failover with Patroni or repmgr. Steps: (1) ✅ PostgreSQL 17 installed on CT151, (2) ✅ Streaming replication configured and verified, (3) Install Patroni/repmgr for automatic failover, (4) Update Ansible playbooks for HA management, (5) Test failover scenarios. **Priority:** Single point of failure for all MSP platform databases (theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit) + 8 new MSP databases (cloudigan_plane, cloudigan_zammad, cloudigan_bookstack, cloudigan_twenty, cloudigan_kimai, cloudigan_documenso, cloudigan_n8n, cloudigan_authentik). **Note:** Active-passive replication working, needs failover automation.
 
 - [ ] **Proxmox Infrastructure Manager (PIM)** (effort: XL) - **IN PROGRESS** - MCP server with full container provisioning capabilities. Natural language interface: "Create a media server with 4GB RAM and Plex". AI handles: CTID assignment, Netbox registration, NPM proxy, DNS, monitoring, backups. Merges mcp-server-proxmox + automation pipeline. **Strategic Goal:** Validate as potential commercial product.
   - **Phase 1: Core MCP Integration** (Mar 14-31)
@@ -85,7 +85,7 @@
     - [ ] Template marketplace
     - [ ] Multi-user support
 
-- [x] **Automated Container Provisioning Pipeline** (effort: L) - ✅ SCRIPTS COMPLETE (Mar 14) - Bash scripts for end-to-end automation. Now being integrated into MCP server. Components: auto-assign CTID, Netbox IPAM, NPM proxy, DNS, monitoring, backups. Scripts location: `scripts/provisioning/`.
+- [ ] **Automated Container Provisioning Pipeline** (effort: L) - ⏳ SCRIPTS COMPLETE, ANSIBLE MIGRATION PENDING - Bash scripts for end-to-end automation complete (Mar 14). **Next:** Migrate all provisioning logic to Ansible playbooks and deprecate bash scripts. Components: auto-assign CTID, Netbox IPAM, NPM proxy, DNS, monitoring, backups. Scripts location: `scripts/provisioning/`. Target: Pure Ansible-based provisioning workflow.
 
 - [x] **Container Naming Convention Audit** (effort: M) - ✅ COMPLETE - All 8 containers renamed and promoted to control plane. All containers now follow standard naming convention.
   - **Phase 1: Documentation** ✅ COMPLETE
@@ -110,9 +110,9 @@
 
 ### Medium Priority
 
-- [x] **Semaphore Ansible Automation Platform** (effort: L) - ✅ COMPLETE (Mar 21) - Full automation platform with M365 SSO, self-updating templates, Teams notifications. 6 playbooks operational: Fix Python Modules, Health Check, PostgreSQL Status, Node.js App Restart, System Update, Template Sync. Managing 11 reachable hosts. Repository: github.com/heybearc/ansible-playbooks.
+- [x] **Semaphore Ansible Automation Platform** (effort: L) - ✅ COMPLETE (Mar 21) - Full automation platform with M365 SSO, self-updating templates, Teams notifications. 7 playbooks operational: Fix Python Modules, Health Check, PostgreSQL Status, Node.js App Restart, System Update, Sync Templates, Sync Inventory. Managing 29/30 hosts (29 containers + TrueNAS). Repository: github.com/heybearc/ansible-playbooks.
 
-- [ ] **Container Renumbering Strategy** (effort: M) - ⏳ IN PROGRESS - Migrating containers to correct CTID ranges. Completed: CT113→CT140 (adguard), CT118→CT141 (netbox). Remaining: CT121→CT142 (nginx-proxy) scheduled for tonight. Method: Stop container, rename ZFS volume, rename config file, update rootfs reference, start container. Downtime: ~30 seconds per container.
+- [ ] **Container Renumbering Strategy** (effort: S) - ⏳ OPTIONAL - Migrating containers to correct CTID ranges. Completed: CT113→CT140 (adguard), CT118→CT141 (netbox). Remaining: CT121→CT142 (nginx-proxy). **Status:** Migration plan exists but not critical - CT121 works fine in current range. Method: Stop container, rename ZFS volume, rename config file, update rootfs reference, start container. Downtime: ~30 seconds.
 
 - [ ] **Infrastructure-as-Code Templates** (effort: L) - Create Terraform/Ansible templates for container provisioning. Enables version-controlled infrastructure, repeatable deployments, disaster recovery.
 
@@ -175,8 +175,9 @@ None currently.
 
 ### Phase 2: Automation (Q2 2026) ⏳ IN PROGRESS
 
-- [ ] Automated container provisioning pipeline
-- [ ] Container naming convention standard
+- [ ] Automated container provisioning pipeline (Scripts complete, Ansible migration pending)
+- [x] Container naming convention standard (✅ Complete - 8 containers renamed)
+- [x] Semaphore Ansible automation platform (✅ Complete - 7 playbooks, 29/30 hosts)
 - [ ] Infrastructure-as-code templates (Terraform/Ansible)
 - [ ] Backup automation for all containers
 - [ ] Disaster recovery runbooks
@@ -204,7 +205,7 @@ None currently.
 
 **Items explicitly deferred with rationale:**
 
-- [ ] **TrueNAS OS Update** - **Deferred because:** Waiting for new drive burn-in period. **Revisit:** Now ready to apply (resilver complete Mar 9, pool ONLINE, 8 days stable). **Action Required:** Apply TrueNAS SCALE Fangtooth update. Current state: media-pool ONLINE with 0 errors. Steps: (1) ✅ Resilver complete, (2) ✅ Pool ONLINE status verified, (3) ✅ Prometheus alerts cleared, (4) ✅ New drive monitored 8 days, (5) Apply OS update via TrueNAS UI.
+- [x] **TrueNAS OS Update** - ✅ COMPLETE (Mar 21) - Applied TrueNAS SCALE 25.04.2.6 (Fangtooth) update. Pool stable, no errors.
 
 ---
 
@@ -303,6 +304,6 @@ None currently.
 
 ---
 
-**Last Updated:** 2026-02-25  
+**Last Updated:** 2026-03-21 (4:03 PM)  
 **Maintained By:** Infrastructure Team  
 **Status:** Active - Following control plane governance standards
