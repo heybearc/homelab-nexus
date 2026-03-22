@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-03-21 (2:55 PM)  
+**Last Updated:** 2026-03-22 (3:30 PM)  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Planning (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform
@@ -9,7 +9,7 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** Infrastructure Automation & Monitoring
+**Current Focus:** NPM Trixie Upgrade + BookStack Knowledge Base Configuration
 
 **Semaphore Ansible Automation Platform** (Mar 21 - COMPLETED)
 - [x] Microsoft 365 SSO integration via OpenID Connect
@@ -23,6 +23,12 @@
 - [x] 29/30 hosts reachable and managed via Ansible (all except TrueNAS edge cases)
 
 **Recent Completions:**
+- [x] NPM Trixie upgrade + BookStack configuration - Mar 22
+  - NPM container (CT121) upgraded to Debian 13 Trixie
+  - NPM v2.14.0 (latest) with Node.js v22.22.1
+  - Patched Proxmox LXC hook for Debian 13 support
+  - BookStack reconfigured to kb.cloudigan.net with direct HTTPS
+  - Container disk resized from 4GB to 8GB
 - [x] Complete Semaphore + Ansible infrastructure automation - Mar 21
   - Semaphore automation platform fully operational
   - 7 operational playbooks deployed
@@ -211,6 +217,18 @@ None currently.
 
 ## ✅ Recently Completed (Last 30 Days)
 
+### 2026-03-22
+- [x] NPM container (CT121) upgraded to Debian 13 Trixie (Date: 2026-03-22)
+- [x] NPM upgraded from v2.12.6 to v2.14.0 (latest version) (Date: 2026-03-22)
+- [x] Node.js upgraded from v16.20.2 to v22.22.1 (Date: 2026-03-22)
+- [x] Patched Proxmox LXC hook to support Debian 13.x versions (Date: 2026-03-22)
+- [x] Fixed `/usr/share/perl5/PVE/LXC/Setup/Debian.pm` version check (Date: 2026-03-22)
+- [x] Removed OpenResty repository (SHA1 signature issues) (Date: 2026-03-22)
+- [x] Resized CT121 disk from 4GB to 8GB (Date: 2026-03-22)
+- [x] BookStack reconfigured from docs.cloudigan.net to kb.cloudigan.net (Date: 2026-03-22)
+- [x] BookStack configured for direct HTTPS access (no NPM proxy) (Date: 2026-03-22)
+- [x] Created ansible.cloudigan.net proxy host for Semaphore (Date: 2026-03-22)
+
 ### 2026-03-21
 - [x] PostgreSQL High Availability automatic failover system deployed (Date: 2026-03-21)
 - [x] Prometheus-based monitoring with 30-second failover detection (Date: 2026-03-21)
@@ -308,6 +326,6 @@ None currently.
 
 ---
 
-**Last Updated:** 2026-03-21 (4:03 PM)  
+**Last Updated:** 2026-03-22 (3:30 PM)  
 **Maintained By:** Infrastructure Team  
 **Status:** Active - Following control plane governance standards

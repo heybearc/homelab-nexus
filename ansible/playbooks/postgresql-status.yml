@@ -1,0 +1,49 @@
+---
+- name: PostgreSQL Status - Check database cluster health
+  hosts: postgresql
+  become: yes
+  become_user: postgres
+  gather_facts: no
+  
+  tasks:
+    - name: Check PostgreSQL service status
+      systemd:
+        name: postgresql
+      register: pg_service
+      become_user: root
+      
+    - name: Get PostgreSQL version
+      shell: psql -c "SELECT version();" | head -3 | tail -1
+      register: pg_version
+      changed_when: false
+      
+    - name: Check replication status (primary)
+      shell: psql -c "SELECT client_addr, state, sync_state FROM pg_stat_replication;"
+      register: replication_status
+      changed_when: false
+      when: "\"primary\" in inventory_hostname"
+      ignore_errors: yes
+      
+    - name: Check if this is a replica
+      shell: psql -c "SELECT pg_is_in_recovery();" | grep -q "t" && echo "replica" || echo "primary"
+      register: server_role
+      changed_when: false
+      
+    - name: Get database sizes
+      shell: psql -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) as size FROM pg_database WHERE datistemplate = false ORDER BY pg_database_size(datname) DESC;"
+      register: db_sizes
+      changed_when: false
+      
+    - name: Display PostgreSQL status
+      debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Service: {{ pg_service.status.ActiveState }}"
+          - "Role: {{ server_role.stdout }}"
+          - "Version: {{ pg_version.stdout }}"
+          - "Databases: {{ db_sizes.stdout_lines }}"
+          
+    - name: Display replication status (primary only)
+      debug:
+        msg: "{{ replication_status.stdout_lines }}"
+      when: replication_status is defined and replication_status.stdout_lines is defined
