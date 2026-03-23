@@ -367,10 +367,19 @@ Scopes: openid, profile, email
 4. Plan Phase 2 deployment
 
 ### Phase 2 Preparation (Week 3-4)
-1. Deploy Plane (Project Management)
-2. Deploy Zammad (Ticketing)
-3. Integrate with BookStack
-4. Onboard first pilot client
+1. ✅ **Plane Deployed** - CT184 @ 10.92.3.51 (projects.cloudigan.net)
+   - External PostgreSQL (CT131: cloudigan_plane)
+   - External MinIO (TrueNAS: plane-uploads)
+   - Community Edition (email/password auth)
+   - **Limitation:** No SSO/OIDC (requires Commercial license)
+   - **Limitation:** No time tracking (requires Commercial license)
+2. Deploy Kimai (Time Tracking) - Planned
+   - Dedicated time tracking for customer/project billing
+   - OIDC/SAML SSO support (free)
+   - Complements Plane for MSP workflows
+3. Deploy Zammad (Ticketing) - Planned
+4. Integrate all services with BookStack
+5. Onboard first pilot client
 
 ---
 
@@ -453,6 +462,13 @@ Scopes: openid, profile, email
 
 ---
 
-**Status:** Ready to begin Phase 1 deployment  
-**Blocker:** Proxmox host update (scheduled for tonight)  
-**Next Action:** Upgrade PostgreSQL cluster after Proxmox update complete
+**Status:** Phase 1 in progress, Plane deployed (Phase 2 preview)  
+**Completed:**
+- ✅ Ansible Control Node (CT183)
+- ✅ Plane Project Management (CT184) - External PostgreSQL + MinIO
+
+**Next Actions:**
+- ⏳ Upgrade PostgreSQL cluster
+- ⏳ Deploy Authentik (SSO)
+- ⏳ Deploy BookStack (Documentation Hub)
+- ⏳ Deploy Kimai (Time Tracking)

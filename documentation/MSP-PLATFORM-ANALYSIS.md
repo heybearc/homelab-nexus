@@ -242,15 +242,15 @@ This document tracks the architectural analysis, governance conflicts, and decis
 - [ ] Design database naming convention (follow D-011)
 - [ ] Plan backup strategy extension
 
-**Estimated New Databases:**
-1. `cloudigan_plane` - Project management
-2. `cloudigan_zammad` - Ticketing
-3. `cloudigan_bookstack` - Documentation
-4. `cloudigan_twenty` - CRM
-5. `cloudigan_kimai` - Time tracking
-6. `cloudigan_documenso` - E-signature
-7. `cloudigan_n8n` - Automation
-8. `cloudigan_authentik` - Identity (if not using Entra ID)
+**MSP Platform Databases:**
+1. ✅ `cloudigan_plane` - Project management (DEPLOYED - CT131)
+2. `cloudigan_zammad` - Ticketing (PLANNED)
+3. `cloudigan_bookstack` - Documentation (PLANNED)
+4. `cloudigan_twenty` - CRM (PLANNED)
+5. `cloudigan_kimai` - Time tracking (PLANNED - complements Plane)
+6. `cloudigan_documenso` - E-signature (PLANNED)
+7. `cloudigan_n8n` - Automation (PLANNED)
+8. `cloudigan_authentik` - Identity (PLANNED - if not using Entra ID direct)
 
 **Action Items:**
 - [ ] Run resource analysis on CT131/CT151
