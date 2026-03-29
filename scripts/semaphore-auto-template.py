@@ -55,6 +55,46 @@ PLAYBOOK_METADATA = {
         "name": "PostgreSQL Status",
         "description": "Check database cluster health and replication",
         "allow_override_args": False
+    },
+    "deploy-proxmox-container.yml": {
+        "name": "Deploy Proxmox Container",
+        "description": "Deploy LXC container with full automation (Netbox, NPM, DNS, monitoring, backups)",
+        "allow_override_args": True
+    },
+    "deploy-proxmox-vm.yml": {
+        "name": "Deploy Proxmox VM",
+        "description": "Deploy VM with full automation (Netbox, NPM, DNS, backups)",
+        "allow_override_args": True
+    },
+    "deploy-proxmox.yml": {
+        "name": "Deploy Proxmox (Unified)",
+        "description": "Unified deployment - choose container or VM",
+        "allow_override_args": True
+    },
+    "postgresql-failover.yml": {
+        "name": "PostgreSQL Failover",
+        "description": "Promote replica to primary during failover",
+        "allow_override_args": False
+    },
+    "postgresql-rejoin-old-primary.yml": {
+        "name": "PostgreSQL Rejoin Old Primary",
+        "description": "Rejoin old primary as new replica after failover",
+        "allow_override_args": False
+    },
+    "distribute-ssh-key.yml": {
+        "name": "Distribute SSH Key",
+        "description": "Distribute homelab SSH key to new hosts",
+        "allow_override_args": True
+    },
+    "sync-inventory.yml": {
+        "name": "Sync Inventory from Netbox",
+        "description": "Auto-update Ansible inventory from Netbox IPAM",
+        "allow_override_args": False
+    },
+    "sync-semaphore-templates.yml": {
+        "name": "Sync Semaphore Templates",
+        "description": "Auto-create Semaphore templates from GitHub playbooks",
+        "allow_override_args": False
     }
 }
 
