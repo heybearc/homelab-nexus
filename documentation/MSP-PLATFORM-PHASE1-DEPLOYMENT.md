@@ -373,13 +373,37 @@ Scopes: openid, profile, email
    - Community Edition (email/password auth)
    - **Limitation:** No SSO/OIDC (requires Commercial license)
    - **Limitation:** No time tracking (requires Commercial license)
-2. Deploy Kimai (Time Tracking) - Planned
-   - Dedicated time tracking for customer/project billing
-   - OIDC/SAML SSO support (free)
-   - Complements Plane for MSP workflows
-3. Deploy Zammad (Ticketing) - Planned
-4. Integrate all services with BookStack
-5. Onboard first pilot client
+2. ✅ **PostgreSQL Cluster Upgraded** - CT131/CT151
+   - Resources: 8GB RAM, 100GB disk (both containers)
+   - Streaming replication: Active (1-2ms lag)
+   - Zero-downtime upgrade completed
+   - Ready for all MSP services
+3. ✅ **Authentik SSO Deployed** - CT170 @ 10.92.3.75 (auth.cloudigan.net)
+   - External PostgreSQL (CT131: cloudigan_authentik)
+   - Microsoft Entra ID federation configured
+   - Docker-in-LXC deployment
+   - Ready for application integration
+4. ✅ **BookStack SSO** - Already configured with M365
+   - Microsoft 365 SSO working
+   - Documentation hub operational
+5. ✅ **Kimai Deployed** - CT111 @ 10.92.3.76 (time.cloudigan.net)
+   - Native LXC deployment (Nginx + PHP 8.3 + MariaDB)
+   - Authentik SAML SSO configured
+   - Admin credentials: admin / Kimai_Admin_2026!
+   - Ready for time tracking and billing
+6. ✅ **Zammad Deployed** - CT186 @ 10.92.3.77 (support.cloudigan.net)
+   - Docker Compose deployment
+   - External PostgreSQL (CT131: zammad_tickets)
+   - Microsoft 365 OIDC SSO configured
+   - M365 Graph API email integration (support@cloudigan.com)
+   - Email ticket creation working
+   - Ready for customer support workflow
+7. Configure PostgreSQL HA/Failover - Planned
+   - Option 1: HAProxy + manual failover
+   - Option 2: Patroni + automatic failover
+   - Reduces failover time from 5-15min to <30sec
+8. Integrate remaining services with Authentik
+9. Onboard first pilot client
 
 ---
 
@@ -462,13 +486,18 @@ Scopes: openid, profile, email
 
 ---
 
-**Status:** Phase 1 in progress, Plane deployed (Phase 2 preview)  
+**Status:** Phase 1 Core Services Deployed ✅  
 **Completed:**
 - ✅ Ansible Control Node (CT183)
 - ✅ Plane Project Management (CT184) - External PostgreSQL + MinIO
+- ✅ PostgreSQL Cluster Upgraded (CT131/CT151) - 8GB RAM, 100GB disk
+- ✅ Authentik SSO (CT170) - Microsoft Entra ID federation
+- ✅ BookStack - M365 SSO configured
+- ✅ Kimai Time Tracking (CT111) - Authentik SAML SSO
+- ✅ Zammad Ticketing (CT186) - M365 OIDC SSO + Graph API email
 
 **Next Actions:**
-- ⏳ Upgrade PostgreSQL cluster
-- ⏳ Deploy Authentik (SSO)
-- ⏳ Deploy BookStack (Documentation Hub)
-- ⏳ Deploy Kimai (Time Tracking)
+- ⏳ Configure customer organizations in Zammad (as needed)
+- ⏳ Set up SLA policies and ticket workflows
+- ⏳ Configure PostgreSQL HA/Failover (optional enhancement)
+- ⏳ Onboard first pilot client
