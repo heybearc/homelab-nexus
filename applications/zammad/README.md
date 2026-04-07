@@ -87,8 +87,8 @@ curl -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt
 - **Purpose:** Send confirmation to customers when ticket is created
 - **Recipient:** Customer (article_last_sender)
 - **Subject:** `Ticket Received [Ticket##{ticket.number}]`
-- **Body:** Personalized greeting with ticket number
-- **Known Issue:** `#{signature}` placeholder doesn't work - signature must be embedded directly
+- **Body:** Personalized greeting with ticket number + embedded logo signature
+- **Status:** ✅ Active with Cloudigan logo signature
 
 ### Trigger ID 4: Admin Notification
 - **Purpose:** Notify admin of new tickets
@@ -106,17 +106,18 @@ Located in `applications/zammad/scripts/`:
 1. **update-zammad-trigger.sh** - Updates auto-reply trigger
 2. **create-admin-notification-trigger.sh** - Creates admin notification
 3. **create-simple-signature.sh** - Creates text-only signature
-4. **update-autoreply-with-signature.sh** - Embeds signature in auto-reply
+4. **update-autoreply-with-signature.sh** - Embeds text-only signature in auto-reply
+5. **update-autoreply-with-logo.sh** - Embeds logo signature in auto-reply (ACTIVE)
 
 ---
 
 ## Outstanding Issues
 
-### Issue 1: Auto-Reply Signature Not Displaying
+### ~~Issue 1: Auto-Reply Signature Not Displaying~~ ✅ RESOLVED
 **Problem:** `#{signature}` placeholder doesn't work in triggers  
-**Solution:** Embed actual signature HTML from signature ID 2 directly into trigger body  
-**Impact:** Customers receive auto-reply without signature  
-**Priority:** Medium
+**Solution:** Embedded signature HTML with logo directly into trigger body  
+**Status:** Fixed - Logo signature now displays in auto-reply emails  
+**Date Resolved:** April 7, 2026
 
 ### Issue 2: Admin Notifications Not Received
 **Problem:** Admin notification emails not arriving  
