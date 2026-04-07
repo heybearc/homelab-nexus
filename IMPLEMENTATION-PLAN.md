@@ -66,10 +66,10 @@
     - [ ] Authentik - Identity provider (SSO foundation, if Entra ID insufficient)
     - [ ] Research Entra ID compatibility for each service
   - **Phase 2: Core Operations** (Priority 2)
-    - [ ] Zammad - Ticketing system (customer-facing, CRITICAL)
-    - [ ] Documenso - E-signature platform (customer-facing, CRITICAL)
+    - [x] Zammad - Ticketing system (customer-facing, CRITICAL) ✅ DEPLOYED (CT186)
+    - [ ] ~~Documenso~~ - E-signature platform (DEFERRED - evaluating DocuSeal as alternative)
     - [ ] Twenty CRM - Customer relationship management
-    - [ ] Kimai - Time tracking
+    - [x] Kimai - Time tracking ✅ DEPLOYED (CT111)
   - **Phase 3: Automation & Integration** (Priority 3)
     - [ ] n8n - Workflow automation (integrates with 1Password for client secrets)
   - **Infrastructure Requirements:**
