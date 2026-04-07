@@ -1,0 +1,120 @@
+---
+- name: Deploy TP-Link Omada Controller
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    omada_version: "5.15"
+    omada_download_url: "https://static.tp-link.com/upload/software/2025/202501/20250109/Omada_SDN_Controller_v5.15.8.2_linux_x64.deb"
+    omada_user: "omada"
+    omada_group: "omada"
+    
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Install required dependencies
+      apt:
+        name:
+          - openjdk-17-jre-headless
+          - jsvc
+          - curl
+          - wget
+          - gnupg
+          - ca-certificates
+        state: present
+        
+    - name: Add MongoDB GPG key
+      apt_key:
+        url: https://www.mongodb.org/static/pgp/server-6.0.asc
+        state: present
+        
+    - name: Add MongoDB repository
+      apt_repository:
+        repo: "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse"
+        state: present
+        filename: mongodb-org-6.0
+        
+    - name: Install MongoDB
+      apt:
+        name: mongodb-org
+        state: present
+        update_cache: yes
+        
+    - name: Create Omada system user
+      user:
+        name: "{{ omada_user }}"
+        system: yes
+        shell: /bin/false
+        home: /opt/tplink/EAPController
+        create_home: no
+        
+    - name: Download Omada Controller package
+      get_url:
+        url: "{{ omada_download_url }}"
+        dest: /tmp/omada-controller.deb
+        mode: '0644'
+        timeout: 300
+        
+    - name: Install Omada Controller
+      apt:
+        deb: /tmp/omada-controller.deb
+        state: present
+      register: omada_install
+      
+    - name: Enable and start MongoDB service
+      systemd:
+        name: mongodb
+        enabled: yes
+        state: started
+        
+    - name: Enable and start Omada Controller service
+      systemd:
+        name: tpeap
+        enabled: yes
+        state: started
+      when: omada_install.changed
+      
+    - name: Wait for Omada Controller to start
+      wait_for:
+        port: 8043
+        delay: 10
+        timeout: 120
+        
+    - name: Check Omada Controller service status
+      systemd:
+        name: tpeap
+      register: omada_service
+      
+    - name: Display Omada Controller status
+      debug:
+        msg:
+          - "Omada Controller Status: {{ omada_service.status.ActiveState }}"
+          - "Access URL: https://{{ inventory_hostname }}:8043"
+          - "HTTP URL: http://{{ inventory_hostname }}:8088"
+          - "Version: {{ omada_version }}"
+          
+    - name: Clean up downloaded package
+      file:
+        path: /tmp/omada-controller.deb
+        state: absent
+        
+    - name: Display post-installation instructions
+      debug:
+        msg:
+          - "=== Omada Controller Installation Complete ==="
+          - "1. Access web UI: https://omada.cloudigan.net (via NPM)"
+          - "2. Complete initial setup wizard"
+          - "3. Adopt devices:"
+          - "   - ER7206 Router: 10.92.0.1"
+          - "   - 24-Port Switch: (assign management IP first)"
+          - "4. Configure VLANs and network policies"
+          - "5. Enable monitoring and alerts"
+          - ""
+          - "Default ports:"
+          - "  - HTTPS: 8043"
+          - "  - HTTP: 8088"
+          - "  - Device adoption: 29810-29814"
