@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-03-22 (3:30 PM)  
+**Last Updated:** 2026-04-07 (6:30 AM)  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Planning (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform
@@ -9,7 +9,7 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** NPM Trixie Upgrade + BookStack Knowledge Base Configuration
+**Current Focus:** MSP Platform SSO Integration - Kimai Authentication
 
 **Semaphore Ansible Automation Platform** (Mar 21 - COMPLETED)
 - [x] Microsoft 365 SSO integration via OpenID Connect
@@ -23,6 +23,15 @@
 - [x] 29/30 hosts reachable and managed via Ansible (all except TrueNAS edge cases)
 
 **Recent Completions:**
+- [x] Kimai SAML SSO Authentication with Authentik - Mar 30 - Apr 7
+  - Reset Authentik admin password (akadmin) in CT170
+  - Fixed TRUSTED_HOSTS format (Symfony regex pattern)
+  - Added NPM proxy IP (10.92.3.3) to TRUSTED_PROXIES
+  - Updated SAML attribute mappings (email, username)
+  - Fixed organization URL (http → https)
+  - Added SSO policy binding in Authentik
+  - Deactivated incorrect user account
+  - **Status:** Authentication working, redirect issue remains
 - [x] NPM Trixie upgrade + BookStack configuration - Mar 22
   - NPM container (CT121) upgraded to Debian 13 Trixie
   - NPM v2.14.0 (latest) with Node.js v22.22.1
