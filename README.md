@@ -29,6 +29,9 @@ Homelab Nexus is a comprehensive automation and management framework for Proxmox
 - **Media Management**: Complete *arr stack with VPN-enabled download clients
 - **Infrastructure**: AdGuard DNS, NPM Proxy, Netbox IPAM, HAProxy (blue-green routing)
 - **Monitoring**: Grafana, Prometheus, Loki, Alertmanager, Uptime Kuma
+- **Automation**: n8n workflow automation (API-enabled)
+- **Task Management**: Vikunja project and task tracking (API-enabled)
+- **Translation**: LibreTranslate multi-language support (API-enabled)
 - **Bots**: QuantShift trading bots (blue-green deployment)
 
 ## 🛠️ Quick Start
@@ -79,6 +82,58 @@ mcp0_deploy_to_standby(app='theoshift')
 # Switch traffic (with approval)
 mcp0_switch_traffic(app='theoshift', requireApproval=True)
 ```
+
+### n8n Workflow Automation
+```bash
+# Test n8n API connection
+python scripts/n8n-api-client.py test-connection
+
+# List all workflows
+python scripts/n8n-api-client.py list-workflows
+
+# Activate a workflow
+python scripts/n8n-api-client.py activate-workflow <workflow-id>
+
+# View pre-built workflow templates
+python scripts/n8n-workflow-examples.py
+```
+
+See `@/Users/cory/Projects/homelab-nexus/documentation/N8N-API-INTEGRATION.md` for full documentation.
+
+### Vikunja Task Management
+```bash
+# Test Vikunja API connection
+python scripts/vikunja-api-client.py test-connection
+
+# List projects and tasks
+python scripts/vikunja-api-client.py list-projects
+python scripts/vikunja-api-client.py list-tasks
+
+# Create a task
+python scripts/vikunja-api-client.py create-task <project-id> "Task title"
+
+# Complete a task
+python scripts/vikunja-api-client.py complete-task <task-id>
+```
+
+See `@/Users/cory/Projects/homelab-nexus/documentation/VIKUNJA-API-INTEGRATION.md` for full documentation.
+
+### LibreTranslate Translation
+```bash
+# Test LibreTranslate API connection
+python scripts/libretranslate-api-client.py test-connection
+
+# List supported languages
+python scripts/libretranslate-api-client.py languages
+
+# Translate text
+python scripts/libretranslate-api-client.py translate "Hello world" en es
+
+# Detect language
+python scripts/libretranslate-api-client.py detect "Bonjour le monde"
+```
+
+See `@/Users/cory/Projects/homelab-nexus/documentation/LIBRETRANSLATE-API-INTEGRATION.md` for full documentation.
 
 ## 📁 Repository Structure
 

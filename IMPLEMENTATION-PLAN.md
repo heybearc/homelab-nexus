@@ -1,7 +1,7 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-04-07 (6:30 AM)  
-**Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Planning (Q2 2026)  
+**Last Updated:** 2026-04-09 (10:30 AM)  
+**Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform
 
@@ -9,7 +9,7 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** MSP Platform SSO Integration - Kimai Authentication
+**Current Focus:** MSP Platform Phase 3 - Automation & Monitoring Tools (COMPLETED)
 
 **Semaphore Ansible Automation Platform** (Mar 21 - COMPLETED)
 - [x] Microsoft 365 SSO integration via OpenID Connect
@@ -23,6 +23,17 @@
 - [x] 29/30 hosts reachable and managed via Ansible (all except TrueNAS edge cases)
 
 **Recent Completions:**
+- [x] **MSP Platform Phase 3 - Automation & Monitoring Tools** - Apr 8-9
+  - n8n Workflow Automation (CT188, flows.cloudigan.net) - 4GB RAM, 2 cores
+  - Vikunja Task Management (CT189, tasks.cloudigan.net) - 2GB RAM, 2 cores
+  - LibreNMS Network Monitoring (CT152, netmon.cloudigan.net) - 4GB RAM, 2 cores, 64GB disk
+  - Uptime Kuma upgraded v1.23→v2.2 & migrated to CT153 (uptime.cloudigan.net)
+  - 28 active monitors migrated with historical data preserved
+  - Grafana + LibreNMS integration (MySQL datasource, 2 dashboards)
+  - Prometheus integration (LibreNMS exporter)
+  - ER7206 Gateway added to LibreNMS
+  - All services deployed via Ansible playbook
+  - **Total resources:** 11GB RAM, 9 cores, 80GB disk
 - [x] Kimai SAML SSO Authentication with Authentik - Mar 30 - Apr 7
   - Reset Authentik admin password (akadmin) in CT170
   - Fixed TRUSTED_HOSTS format (Symfony regex pattern)
@@ -70,8 +81,11 @@
     - [ ] ~~Documenso~~ - E-signature platform (DEFERRED - evaluating DocuSeal as alternative)
     - [ ] Twenty CRM - Customer relationship management
     - [x] Kimai - Time tracking ✅ DEPLOYED (CT111)
-  - **Phase 3: Automation & Integration** (Priority 3)
-    - [ ] n8n - Workflow automation (integrates with 1Password for client secrets)
+  - **Phase 3: Automation & Integration** (Priority 3) - ✅ COMPLETED Apr 8-9
+    - [x] n8n - Workflow automation (CT188, flows.cloudigan.net) ✅ DEPLOYED
+    - [x] Vikunja - Task management (CT189, tasks.cloudigan.net) ✅ DEPLOYED
+    - [x] LibreNMS - Network monitoring (CT152, netmon.cloudigan.net) ✅ DEPLOYED
+    - [x] Uptime Kuma - Uptime monitoring (CT153, uptime.cloudigan.net) ✅ MIGRATED & UPGRADED
   - **Infrastructure Requirements:**
     - [ ] PostgreSQL HA setup (see below - BLOCKER)
     - [ ] Entra ID SSO research and app registrations
