@@ -1,15 +1,29 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-04-09 (10:30 AM)  
+**Last Updated:** 2026-04-17 (7:25 PM)  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
-**Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform
+**Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
 
 ---
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** MSP Platform Phase 3 - Automation & Monitoring Tools (COMPLETED)
+**Current Focus:** TIP Generator Web Application - Planning Complete (Apr 17)
+
+**TIP Generator Web Application** (Apr 17 - PLANNING COMPLETE)
+- [x] Comprehensive architecture plan created
+- [x] Phased rollout strategy designed (v1 single-user → v2 team collaboration)
+- [x] Template intelligence approach: auto-detect Word structure, styles, colors
+- [x] AI integration strategy: Claude API with template-aware prompts
+- [x] Tech stack selected: React + FastAPI + PostgreSQL
+- [x] Authentication options: Authentik OAuth or M365 OAuth
+- [x] Blue-green deployment architecture for v2
+- [x] 4-week development timeline planned
+- [ ] **Next:** Gather sample documents and begin Phase 1 implementation
+- **Plan Location:** `~/.windsurf/plans/tip-generator-webapp-424e2d.md`
+
+**Previous Focus:** MSP Platform Phase 3 - Automation & Monitoring Tools (COMPLETED Apr 8-9)
 
 **Semaphore Ansible Automation Platform** (Mar 21 - COMPLETED)
 - [x] Microsoft 365 SSO integration via OpenID Connect
@@ -69,6 +83,8 @@
 ## 📋 Backlog (Prioritized)
 
 ### High Priority
+
+- [ ] **TIP Generator Web Application** (effort: XL) - **PLANNING COMPLETE** - AI-powered Technical Implementation Plan generator. Upload Excel discovery data + PDF SOW, AI generates complete TIP using reusable Word template with style preservation. **Phase 1:** Single-user with remote access (Authentik/M365 OAuth), draft management, Word/PDF export. **Phase 2:** Team collaboration, blue-green deployment. **Tech Stack:** React + FastAPI + PostgreSQL + Claude API. **Plan:** `~/.windsurf/plans/tip-generator-webapp-424e2d.md`. **Next:** Gather sample documents, begin Phase 1 implementation.
 
 - [ ] **Cloudigan MSP Platform - Phase 1 Deployment** (effort: XL) - **PLANNING** - Deploy core MSP platform services. **Anchor Services:** BookStack (documentation/client hub), Plane (project management), Authentik/Entra ID (identity). **Reference:** `documentation/MSP-PLATFORM-ANALYSIS.md`
   - **Phase 1: Anchor Services** (Priority 1)
