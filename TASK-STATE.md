@@ -1,16 +1,30 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-04-17
+**Last updated:** 2026-04-19
 
 ---
 
 ## Current Task
-**TIP Generator Web Application - Planning & Architecture** - PLANNING COMPLETE
+**TIP Generator Web Application - Infrastructure Deployment** - COMPLETE ✅
 
 ### What I'm doing right now
-Completed comprehensive planning for AI-powered Technical Implementation Plan (TIP) generator web application. Designed phased rollout: v1 single-user with template intelligence, v2 team collaboration with blue-green deployment.
+Completed full infrastructure deployment for TIP Generator. All containers deployed, HAProxy configured, PostgreSQL database created, Authentik OAuth configured, backups enabled, GitHub repository created with MC governance, and MCP server integration complete. Ready for Phase 1 development.
 
-### Recent completions (2026-04-17)
+### Recent completions (2026-04-19)
+- ✅ **TIP Generator - Complete Infrastructure Deployment** (Apr 19)
+  - **Containers:** CT190 (tip-blue @ 10.92.3.90), CT191 (tip-green @ 10.92.3.91)
+  - **HAProxy:** Blue-green backends configured on CT136/CT139 with health checks
+  - **PostgreSQL:** Database `tip_generator` created on CT131 with user `tip_user`
+  - **Authentik OAuth:** Provider and application configured with client credentials
+  - **Backups:** Added to Tier 1 (daily at 2 AM, 7/4/3 retention) via vzdump.cron
+  - **GitHub:** Repository created at https://github.com/heybearc/tip-generator
+  - **MC Governance:** Cloudy-Work submodule integrated, .gitignore, .env.example
+  - **Documentation:** ARCHITECTURE.md, DEPLOYMENT.md, DEVELOPMENT.md added
+  - **MCP Integration:** Added to homelab-blue-green-mcp for automated deployments
+  - **Resources:** 4GB RAM, 2 cores, 50GB disk per container
+  - **Domain:** https://tip.cloudigan.net (via HAProxy VIP 10.92.3.33)
+
+### Previous completions (2026-04-17)
 - ✅ **TIP Generator Web Application - Planning** (Apr 17)
   - Comprehensive architecture plan created
   - Phased rollout strategy: v1 single-user → v2 team collaboration
@@ -57,17 +71,18 @@ Completed comprehensive planning for AI-powered Technical Implementation Plan (T
   - Container repurposed for n8n
 
 ### Next steps
-1. **TIP Generator - Gather Sample Documents**
+1. **TIP Generator - Phase 1 Development**
+   - Clone repository: `git clone git@github.com:heybearc/tip-generator.git`
+   - Set up backend: FastAPI with OAuth integration
+   - Set up frontend: React with Vite
+   - Implement template parser (Word document structure/styles)
+   - Implement document upload (Excel, PDF)
+   - Integrate Claude API for content generation
+   - Deploy to STANDBY using MCP: `mcp0_deploy_to_standby tip-generator`
+2. **TIP Generator - Gather Sample Documents** (for testing)
    - Provide example TIP Word template
    - Provide sample Excel discovery worksheet
    - Provide sample SOW/service order PDF
-   - Review plan and confirm architecture
-2. **TIP Generator - Phase 1 Implementation** (if approved)
-   - Set up project structure (React + FastAPI)
-   - Develop Word template parser (structure, styles, colors)
-   - Database schema and models
-   - File upload system
-   - Authentik OAuth integration
 3. **MSP Platform - Continue Phase 1 deployment**
    - BookStack (documentation hub)
    - Plane (project management)
@@ -92,20 +107,33 @@ Completed comprehensive planning for AI-powered Technical Implementation Plan (T
 ## Exact Next Command
 
 ```bash
-# Review TIP Generator plan and gather sample documents
-open ~/.windsurf/plans/tip-generator-webapp-424e2d.md
+# Clone TIP Generator repository and begin Phase 1 development
+cd /Users/cory/Projects
+git clone git@github.com:heybearc/tip-generator.git
+cd tip-generator
 
-# Once approved, start Phase 1 implementation:
-# 1. Create project directory structure
-# 2. Set up React + FastAPI boilerplate
-# 3. Begin Word template parser development
+# Review documentation
+open docs/DEVELOPMENT.md
+open docs/DEPLOYMENT.md
+
+# Set up backend
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+# Create requirements.txt and begin FastAPI development
 ```
 
 ---
 
 ## Infrastructure Summary
 
-### Newly Deployed (Today)
+### Newly Deployed (2026-04-19)
+| Service | Container | IP | Domain | Resources |
+|---------|-----------|-----|--------|-----------|
+| TIP Generator (BLUE) | CT190 | 10.92.3.90 | tip.cloudigan.net | 4GB RAM, 2 cores, 50GB disk |
+| TIP Generator (GREEN) | CT191 | 10.92.3.91 | tip.cloudigan.net | 4GB RAM, 2 cores, 50GB disk |
+
+### Previously Deployed (2026-04-08 - 2026-04-09)
 | Service | Container | IP | Domain | Resources |
 |---------|-----------|-----|--------|-----------|
 | n8n | CT188 | 10.92.3.79 | flows.cloudigan.net | 4GB RAM, 2 cores |
@@ -113,10 +141,10 @@ open ~/.windsurf/plans/tip-generator-webapp-424e2d.md
 | LibreNMS | CT152 | 10.92.3.81 | netmon.cloudigan.net | 4GB RAM, 2 cores, 64GB disk |
 | Uptime Kuma | CT153 | 10.92.3.82 | uptime.cloudigan.net | 1GB RAM, 1 core, 16GB disk |
 
-### Total New Resources
-- **RAM:** 11GB
-- **CPU Cores:** 9
-- **Disk:** 80GB
+### Total Resources (All Recent Deployments)
+- **RAM:** 19GB
+- **CPU Cores:** 13
+- **Disk:** 180GB
 
 ### Monitoring Coverage
 - **Uptime Kuma:** 28 active monitors (all production services)
@@ -140,25 +168,38 @@ open ~/.windsurf/plans/tip-generator-webapp-424e2d.md
 
 ## Context for Tomorrow
 
-**Pick up with:** Review TIP Generator plan, gather sample documents, or begin implementation
+**Pick up with:** Clone TIP Generator repository and begin Phase 1 development
 
 **Key files:**
-- `~/.windsurf/plans/tip-generator-webapp-424e2d.md` - TIP Generator comprehensive plan
-- `/Users/cory/Projects/homelab-nexus/IMPLEMENTATION-PLAN.md` - MSP platform roadmap
-- `/Users/cory/Projects/homelab-nexus/TASK-STATE.md` - Current task state
+- `/Users/cory/Projects/tip-generator/` - TIP Generator repository (clone first)
+- `/Users/cory/Projects/tip-generator/docs/DEVELOPMENT.md` - Development guide
+- `/Users/cory/Projects/tip-generator/docs/DEPLOYMENT.md` - Deployment guide
+- `/Users/cory/Projects/tip-generator/docs/ARCHITECTURE.md` - Full architecture plan
+- `/Users/cory/Projects/homelab-nexus/documentation/TIP-GENERATOR-DEPLOYMENT.md` - Infrastructure details
 
-**TIP Generator Next Actions:**
-1. Review plan with stakeholders
-2. Gather sample documents (Word template, Excel worksheet, SOW PDF)
-3. Confirm architecture and feature set
-4. Begin Phase 1 implementation if approved
+**TIP Generator Infrastructure (Ready):**
+- **Containers:** CT190 (BLUE @ 10.92.3.90), CT191 (GREEN @ 10.92.3.91)
+- **Database:** `postgresql://tip_user:TipGen2026!Secure@10.92.3.21:5432/tip_generator`
+- **OAuth:** Client ID and secret in docs/DEPLOYMENT.md
+- **Domain:** https://tip.cloudigan.net (via HAProxy VIP 10.92.3.33)
+- **GitHub:** https://github.com/heybearc/tip-generator
+- **MCP Tools:** `mcp0_deploy_to_standby tip-generator`, `mcp0_switch_traffic tip-generator`
 
-**Alternative Tasks (if waiting on TIP approval):**
+**Phase 1 Development Tasks:**
+1. Set up FastAPI backend with OAuth integration
+2. Set up React frontend with Vite
+3. Implement Word template parser
+4. Implement document upload (Excel, PDF)
+5. Integrate Claude API for content generation
+6. Deploy and test on STANDBY container
+
+**Alternative Tasks:**
 - Add network devices to LibreNMS (netmon.cloudigan.net)
 - Configure n8n workflows (flows.cloudigan.net)
 - Continue MSP Platform Phase 1 deployment
 
 **Access credentials:**
+- TIP Generator DB: tip_user / TipGen2026!Secure
 - LibreNMS: admin / Cloudigan2026!
 - Vikunja: cory@cloudigan.com (admin)
 - Grafana: admin / Cloudy_92!
