@@ -234,23 +234,34 @@ Login to Wix DNS management and create CNAME:
 
 This will make `tip.cloudigan.net` resolve through Cloudflare → NPM → HAProxy → TIP containers.
 
-### 6. MCP Server Integration
+### ✅ 6. MCP Server Integration - COMPLETE
 
-**Add to homelab-blue-green-mcp:**
+**Added to homelab-blue-green-mcp:** - **COMPLETED 2026-04-19**
 
+**Configuration:**
 ```javascript
-const apps = {
-  // ... existing apps ...
-  'tip-generator': {
-    name: 'TIP Generator',
-    blue: { host: '10.92.3.90', pm: 'tip-blue' },
-    green: { host: '10.92.3.91', pm: 'tip-green' },
-    port: 8000,
-    healthPath: '/health',
-    haproxyBackend: 'tip_backend'
-  }
-};
+'tip-generator': {
+  name: 'TIP Generator',
+  blueIp: '10.92.3.90',
+  greenIp: '10.92.3.91',
+  blueContainer: 190,
+  greenContainer: 191,
+  haproxyBackend: 'tip',
+  sshBlue: 'root@10.92.3.90',
+  sshGreen: 'root@10.92.3.91',
+  path: '/opt/tip-generator',
+  branch: 'main',
+  pmBlue: 'tip-generator',
+  pmGreen: 'tip-generator',
+  healthEndpoint: '/health',
+  port: 8000,
+}
 ```
+
+**Available MCP Tools:**
+- `mcp0_get_deployment_status` - Check LIVE/STANDBY status
+- `mcp0_deploy_to_standby` - Deploy to STANDBY container
+- `mcp0_switch_traffic` - Switch HAProxy traffic (LIVE ↔ STANDBY)
 
 ---
 
