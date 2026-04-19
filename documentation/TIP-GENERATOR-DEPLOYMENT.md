@@ -124,32 +124,35 @@ ALTER DATABASE tip_generator OWNER TO tip_user;
 postgresql://tip_user:TipGen2026!Secure@10.92.3.21:5432/tip_generator
 ```
 
-### ⏳ 3. Authentik OAuth Application - MANUAL REQUIRED
+### ✅ 3. Authentik OAuth Application - COMPLETE
 
-**Target:** CT170 (Authentik) - https://auth.cloudigan.net
+**Target:** CT170 (Authentik) - https://auth.cloudigan.net - **COMPLETED 2026-04-19**
 
-**Create OAuth2/OIDC Provider:**
-1. Navigate to Applications → Providers → Create
-2. Provider type: OAuth2/OpenID Provider
-3. Name: TIP Generator
-4. Authorization flow: default-provider-authorization-implicit-consent
-5. Client type: Confidential
-6. Redirect URIs: 
-   - `https://tip.cloudigan.net/auth/callback`
-   - `http://10.92.3.90:8000/auth/callback` (BLUE direct)
-   - `http://10.92.3.91:8000/auth/callback` (GREEN direct)
-7. Scopes: openid, profile, email
+**OAuth2/OIDC Provider Created:**
+- Provider ID: 4
+- Name: TIP Generator
+- Client Type: Confidential
+- Authorization Flow: default-provider-authorization-implicit-consent
+- Redirect URIs: 
+  - `https://tip.cloudigan.net/auth/callback` (production)
+  - `http://10.92.3.90:8000/auth/callback` (BLUE direct)
+  - `http://10.92.3.91:8000/auth/callback` (GREEN direct)
+- Sub Mode: hashed_user_id
+- Include Claims in ID Token: Yes
+- Issuer Mode: per_provider
 
-**Create Application:**
-1. Applications → Create
-2. Name: TIP Generator
-3. Slug: tip-generator
-4. Provider: (select TIP Generator provider)
-5. Launch URL: https://tip.cloudigan.net
+**Application Created:**
+- Application ID: f1e56917-7cca-4b00-8e06-d6225815b56f
+- Name: TIP Generator
+- Slug: tip-generator
+- Launch URL: https://tip.cloudigan.net
+- Open in New Tab: Yes
 
-**Save credentials for application:**
-- Client ID: (generated)
-- Client Secret: (generated)
+**OAuth Credentials:**
+- **Client ID:** `MFO9C9ynlvpoX895YRSutwCl7xBouyAy4oOjNmI9`
+- **Client Secret:** `tfCdQRgZHcIeE1bMCpioR2Beb1p3PuwmnZcPNZZqc3JGdAHRCXG4F0rk3ndP6nrGKJMF9lY92GW0gOW2i6laGMwXEfmdOIHtzWXWJWmEeBUeDOTzFaspAPSo03nVTA5A`
+- **Issuer URL:** `https://auth.cloudigan.net/application/o/tip-generator/`
+- **Token Validity:** Access: 1 hour, Refresh: 30 days
 
 ### 4. Application Deployment
 
@@ -166,24 +169,26 @@ postgresql://tip_user:TipGen2026!Secure@10.92.3.21:5432/tip_generator
 **Environment Variables (.env):**
 ```bash
 # Database
-DATABASE_URL=postgresql://tip_user:PASSWORD@10.92.3.21:5432/tip_generator
+DATABASE_URL=postgresql://tip_user:TipGen2026!Secure@10.92.3.21:5432/tip_generator
 
 # Authentik OAuth
 AUTH_PROVIDER=authentik
-AUTHENTIK_CLIENT_ID=...
-AUTHENTIK_CLIENT_SECRET=...
+AUTHENTIK_CLIENT_ID=MFO9C9ynlvpoX895YRSutwCl7xBouyAy4oOjNmI9
+AUTHENTIK_CLIENT_SECRET=tfCdQRgZHcIeE1bMCpioR2Beb1p3PuwmnZcPNZZqc3JGdAHRCXG4F0rk3ndP6nrGKJMF9lY92GW0gOW2i6laGMwXEfmdOIHtzWXWJWmEeBUeDOTzFaspAPSo03nVTA5A
 AUTHENTIK_DOMAIN=auth.cloudigan.net
+AUTHENTIK_ISSUER=https://auth.cloudigan.net/application/o/tip-generator/
 AUTHENTIK_REDIRECT_URI=https://tip.cloudigan.net/auth/callback
 
 # Claude API
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=sk-ant-... # To be added during Phase 1 development
 
 # Application
 STORAGE_PATH=/data/tip-generator
 TEMPLATE_PATH=/data/tip-generator/templates/active-template.docx
-SESSION_SECRET=...
+SESSION_SECRET=... # Generate random secret during deployment
 ALLOWED_ORIGINS=https://tip.cloudigan.net
 PORT=8000
+NODE_ENV=production
 ```
 
 **Directory Structure:**
