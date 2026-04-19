@@ -48,19 +48,23 @@
 - promtail installed (log shipping to Loki)
 - Ready for Prometheus scraping
 
-✅ **Backups**
-- Proxmox daily snapshots configured
-- Storage: truenas-backups
+✅ **Backups** - **TIER 1 CRITICAL**
+- Added to `/etc/pve/vzdump.cron` Tier 1 (Critical Production)
+- Schedule: Daily at 2:00 AM
+- Storage: truenas-backups (TrueNAS NFS)
 - Compression: zstd
 - Mode: snapshot
+- Retention: keep-daily=7, keep-weekly=4, keep-monthly=3
+- Email notifications on failure
+- **Note:** Ansible playbook updated to use vzdump.cron instead of deprecated pvesh method
 
 ---
 
-## Pending Configuration
+## Configuration Progress
 
-### 1. HAProxy Backend Configuration
+### ✅ 1. HAProxy Backend Configuration - COMPLETE
 
-**Target:** CT136 (MASTER) and CT139 (BACKUP)
+**Target:** CT136 (MASTER) and CT139 (BACKUP) - **COMPLETED 2026-04-19**
 
 Add to `/etc/haproxy/haproxy.cfg`:
 
@@ -85,9 +89,16 @@ frontend https_frontend
 - Change forward_host from 10.92.3.90 to 10.92.3.33
 - Keep forward_port as 8000
 
-### 2. PostgreSQL Database Setup
+**Status:** ✅ Configured on both HAProxy nodes
+- ACLs added for tip.cloudigan.net, blue-tip.cloudigan.net, green-tip.cloudigan.net
+- Backend `tip_blue` routes to 10.92.3.90:8000
+- Backend `tip_green` routes to 10.92.3.91:8000
+- Health check: GET /health (expects 200)
+- Configuration validated and reloaded on both CT136 and CT139
 
-**Target:** CT131 (PostgreSQL primary)
+### ✅ 2. PostgreSQL Database Setup - COMPLETE
+
+**Target:** CT131 (PostgreSQL primary) - **COMPLETED 2026-04-19**
 
 ```sql
 -- Create database and user
@@ -101,14 +112,21 @@ GRANT ALL ON SCHEMA public TO tip_user;
 ALTER DATABASE tip_generator OWNER TO tip_user;
 ```
 
+**Status:** ✅ Database created and configured
+- Database: `tip_generator`
+- User: `tip_user`
+- Password: `TipGen2026!Secure`
+- All privileges granted
+- Schema ownership transferred
+
 **Connection String:**
 ```
-postgresql://tip_user:PASSWORD@10.92.3.21:5432/tip_generator
+postgresql://tip_user:TipGen2026!Secure@10.92.3.21:5432/tip_generator
 ```
 
-### 3. Authentik OAuth Application
+### ⏳ 3. Authentik OAuth Application - MANUAL REQUIRED
 
-**Target:** CT170 (Authentik)
+**Target:** CT170 (Authentik) - https://auth.cloudigan.net
 
 **Create OAuth2/OIDC Provider:**
 1. Navigate to Applications → Providers → Create
