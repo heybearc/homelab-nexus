@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-04-19  
+**Last Updated:** 2026-04-22  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -9,7 +9,7 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** TIP Generator Web Application - Infrastructure Complete, Ready for Phase 1 Development (Apr 19)
+**Current Focus:** TIP Generator Phase 1 Development (Apr 22 - next up)
 
 **TIP Generator Web Application** (Apr 17-19 - INFRASTRUCTURE COMPLETE ✅)
 - [x] Comprehensive architecture plan created (Apr 17)
@@ -32,6 +32,17 @@
   - MCP server integration for automated deployments
 - [ ] **Next:** Begin Phase 1 development (FastAPI + React + Claude integration)
 - **Docs:** `tip-generator/docs/`, `homelab-nexus/documentation/TIP-GENERATOR-DEPLOYMENT.md`
+
+**Authentik Branding & User Management** (Apr 22 - COMPLETE ✅)
+- [x] SSH key deployed to CT170 (Authentik) via Proxmox exec
+- [x] SSH keys audited and deployed to all missing containers (CT121, CT142, CT184, CT185, CT187)
+- [x] Cloudigan brand created in Authentik (logo, favicon, title)
+- [x] All flow titles updated: "Welcome to authentik!" → "Welcome to Cloudigan!"
+- [x] Groups created: `cloudigan-admins`, `cloudigan-staff`, `cloudigan-clients`
+- [x] Invitation enrollment flow built (`cloudigan-invitation-enrollment`)
+- [x] Group auto-assignment from invite `fixed_data.group` via expression policy
+- [x] TIP Generator app access restricted to `cloudigan-admins` + `cloudigan-staff`
+- [x] `AUTHENTIK_API_TOKEN` saved to `.env`
 
 **Previous Focus:** MSP Platform Phase 3 - Automation & Monitoring Tools (COMPLETED Apr 8-9)
 

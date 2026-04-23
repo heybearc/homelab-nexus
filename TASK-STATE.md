@@ -1,14 +1,31 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-04-22
 
 ---
 
 ## Current Task
-**TIP Generator Web Application - Infrastructure Deployment** - COMPLETE ✅
+**Authentik Branding & User Management** - COMPLETE ✅
 
 ### What I'm doing right now
-Completed full infrastructure deployment for TIP Generator. All containers deployed, HAProxy configured, PostgreSQL database created, Authentik OAuth configured, backups enabled, GitHub repository created with MC governance, and MCP server integration complete. Ready for Phase 1 development.
+Completed full Authentik branding for Cloudigan, invitation enrollment flow with group-based auto-assignment, and TIP Generator group access control. Ready to resume TIP Generator Phase 1 development.
+
+### Recent completions (2026-04-22)
+- ✅ **Authentik Branding - Cloudigan** (Apr 22)
+  - SSH key deployed to CT170 via Proxmox exec (no password needed going forward)
+  - API token created and saved to `.env` as `AUTHENTIK_API_TOKEN`
+  - Cloudigan brand created at `auth.cloudigan.net` with color SVG logo + favicon
+  - All flow titles changed from "Welcome to authentik!" → "Welcome to Cloudigan!"
+  - CT170 SSH alias added to `~/.ssh/config` and `ssh_config_master.conf`
+- ✅ **SSH Keys - Mass Deployment** (Apr 22)
+  - Audited all containers for `homelab_root` key presence
+  - Deployed missing keys to: CT121 (NPM), CT142, CT184, CT185, CT187
+- ✅ **Authentik Invitation Enrollment Flow** (Apr 22)
+  - Groups created: `cloudigan-admins`, `cloudigan-staff`, `cloudigan-clients`
+  - Enrollment flow: `cloudigan-invitation-enrollment` (invite → username/email → password → auto-group → login)
+  - Group assigned from invite `fixed_data.group` via expression policy
+  - TIP Generator app: `cloudigan-admins` + `cloudigan-staff` groups bound (access control)
+  - Invite link format: `https://auth.cloudigan.net/if/flow/cloudigan-invitation-enrollment/?itoken=<token>`
 
 ### Recent completions (2026-04-19)
 - ✅ **TIP Generator - Complete Infrastructure Deployment** (Apr 19)
@@ -71,7 +88,7 @@ Completed full infrastructure deployment for TIP Generator. All containers deplo
   - Container repurposed for n8n
 
 ### Next steps
-1. **TIP Generator - Phase 1 Development**
+1. **TIP Generator - Phase 1 Development** ← RESUME HERE
    - Clone repository: `git clone git@github.com:heybearc/tip-generator.git`
    - Set up backend: FastAPI with OAuth integration
    - Set up frontend: React with Vite
@@ -100,7 +117,7 @@ Completed full infrastructure deployment for TIP Generator. All containers deplo
 
 ## Known Issues
 
-**None** - All deployments successful and operational
+- **Authentik Embedded Outpost** shows "unhealthy" in UI — cosmetic only, WebSocket self-loopback issue in Docker. Does NOT affect auth/SSO. Fix: set `AUTHENTIK_HOST=http://10.92.3.75:9000` in `/opt/authentik/.env` (low priority)
 
 ---
 
@@ -114,7 +131,6 @@ cd tip-generator
 
 # Review documentation
 open docs/DEVELOPMENT.md
-open docs/DEPLOYMENT.md
 
 # Set up backend
 cd backend
@@ -122,6 +138,12 @@ python3.11 -m venv venv
 source venv/bin/activate
 # Create requirements.txt and begin FastAPI development
 ```
+
+**Authentik Quick Reference (for future invites):**
+- Create invite: Authentik UI → Directory → Invitations → Create → set `fixed_data: {"group": "cloudigan-staff"}`
+- Or ask Cascade: "Create a staff invite for [name]"
+- Groups: `cloudigan-admins`, `cloudigan-staff`, `cloudigan-clients`
+- API token: `AUTHENTIK_API_TOKEN` in `.env`
 
 ---
 

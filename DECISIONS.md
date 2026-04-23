@@ -39,6 +39,18 @@
 - No manual intervention required for production operation
 - Webhook remains operational 24/7 without downtime
 
+## D-CLOUDIGAN-005: Authentik Identity Provider Branding & User Onboarding
+**Date:** 2026-04-22
+**Context:** Authentik needed Cloudigan branding and a scalable user onboarding system for staff/client access to internal apps
+**Decision:** Custom brand at `auth.cloudigan.net` domain with Cloudigan logo/favicon; invitation-based enrollment with group auto-assignment from invite `fixed_data`
+**Consequences:**
+- Cloudigan branding applied to all auth flows (logo, favicon, "Welcome to Cloudigan!" titles)
+- Three groups: `cloudigan-admins`, `cloudigan-staff`, `cloudigan-clients`
+- Invites specify target group in `fixed_data: {"group": "cloudigan-staff"}` — expression policy assigns on enrollment
+- TIP Generator access controlled via group bindings (admins + staff only)
+- API token stored as `AUTHENTIK_API_TOKEN` in `.env` for programmatic invite creation
+- Outpost "unhealthy" warning is cosmetic (WebSocket loopback) — non-blocking
+
 ## D-HOMELAB-001: TIP Generator Phased Rollout Strategy
 **Date:** 2026-04-17
 **Context:** Need AI-powered system to generate Technical Implementation Plans from customer discovery data and service orders
