@@ -65,6 +65,24 @@
 - **Timeline:** 4 weeks for v1 (planning → deployment)
 - **Plan Location:** `~/.windsurf/plans/tip-generator-webapp-424e2d.md`
 
+## D-HOMELAB-003: Nextcloud Object Store Migration MinIO → AIStor (Free)
+**Date:** 2026-05-07
+**Context:** TrueNAS deprecated the community MinIO app in April 2026 because upstream MinIO transitioned to source-only/maintenance mode. Our Nextcloud instance (`10.92.5.200:9002`) uses MinIO as its **primary** S3 object store for ~1.1 TB / 137,336 objects in bucket `nc-data` (Nextcloud `oc_filecache` rows reference these by object key). A regression here breaks file access for all users.
+**Decision:** Migrate to **MinIO AIStor (Free tier)** in-place against the existing on-disk data, keeping the same host path, ports, and root credentials so Nextcloud's stored S3 config required zero changes.
+**Alternatives considered:**
+- **SeaweedFS** — mature, Apache 2.0; rejected due to documented Nextcloud PROPFIND/dir-create instability with 100k+ objects.
+- **Garage** — lovely but AGPLv3 and would have required full S3-to-S3 data migration (different on-disk format) for 1.1 TB.
+- **VersityGW** — POSIX-on-S3 gateway changes storage semantics; not safe for an existing populated dataset.
+- **RustFS** — too new for production data of this size.
+**Consequences:**
+- AIStor reuses the MinIO on-disk format → zero data movement; just remounted `/mnt/media-pool/minio` from `/export` → `/data` and chowned 473:473 → 568:568 for the AIStor `apps` user.
+- Same `MINIO_ROOT_USER=admin` / same password / same `nc-data` bucket / same ports (9000 API, 9001 console) on `10.92.5.200` → Nextcloud `OBJECTSTORE_S3_*` env vars unchanged.
+- Free-tier license is no-cost but **required** — without one, AIStor RELEASE.2026-05-04 boots in offline mode and blocks all S3 ops. License JWT is stored in the TrueNAS app config (`aistor.license_key`).
+- Free tier limits: single-node only (fine for homelab), no multi-site replication, no object tiering, no `mc support`. Acceptable for our usage.
+- Old `minio` app deleted from TrueNAS Apps; data preserved on disk + ZFS snapshot `media-pool/minio@pre-aistor-20260507` as rollback.
+- Performed via `midclt` (TrueNAS middleware API) entirely from this agent — no UI clicks.
+- **Migration runbook:** `documentation/AISTOR-MIGRATION-2026-05-07.md`.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

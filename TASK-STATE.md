@@ -1,16 +1,31 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-04-22
+**Last updated:** 2026-05-07
 
 ---
 
 ## Current Task
-**Authentik Branding & User Management** - COMPLETE ✅
+**Nextcloud Object Store Migration: MinIO → AIStor** - COMPLETE ✅
 
 ### What I'm doing right now
-Completed full Authentik branding for Cloudigan, invitation enrollment flow with group-based auto-assignment, and TIP Generator group access control. Ready to resume TIP Generator Phase 1 development.
+Migrated Nextcloud's primary object store from the deprecated TrueNAS MinIO Community app to MinIO AIStor (Free tier) on `10.92.5.200:9000/9001`, in-place against the existing 1.1 TB / 137,336-object `nc-data` bucket. Nextcloud is back online at https://nextcloud.cloudigan.net. Old `minio` app removed from TrueNAS (data preserved on disk + ZFS snapshots). Ready to resume TIP Generator Phase 1 development.
 
-### Recent completions (2026-04-22)
+### Recent completions (2026-05-07)
+- ✅ **TrueNAS MinIO → AIStor migration** (May 7)
+  - ZFS snapshots created (rollback): `media-pool/minio@pre-aistor-20260507`, `media-pool/ix-apps/app_mounts/nextcloud@pre-aistor-20260507` (recursive)
+  - `/mnt/media-pool/minio` chowned 473:473 → 568:568 (137k files, AIStor `apps` user)
+  - AIStor 1.1.12 installed via `midclt app.create` with host_path → `/mnt/media-pool/minio`, same ports/credentials as old MinIO so Nextcloud's stored S3 config kept working with zero changes
+  - Free-tier license applied
+  - Nextcloud restarted, login + WebDAV verified (200/207)
+  - Deprecated `minio` app deleted from TrueNAS Apps (data left intact on disk)
+  - Total downtime: ~5 minutes
+- ✅ **Nextcloud "Too many requests" lockout diagnosis** (May 7)
+  - Confirmed root cause: NPM proxy on CT121 missing `X-Forwarded-Proto`/`X-Forwarded-For`, causing every client behind 10.92.3.3 to share the bruteforce-attempt counter
+  - Documented in error logs (`uninitialized "trust_forwarded_proto"` warnings on `/data/nginx/proxy_host/46.conf`)
+  - Workaround: throttle aged out, user got back in
+  - **Pending fix:** add proper proxy headers to `46.conf` so this doesn't recur
+
+### Previous completions (2026-04-22)
 - ✅ **Authentik Branding - Cloudigan** (Apr 22)
   - SSH key deployed to CT170 via Proxmox exec (no password needed going forward)
   - API token created and saved to `.env` as `AUTHENTIK_API_TOKEN`
@@ -88,7 +103,18 @@ Completed full Authentik branding for Cloudigan, invitation enrollment flow with
   - Container repurposed for n8n
 
 ### Next steps
-1. **TIP Generator - Phase 1 Development** ← RESUME HERE
+1. **NPM proxy header fix for nextcloud.cloudigan.net** (small, do first to prevent recurrence of "Too many requests")
+   - Edit `/data/nginx/proxy_host/46.conf` on CT121 to add `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` and `proxy_set_header X-Forwarded-Proto $scheme;`
+   - Reload nginx (`docker exec npm_app_1 nginx -s reload` or via NPM UI re-save of the proxy host)
+   - Verify Nextcloud `trusted_proxies` includes `10.92.3.3` and `overwriteprotocol=https` in `config.php`
+2. **AIStor: rotate license + verify** (paranoia — license JWT was pasted in chat)
+   - Re-download from https://subnet.min.io
+   - Update via TrueNAS UI Apps → aistor → Edit, or via `midclt app.update aistor` with new `aistor.license_key`
+   - Confirm with `mc license info` from a host with `mc` configured
+3. **AIStor: post-migration verification** (week-long)
+   - Daily Nextcloud usage smoke test (upload/download/preview)
+   - Once stable for 7 days, drop `pre-aistor-20260507` snapshots to reclaim space
+4. **TIP Generator - Phase 1 Development** ← RESUME HERE (was deferred for AIStor migration)
    - Clone repository: `git clone git@github.com:heybearc/tip-generator.git`
    - Set up backend: FastAPI with OAuth integration
    - Set up frontend: React with Vite
@@ -118,13 +144,25 @@ Completed full Authentik branding for Cloudigan, invitation enrollment flow with
 ## Known Issues
 
 - **Authentik Embedded Outpost** shows "unhealthy" in UI — cosmetic only, WebSocket self-loopback issue in Docker. Does NOT affect auth/SSO. Fix: set `AUTHENTIK_HOST=http://10.92.3.75:9000` in `/opt/authentik/.env` (low priority)
+- **NPM proxy host 46 (nextcloud.cloudigan.net) missing forwarded-proto/-for headers** — causes Nextcloud to see all clients as `10.92.3.3` and share a single bruteforce counter, locking everyone out after one bad password. Logs show `uninitialized "trust_forwarded_proto"` warnings. Fix queued as Next Step #1.
+- **AIStor Free-tier license JWT was pasted in agent chat** — rotate via SUBNET to be safe.
 
 ---
 
 ## Exact Next Command
 
 ```bash
-# Clone TIP Generator repository and begin Phase 1 development
+# Patch NPM proxy host 46 to forward client IP/proto to Nextcloud
+ssh -F .cloudy-work/ssh_config_master.conf npm
+# then in NPM UI: edit nextcloud.cloudigan.net proxy host → Advanced tab,
+# add: proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#      proxy_set_header X-Forwarded-Proto $scheme;
+#      proxy_set_header X-Real-IP $remote_addr;
+# Save (this regenerates 46.conf and reloads nginx)
+# Then verify in Nextcloud config.php that trusted_proxies includes 10.92.3.3
+#                                       and overwriteprotocol = 'https'
+
+# After NPM fix, resume TIP Generator Phase 1:
 cd /Users/cory/Projects
 git clone git@github.com:heybearc/tip-generator.git
 cd tip-generator

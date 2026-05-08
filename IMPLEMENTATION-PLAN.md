@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-04-22  
+**Last Updated:** 2026-05-07  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -9,7 +9,25 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** TIP Generator Phase 1 Development (Apr 22 - next up)
+**Current Focus:** Nextcloud object store migration (May 7 — DONE) → NPM proxy header fix → TIP Generator Phase 1
+
+**Nextcloud MinIO → AIStor migration** (May 7 — COMPLETE ✅)
+- [x] Researched TrueNAS MinIO deprecation (truenas/apps#3451) and replacement options
+- [x] Selected AIStor Free tier (drop-in MinIO compatibility, single-node OK for homelab)
+- [x] ZFS snapshots: `media-pool/minio@pre-aistor-20260507`, `media-pool/ix-apps/app_mounts/nextcloud@pre-aistor-20260507` (recursive)
+- [x] Stopped `nextcloud` and `minio` apps via `midclt app.stop` (jobs)
+- [x] Recursive `filesystem.chown` on `/mnt/media-pool/minio` from 473:473 → 568:568
+- [x] Installed AIStor 1.1.12 via `midclt app.create` (host_path `/mnt/media-pool/minio` → `/data`, ports 9000/9001 on 10.92.5.200, same admin creds, Free-tier license)
+- [x] Verified `/minio/health/live` returns 200 and `nc-data` retains all 137,336 entries
+- [x] Restarted Nextcloud, confirmed login + WebDAV (200/207)
+- [x] Removed deprecated `minio` app from TrueNAS Apps (data preserved on disk)
+- [x] Runbook documented in `documentation/AISTOR-MIGRATION-2026-05-07.md`
+- [x] ADR D-HOMELAB-003 logged
+- [ ] **Next:** Patch NPM proxy host 46 (`nextcloud.cloudigan.net`) to forward `X-Forwarded-For`/`X-Forwarded-Proto` (root cause of "Too many requests" lockout earlier today)
+- [ ] **Next:** Rotate AIStor Free-tier license (JWT was pasted in agent chat)
+- [ ] **Next:** After 7 days of stable operation, drop `pre-aistor-20260507` snapshots
+
+**Previous Focus:** TIP Generator Phase 1 Development (Apr 22 - next up after stabilization tasks)
 
 **TIP Generator Web Application** (Apr 17-19 - INFRASTRUCTURE COMPLETE ✅)
 - [x] Comprehensive architecture plan created (Apr 17)
