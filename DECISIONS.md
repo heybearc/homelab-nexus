@@ -83,6 +83,18 @@
 - Performed via `midclt` (TrueNAS middleware API) entirely from this agent — no UI clicks.
 - **Migration runbook:** `documentation/AISTOR-MIGRATION-2026-05-07.md`.
 
+## D-HOMELAB-004: Vaultwarden MSP HA — Primary + Backup, Not Active/Active
+**Date:** 2026-05-12
+**Context:** Plan to offer Vaultwarden as an MSP-style service on **`vault.cloudigan.com`** (`.com` branding) behind NPM and HAProxy, with redundancy expectations.
+**Decision:** Use **one active Vaultwarden** at a time. HAProxy (or equivalent) routes to a **primary** backend with a **`backup`** peer and HTTP health checks on **`/alive`**. Standby holds replicated **PostgreSQL** (or promoted replica on failover) and replicated **`DATA_FOLDER`** / ZFS sync—**not** two independent writers serving the same logical instance concurrently.
+**Alternatives considered:**
+- **Round-robin / active-active to two Vaultwarden processes** — rejected: unsupported multi-writer semantics for Vaultwarden’s on-disk state + DB; high risk of corruption or subtle client bugs.
+- **Single node + DR only** — acceptable **v1**; document RPO/RTO honestly if HA deferred.
+**Consequences:**
+- Marketing language should say **failover / DR**, not live/live clustering, unless architecture changes to a vendor-supported clustered Bitwarden deployment.
+- **`DOMAIN`** must match the public URL users enter in Bitwarden (e.g. `https://vault.cloudigan.com`).
+- White label remains **server-side** (SMTP, templates, web vault assets); clients stay Bitwarden-branded apps.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

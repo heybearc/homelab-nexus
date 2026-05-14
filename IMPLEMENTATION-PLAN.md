@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-05-07  
+**Last Updated:** 2026-05-12  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -9,7 +9,12 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** Nextcloud object store migration (May 7 — DONE) → NPM proxy header fix → TIP Generator Phase 1
+**Current Focus:** NPM proxy header fix (Nextcloud) → TIP Generator Phase 1 → Vaultwarden `vault.cloudigan.com` (design → implement)
+
+**Recently completed (2026-05-12)**
+- [x] Proxmox Tailscale on `prox`: upgrade to **1.96.4**, **`accept-dns=false`** (immutable `resolv.conf`); subnet router unchanged.
+- [x] Windows RDP homelab tooling in repo: `scripts/windows/rdp-listener-custom-cert.ps1`, `scripts/windows/import-rdp-listener-trust-cert.ps1` (FQDN **`cloudy-renvis01.cloudigan.com`**).
+- [x] Vaultwarden MSP redundancy model documented: **HAProxy primary + backup**, **`/alive`** checks — **not** active/active dual writers (see **D-HOMELAB-004**).
 
 **Nextcloud MinIO → AIStor migration** (May 7 — COMPLETE ✅)
 - [x] Researched TrueNAS MinIO deprecation (truenas/apps#3451) and replacement options
@@ -146,6 +151,7 @@
     - [ ] Entra ID SSO research and app registrations
     - [ ] Backup strategy extension to MSP containers
     - [ ] Blue-green deployment pattern for MSP apps
+    - [ ] **Vaultwarden MSP (`vault.cloudigan.com`)** — Bitwarden-compatible password manager on **.com** branding; NPM TLS; `DOMAIN` matches public URL; white label (SMTP, `TEMPLATES_FOLDER`, web vault assets). HA: **primary + backup** backends, **`/alive`** health checks (**D-HOMELAB-004**); Postgres + `DATA_FOLDER` replication for standby. TrueNAS app today; optional move to LXC for HAProxy integration.
 
 - [x] **PostgreSQL High Availability Setup** (effort: M) - ✅ COMPLETE (Mar 21) - **UNBLOCKED MSP PLATFORM** - Prometheus-based automatic failover system operational. Components: (1) ✅ PostgreSQL 17 streaming replication (CT131 → CT151), (2) ✅ postgres_exporter on both nodes, (3) ✅ Prometheus alert rules for failover detection, (4) ✅ Alertmanager webhook routing, (5) ✅ Webhook receiver on CT150 triggers Semaphore, (6) ✅ Ansible playbooks for failover and recovery. **Failover time:** ~30 seconds. **Documentation:** `documentation/POSTGRESQL-HA-SETUP.md`. **Status:** Protects 5 production databases + ready for 8 new MSP databases.
 

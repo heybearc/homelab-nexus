@@ -1,29 +1,22 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-05-07
+**Last updated:** 2026-05-12
 
 ---
 
 ## Current Task
-**Nextcloud Object Store Migration: MinIO → AIStor** - COMPLETE ✅
+**Stabilization + MSP prep** — Nextcloud NPM header fix still first; Vaultwarden `vault.cloudigan.com` design captured in plan/ADR.
 
 ### What I'm doing right now
-Migrated Nextcloud's primary object store from the deprecated TrueNAS MinIO Community app to MinIO AIStor (Free tier) on `10.92.5.200:9000/9001`, in-place against the existing 1.1 TB / 137,336-object `nc-data` bucket. Nextcloud is back online at https://nextcloud.cloudigan.net. Old `minio` app removed from TrueNAS (data preserved on disk + ZFS snapshots). Ready to resume TIP Generator Phase 1 development.
+No in-flight implementation in this repo today. **Next concrete infra:** patch NPM proxy host for `nextcloud.cloudigan.net` (forwarded headers). **Product design:** Vaultwarden on `vault.cloudigan.com` with HAProxy **primary + backup** (not dual active writers); Bitwarden clients OK.
+
+### Recent completions (2026-05-12)
+- ✅ **Proxmox (`prox`) Tailscale** — upgraded **1.86.2 → 1.96.4**; **`tailscale set --accept-dns=false`** because `/etc/resolv.conf` is **immutable** (`chattr +i`); subnet routes for `10.92.0.0/23`–`10.92.5.0/24` remain advertised; health warnings cleared.
+- ✅ **cloudy-renvis01 RDP TLS** — repo scripts: `scripts/windows/rdp-listener-custom-cert.ps1` (self-signed SANs for **`cloudy-renvis01.cloudigan.com`**, MagicDNS, NetBIOS, Tailscale + LAN IPs; WMI bind + optional `TermService` restart); `scripts/windows/import-rdp-listener-trust-cert.ps1` (trust `C:\temp\rdp-listener-homelab.cer` on Windows clients).
+- ✅ **Vaultwarden MSP / redundancy** — agreed architecture: **`vault.cloudigan.com`** via NPM; **HAProxy `server` + `backup`** with **`/alive`** checks; avoid active/active dual Vaultwarden writers; white label via `DOMAIN`, SMTP, templates, vault web assets.
 
 ### Recent completions (2026-05-07)
-- ✅ **TrueNAS MinIO → AIStor migration** (May 7)
-  - ZFS snapshots created (rollback): `media-pool/minio@pre-aistor-20260507`, `media-pool/ix-apps/app_mounts/nextcloud@pre-aistor-20260507` (recursive)
-  - `/mnt/media-pool/minio` chowned 473:473 → 568:568 (137k files, AIStor `apps` user)
-  - AIStor 1.1.12 installed via `midclt app.create` with host_path → `/mnt/media-pool/minio`, same ports/credentials as old MinIO so Nextcloud's stored S3 config kept working with zero changes
-  - Free-tier license applied
-  - Nextcloud restarted, login + WebDAV verified (200/207)
-  - Deprecated `minio` app deleted from TrueNAS Apps (data left intact on disk)
-  - Total downtime: ~5 minutes
-- ✅ **Nextcloud "Too many requests" lockout diagnosis** (May 7)
-  - Confirmed root cause: NPM proxy on CT121 missing `X-Forwarded-Proto`/`X-Forwarded-For`, causing every client behind 10.92.3.3 to share the bruteforce-attempt counter
-  - Documented in error logs (`uninitialized "trust_forwarded_proto"` warnings on `/data/nginx/proxy_host/46.conf`)
-  - Workaround: throttle aged out, user got back in
-  - **Pending fix:** add proper proxy headers to `46.conf` so this doesn't recur
+- ✅ **TrueNAS MinIO → AIStor** + Nextcloud back online; NPM header root cause for lockout diagnosed (**fix still pending**). Details: `documentation/AISTOR-MIGRATION-2026-05-07.md`, D-HOMELAB-003.
 
 ### Previous completions (2026-04-22)
 - ✅ **Authentik Branding - Cloudigan** (Apr 22)
@@ -122,19 +115,21 @@ Migrated Nextcloud's primary object store from the deprecated TrueNAS MinIO Comm
    - Implement document upload (Excel, PDF)
    - Integrate Claude API for content generation
    - Deploy to STANDBY using MCP: `mcp0_deploy_to_standby tip-generator`
-2. **TIP Generator - Gather Sample Documents** (for testing)
+5. **TIP Generator - Gather Sample Documents** (for testing)
    - Provide example TIP Word template
    - Provide sample Excel discovery worksheet
    - Provide sample SOW/service order PDF
-3. **MSP Platform - Continue Phase 1 deployment**
+6. **Vaultwarden MSP — `vault.cloudigan.com`** (after NPM + optional license rotation)
+   - DNS + NPM proxy host; Vaultwarden `DOMAIN`; HAProxy primary/backup if second node; doc RPO/RTO
+7. **MSP Platform - Continue Phase 1 deployment**
    - BookStack (documentation hub)
    - Plane (project management)
    - Authentik/Entra ID SSO research
-4. **LibreNMS - Add network devices**
+8. **LibreNMS - Add network devices**
    - Switches, APs, Omada Controller
    - Enable auto-discovery
    - Configure SNMP communities
-5. **n8n - Configure first workflows**
+9. **n8n - Configure first workflows**
    - Set up automation workflows
    - Integrate with 1Password
    - Connect to MSP services
@@ -228,7 +223,7 @@ source venv/bin/activate
 
 ## Context for Tomorrow
 
-**Pick up with:** Clone TIP Generator repository and begin Phase 1 development
+**Pick up with:** NPM proxy header fix for Nextcloud, then clone TIP Generator and begin Phase 1 (or start Vaultwarden `vault.cloudigan.com` cutover design in infra).
 
 **Key files:**
 - `/Users/cory/Projects/tip-generator/` - TIP Generator repository (clone first)
