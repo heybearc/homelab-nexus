@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-05-12  
+**Last Updated:** 2026-05-16  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -9,7 +9,13 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** NPM proxy header fix (Nextcloud) → TIP Generator Phase 1 → Vaultwarden `vault.cloudigan.com` (design → implement)
+**Current Focus:** Switch SSH key import → NPM proxy header fix (Nextcloud) → Vaultwarden `vault.cloudigan.com` (design → implement)
+
+**Recently completed (2026-05-16)**
+- [x] Proxmox + TrueNAS live inventory; `PROXMOX-INVENTORY-2026-05-14.md` + control plane copy
+- [x] SSH config / APP-MAP / homelab-hosts sync (tip-blue .91, tip-green .92, decommissioned media removed)
+- [x] `homelab_root` on all 39 running LXCs (9 installed); `dc-01` Windows key repaired
+- [x] Control plane: **D-041**, `deploy-homelab-root-keys.md`, `verify_homelab_ssh.sh` improvements
 
 **Recently completed (2026-05-12)**
 - [x] Proxmox Tailscale on `prox`: upgrade to **1.96.4**, **`accept-dns=false`** (immutable `resolv.conf`); subnet router unchanged.

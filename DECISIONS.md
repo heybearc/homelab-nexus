@@ -95,6 +95,13 @@
 - **`DOMAIN`** must match the public URL users enter in Bitwarden (e.g. `https://vault.cloudigan.com`).
 - White label remains **server-side** (SMTP, templates, web vault assets); clients stay Bitwarden-branded apps.
 
+## D-HOMELAB-005: Homelab admin SSH — `homelab_root` everywhere except TP-Link switch
+**Date:** 2026-05-16  
+**Context:** Audit required consistent key-based SSH for automation (Ansible, MCP, scripts) across Proxmox LXCs and Windows VMs.  
+**Decision:** Use `~/.ssh/homelab_root` for all LXCs (`root`) and Windows Administrator hosts. Bulk deploy via `pct exec` from `prox`. Windows domain admins use `C:\ProgramData\ssh\administrators_authorized_keys` with **one key per line**.  
+**Exceptions:** TP-Link SG3428XMP (`switch`, 10.92.0.2) remains password-only until key imported in switch UI (legacy ciphers). TrueNAS uses `truenas_admin` on port 222 with same key.  
+**Control plane:** Promoted as **D-041** in Cloudy-Work `DECISIONS.md`. Runbook: `_cloudy-ops/ssh/deploy-homelab-root-keys.md`.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation
