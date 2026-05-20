@@ -102,6 +102,12 @@
 **Exceptions:** TP-Link SG3428XMP (`switch`, 10.92.0.2) remains password-only until key imported in switch UI (legacy ciphers). TrueNAS uses `truenas_admin` on port 222 with same key.  
 **Control plane:** Promoted as **D-041** in Cloudy-Work `DECISIONS.md`. Runbook: `_cloudy-ops/ssh/deploy-homelab-root-keys.md`.
 
+## D-HOMELAB-006: Cloudigan Vault MSP — new product; Stripe via Cloudigan API
+**Date:** 2026-05-16  
+**Context:** `vault.cloudigan.com` is a paid MSP offering for customers (white-label Vaultwarden), separate from homelab TrueNAS Vaultwarden. Question whether to move Stripe automation to n8n.  
+**Decision:** **New customer instance** on CT171/172 (not a cutover from TrueNAS). **Stripe checkout → Cloudigan API** webhook (extend D-038 `product_type` routing with `vault`); n8n only for optional non-critical side workflows. Proposed SMB pricing tiers documented in `documentation/CLOUDIGAN-VAULT-PRODUCT.md` (not yet in Stripe).  
+**Consequences:** HAProxy MSP pool uses BLUE primary / GREEN backup only (TrueNAS excluded). Billing enforcement via invites/org seats + API automation, not Vaultwarden-native subscriptions.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

@@ -1,14 +1,38 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-05-12
+**Last updated:** 2026-05-16 (mid-day)
 
 ---
 
 ## Current Task
-**Stabilization + MSP prep** — Nextcloud NPM header fix still first; Vaultwarden `vault.cloudigan.com` design captured in plan/ADR.
+**PAUSED** — handling another task. **Resume Cloudigan Vault** from `documentation/CLOUDIGAN-VAULT-PRODUCT.md`.
 
 ### What I'm doing right now
-No in-flight implementation in this repo today. **Next concrete infra:** patch NPM proxy host for `nextcloud.cloudigan.net` (forwarded headers). **Product design:** Vaultwarden on `vault.cloudigan.com` with HAProxy **primary + backup** (not dual active writers); Bitwarden clients OK.
+Vault MSP infra is largely done (see **Paused: Cloudigan Vault MSP** below). When resuming: DNS + NPM SSL → branding/SMTP → Stripe products → Cloudigan API vault webhook branch → DB/data replication.
+
+### Paused: Cloudigan Vault MSP (2026-05-16 session)
+
+**Full notes:** [`documentation/CLOUDIGAN-VAULT-PRODUCT.md`](documentation/CLOUDIGAN-VAULT-PRODUCT.md)
+
+| Topic | Decision / state |
+|-------|------------------|
+| **Product** | New paid MSP on `vault.cloudigan.com` — **not** homelab TrueNAS cutover |
+| **Infra** | CT171 BLUE active, CT172 GREEN staged (not running); HAProxy + NPM 107 |
+| **Billing** | Stripe → **Cloudigan API** (extend D-038); **not** n8n for checkout |
+| **Pricing** | Proposed Starter / Business / Business Plus — **not in Stripe yet** (see product doc) |
+| **White label** | SMTP, templates, `DOMAIN`, org invites; Bitwarden apps unchanged |
+| **DNS** | Manual A → `174.104.207.3` (Wix MCP lacks DNS permissions) |
+| **Next** | DNS/SSL verify → Stripe + API vault branch → SMTP/branding → replication runbook |
+
+### Recent completions (2026-05-16)
+- ✅ **Vaultwarden LXC pair (CT171/172)** — BLUE active @ `10.92.3.94`, GREEN standby staged @ `.95` (compose + image, not running); Netbox IPs; privileged LXC for Docker
+- ✅ **HAProxy `vaultwarden_ha`** — primary **BLUE** `.94`, backup **GREEN** `.95` (TrueNAS excluded — separate homelab instance)
+- ✅ **NPM proxy host 107** — `vault.cloudigan.com` → `10.92.3.33:80` (SSL cert ID 96; confirm after public DNS)
+- ✅ **Nextcloud (`nextcloud.cloudigan.net`)** — verified healthy: `status.php` 200 (v33.0.3.2, not in maintenance); desktop sync (Windows + Mac clients) and web UI returning 200; **0** HTTP 429 in NPM access log; NPM proxy host 46 forwards `X-Forwarded-*` via standard `proxy.conf` include. Residual NPM `trust_forwarded_proto` nginx warnings are cosmetic (do not block sync). See D-HOMELAB-003 / AISTOR migration notes.
+- ✅ **CT130 (BookStack) backups** — removed `storage local` job + duplicate job; single daily → `truenas-backups` with prune `keep-daily=7,keep-weekly=4,keep-monthly=3`
+- ✅ **Proxmox `local` cleanup** — deleted ~30G stale vzdump on root (`92%` → `59%`); ISOs still ~36G if more space needed
+- ✅ **TrueNAS alerts** — dismissed app-update INFO alerts (nextcloud, vaultwarden, aistor); pool healthy
+- ✅ **Docs** — removed stale ZJV425XP disk alert from `documentation/proxmox-infrastructure-spec.md`
 
 ### Recent completions (2026-05-12)
 - ✅ **Proxmox (`prox`) Tailscale** — upgraded **1.86.2 → 1.96.4**; **`tailscale set --accept-dns=false`** because `/etc/resolv.conf` is **immutable** (`chattr +i`); subnet routes for `10.92.0.0/23`–`10.92.5.0/24` remain advertised; health warnings cleared.
@@ -16,7 +40,7 @@ No in-flight implementation in this repo today. **Next concrete infra:** patch N
 - ✅ **Vaultwarden MSP / redundancy** — agreed architecture: **`vault.cloudigan.com`** via NPM; **HAProxy `server` + `backup`** with **`/alive`** checks; avoid active/active dual Vaultwarden writers; white label via `DOMAIN`, SMTP, templates, vault web assets.
 
 ### Recent completions (2026-05-07)
-- ✅ **TrueNAS MinIO → AIStor** + Nextcloud back online; NPM header root cause for lockout diagnosed (**fix still pending**). Details: `documentation/AISTOR-MIGRATION-2026-05-07.md`, D-HOMELAB-003.
+- ✅ **TrueNAS MinIO → AIStor** + Nextcloud back online. Details: `documentation/AISTOR-MIGRATION-2026-05-07.md`, D-HOMELAB-003.
 
 ### Previous completions (2026-04-22)
 - ✅ **Authentik Branding - Cloudigan** (Apr 22)
@@ -96,18 +120,14 @@ No in-flight implementation in this repo today. **Next concrete infra:** patch N
   - Container repurposed for n8n
 
 ### Next steps
-1. **NPM proxy header fix for nextcloud.cloudigan.net** (small, do first to prevent recurrence of "Too many requests")
-   - Edit `/data/nginx/proxy_host/46.conf` on CT121 to add `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` and `proxy_set_header X-Forwarded-Proto $scheme;`
-   - Reload nginx (`docker exec npm_app_1 nginx -s reload` or via NPM UI re-save of the proxy host)
-   - Verify Nextcloud `trusted_proxies` includes `10.92.3.3` and `overwriteprotocol=https` in `config.php`
-2. **AIStor: rotate license + verify** (paranoia — license JWT was pasted in chat)
+1. **AIStor: rotate license + verify** (paranoia — license JWT was pasted in chat)
    - Re-download from https://subnet.min.io
    - Update via TrueNAS UI Apps → aistor → Edit, or via `midclt app.update aistor` with new `aistor.license_key`
    - Confirm with `mc license info` from a host with `mc` configured
-3. **AIStor: post-migration verification** (week-long)
+2. **AIStor: post-migration verification** (week-long)
    - Daily Nextcloud usage smoke test (upload/download/preview)
    - Once stable for 7 days, drop `pre-aistor-20260507` snapshots to reclaim space
-4. **TIP Generator - Phase 1 Development** ← RESUME HERE (was deferred for AIStor migration)
+3. **TIP Generator - Phase 1 Development** ← RESUME HERE (was deferred for AIStor migration)
    - Clone repository: `git clone git@github.com:heybearc/tip-generator.git`
    - Set up backend: FastAPI with OAuth integration
    - Set up frontend: React with Vite
@@ -115,31 +135,50 @@ No in-flight implementation in this repo today. **Next concrete infra:** patch N
    - Implement document upload (Excel, PDF)
    - Integrate Claude API for content generation
    - Deploy to STANDBY using MCP: `mcp0_deploy_to_standby tip-generator`
-5. **TIP Generator - Gather Sample Documents** (for testing)
+4. **TIP Generator - Gather Sample Documents** (for testing)
    - Provide example TIP Word template
    - Provide sample Excel discovery worksheet
    - Provide sample SOW/service order PDF
-6. **Vaultwarden MSP — `vault.cloudigan.com`** (after NPM + optional license rotation)
-   - DNS + NPM proxy host; Vaultwarden `DOMAIN`; HAProxy primary/backup if second node; doc RPO/RTO
-7. **MSP Platform - Continue Phase 1 deployment**
+5. **Vaultwarden MSP — `vault.cloudigan.com`** ← **PAUSED** (see `documentation/CLOUDIGAN-VAULT-PRODUCT.md`)
+   - See **Vaultwarden HA plan** section below
+6. **MSP Platform - Continue Phase 1 deployment**
    - BookStack (documentation hub)
    - Plane (project management)
    - Authentik/Entra ID SSO research
-8. **LibreNMS - Add network devices**
+7. **LibreNMS - Add network devices**
    - Switches, APs, Omada Controller
    - Enable auto-discovery
    - Configure SNMP communities
-9. **n8n - Configure first workflows**
+8. **n8n - Configure first workflows**
    - Set up automation workflows
    - Integrate with 1Password
    - Connect to MSP services
 
 ---
 
+## Vaultwarden HA plan (D-HOMELAB-004)
+
+**Goal:** Survive single-node outage (TrueNAS app down OR standby LXC down) with automatic failover, no dual writers.
+
+| Phase | Work | Outcome |
+|-------|------|---------|
+| **0** | `vault.cloudigan.com` DNS → NPM → HAProxy VIP `10.92.3.33` | NPM + HAProxy done; **public DNS manual** |
+| **1** | Postgres DB `vaultwarden` on CT131; replicate to CT151 | DB on CT131 ✅; replica pending |
+| **2** | Ansible `deploy-vaultwarden-containers.yml` → CT171/172 on `vmbr0923` | **Done** — GREEN staged, not started |
+| **3** | Sync `DATA_FOLDER` (ZFS snapshot/replication or `rsync` + orchestration) | Attachments/icons survive failover |
+| **4** | HAProxy: primary BLUE, `backup` GREEN, `GET /alive` | **Done** (MSP pool; TrueNAS excluded) |
+| **5** | Runbook: promote standby DB + start Vaultwarden + validate Bitwarden clients | Documented RPO/RTO |
+
+**Not in scope:** active/active Vaultwarden (forbidden per D-HOMELAB-004).
+
+**Optional:** use spare 12TB (`sdk`) as dedicated dataset for vault data/backups (separate from `media-pool` stripe).
+
+---
+
 ## Known Issues
 
 - **Authentik Embedded Outpost** shows "unhealthy" in UI — cosmetic only, WebSocket self-loopback issue in Docker. Does NOT affect auth/SSO. Fix: set `AUTHENTIK_HOST=http://10.92.3.75:9000` in `/opt/authentik/.env` (low priority)
-- **NPM proxy host 46 (nextcloud.cloudigan.net) missing forwarded-proto/-for headers** — causes Nextcloud to see all clients as `10.92.3.3` and share a single bruteforce counter, locking everyone out after one bad password. Logs show `uninitialized "trust_forwarded_proto"` warnings. Fix queued as Next Step #1.
+- **NPM `trust_forwarded_proto` warnings** on proxy host 46 — cosmetic nginx/NPM log noise; Nextcloud verified working 2026-05-16 (no 429 lockouts, sync active). Optional: add Nextcloud advanced NPM config to silence warnings.
 - **AIStor Free-tier license JWT was pasted in agent chat** — rotate via SUBNET to be safe.
 
 ---
@@ -147,17 +186,12 @@ No in-flight implementation in this repo today. **Next concrete infra:** patch N
 ## Exact Next Command
 
 ```bash
-# Patch NPM proxy host 46 to forward client IP/proto to Nextcloud
-ssh -F .cloudy-work/ssh_config_master.conf npm
-# then in NPM UI: edit nextcloud.cloudigan.net proxy host → Advanced tab,
-# add: proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#      proxy_set_header X-Forwarded-Proto $scheme;
-#      proxy_set_header X-Real-IP $remote_addr;
-# Save (this regenerates 46.conf and reloads nginx)
-# Then verify in Nextcloud config.php that trusted_proxies includes 10.92.3.3
-#                                       and overwriteprotocol = 'https'
+# Resume Cloudigan Vault (product + infra):
+open documentation/CLOUDIGAN-VAULT-PRODUCT.md
+# After public DNS:
+curl -sS https://vault.cloudigan.com/alive
 
-# After NPM fix, resume TIP Generator Phase 1:
+# Or resume TIP Generator Phase 1:
 cd /Users/cory/Projects
 git clone git@github.com:heybearc/tip-generator.git
 cd tip-generator
@@ -223,7 +257,7 @@ source venv/bin/activate
 
 ## Context for Tomorrow
 
-**Pick up with:** NPM proxy header fix for Nextcloud, then clone TIP Generator and begin Phase 1 (or start Vaultwarden `vault.cloudigan.com` cutover design in infra).
+**Pick up with:** Vaultwarden HA buildout (primary task) or TIP Generator Phase 1 clone/dev.
 
 **Key files:**
 - `/Users/cory/Projects/tip-generator/` - TIP Generator repository (clone first)
