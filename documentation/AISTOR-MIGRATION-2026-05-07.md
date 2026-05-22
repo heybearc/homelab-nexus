@@ -169,7 +169,7 @@ midclt -q call -j app.delete minio   # data on disk untouched
 
 ## Outstanding follow-ups
 
-- [ ] **NPM proxy header fix** for `nextcloud.cloudigan.net` (proxy host 46 on CT121). Currently missing `X-Forwarded-For`/`X-Forwarded-Proto`, which made every client share Nextcloud's bruteforce counter and triggered "Too many requests" lockouts. Logs show `uninitialized "trust_forwarded_proto"` warnings.
+- [x] **NPM proxy / Nextcloud access** for `nextcloud.cloudigan.net` — verified healthy 2026-05-16 (`status.php` 200, desktop sync active, 0× HTTP 429 in NPM logs). Standard NPM `proxy.conf` forwards `X-Forwarded-*`; residual `trust_forwarded_proto` nginx warnings are cosmetic only.
 - [ ] **Rotate AIStor license JWT** — was pasted into agent chat. Re-download from SUBNET and update via UI or `midclt app.update aistor`.
 - [ ] **Drop snapshots** after 7 days clean: `media-pool/minio@pre-aistor-20260507` and `media-pool/ix-apps/app_mounts/nextcloud@pre-aistor-20260507`.
 

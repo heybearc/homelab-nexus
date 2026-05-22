@@ -1,0 +1,47 @@
+---
+- name: Vaultwarden post-deploy (DB + docker, skip Netbox)
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/vaultwarden_deploy.yml
+  vars:
+    vaultwarden_blue:
+      name: vaultwarden-blue
+      ctid: 171
+      ip: 10.92.3.94
+    vaultwarden_green:
+      name: vaultwarden-green
+      ctid: 172
+      ip: 10.92.3.95
+    vaultwarden_db_password: "{{ lookup('env', 'VAULTWARDEN_DB_PASSWORD') }}"
+  tasks:
+    - name: Create Vaultwarden database
+      ansible.builtin.include_tasks: tasks/create-vaultwarden-database.yml
+
+    - name: Configure Vaultwarden on each LXC
+      ansible.builtin.include_tasks: tasks/configure-vaultwarden-node.yml
+      loop:
+        - "{{ vaultwarden_blue | combine({'node_role': 'active'}) }}"
+        - "{{ vaultwarden_green | combine({'node_role': 'standby'}) }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }} ({{ node.node_role }})"
+
+    - name: Verify SSH and health
+      ansible.builtin.command: ssh -o BatchMode=yes -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf {{ item.name }} /bin/hostname
+      loop:
+        - "{{ vaultwarden_blue }}"
+        - "{{ vaultwarden_green }}"
+      changed_when: false
+
+    - name: Check /alive on blue
+      ansible.builtin.uri:
+        url: "http://{{ vaultwarden_blue.ip }}:8080/alive"
+        return_content: false
+      register: alive
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Vaultwarden BLUE: http://{{ vaultwarden_blue.ip }}:8080/alive -> HTTP {{ alive.status }}"
+          - "GREEN standby staged (Vaultwarden not started)"

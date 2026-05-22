@@ -43,11 +43,9 @@
 - **S3 Bucket**: nc-data (public read/write policy)
 - **Nextcloud Data**: 181,660+ files (~213GB) migrated successfully
 
-#### Critical Hardware Alert
-- **Failing Disk**: /dev/sdc (Serial: ZJV425XP)
-- **Status**: CRITICAL - 272 pending sectors, immediate replacement required
-- **Model**: Seagate BarraCuda ST12000DM0007-2GR116 (12TB)
-- **Action Required**: Replace within 24-48 hours maximum
+#### TrueNAS disk health (verified 2026-05-16)
+- **media-pool:** ONLINE; last scrub finished with 0 errors
+- **Stale note removed:** An old alert for `/dev/sdc` serial ZJV425XP is obsolete (device names/serials changed after disk replacement). Confirm health in TrueNAS UI → Storage → Disks (SMART) for any unused drives (e.g. `sda` Barracuda).
 
 ## LXC Container Configuration
 
@@ -359,11 +357,7 @@
 
 
 ### TrueNAS Hardware Status
-- **Critical Alert**: Disk /dev/sdc failing (272 pending sectors)
-- **Serial Number**: ZJV425XP
-- **Model**: Seagate BarraCuda ST12000DM0007-2GR116 (12TB)
-- **Replacement Timeline**: 24-48 hours maximum
-- **Risk Level**: CRITICAL - potential data loss
+- See **TrueNAS disk health** under Storage Configuration (verified 2026-05-16)
 
 ## Docker Infrastructure (Legacy/Migration Source)
 

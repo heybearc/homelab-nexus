@@ -1,0 +1,160 @@
+---
+# Deploy Vaultwarden blue/green LXCs on Proxmox (D-HOMELAB-004 phase 2)
+#
+# Uses shared playbook: ansible-playbooks/playbooks/deploy-proxmox-container.yml
+# Plus homelab tasks: Netbox IP plan, full IPAM, Postgres DB, Vaultwarden docker.
+#
+# Prereqs:
+#   - .env with NETBOX_TOKEN (and NPM_* if using NPM later)
+#   - SSH: prox + homelab_root in ~/.ssh
+#   - ansible-playbooks repo at ../ansible-playbooks (sibling of homelab-nexus)
+#
+# Run from homelab-nexus:
+#   cd ansible && ansible-playbook playbooks/deploy-vaultwarden-containers.yml
+
+- name: Plan Vaultwarden deployment (Netbox IPs + CTID check)
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/vaultwarden_deploy.yml
+  tasks:
+    - name: Require Netbox token
+      assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in environment or homelab-nexus/.env"
+
+    - name: Resolve next available IPs from Netbox
+      command:
+        argv:
+          - "{{ playbook_dir }}/../../scripts/provisioning/netbox-next-available-ip.sh"
+          - --count
+          - "2"
+          - --start-host
+          - "{{ vaultwarden_ip_start_host | default(94) }}"
+      environment:
+        NETBOX_URL: "{{ netbox_url }}"
+        NETBOX_TOKEN: "{{ netbox_token }}"
+      register: netbox_ip_script
+      changed_when: false
+
+    - name: Assign planned IPs
+      set_fact:
+        vaultwarden_blue: "{{ vaultwarden_blue | combine({'ip': netbox_ip_script.stdout_lines[0]}) }}"
+        vaultwarden_green: "{{ vaultwarden_green | combine({'ip': netbox_ip_script.stdout_lines[1]}) }}"
+
+    - name: Verify CTIDs are free on Proxmox
+      command: ssh prox "test ! -f /etc/pve/lxc/{{ item }}.conf"
+      loop:
+        - "{{ vaultwarden_blue.ctid }}"
+        - "{{ vaultwarden_green.ctid }}"
+      changed_when: false
+
+    - name: Show deployment plan
+      debug:
+        msg:
+          - "=== Vaultwarden LXC plan ==="
+          - "BLUE:  CT{{ vaultwarden_blue.ctid }} {{ vaultwarden_blue.name }} @ {{ vaultwarden_blue.ip }}"
+          - "GREEN: CT{{ vaultwarden_green.ctid }} {{ vaultwarden_green.name }} @ {{ vaultwarden_green.ip }}"
+          - "Storage: hdd-pool | Bridge: vmbr0923 | {{ vaultwarden_cores }}c / {{ vaultwarden_memory }}MB / {{ vaultwarden_disk }}G"
+          - "Shared playbook: {{ ansible_playbooks_root }}/deploy-proxmox-container.yml"
+
+- name: Deploy vaultwarden-blue (Proxmox + baseline automation)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: "{{ hostvars['localhost']['vaultwarden_blue'].name }}"
+    container_function: security
+    container_ctid: "{{ hostvars['localhost']['vaultwarden_blue'].ctid }}"
+    container_ip: "{{ hostvars['localhost']['vaultwarden_blue'].ip }}"
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 10
+    netbox_url: "{{ hostvars['localhost']['netbox_url'] | default(lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true)) }}"
+    netbox_token: "{{ hostvars['localhost']['netbox_token'] | default(lookup('env', 'NETBOX_TOKEN')) }}"
+    npm_url: "{{ hostvars['localhost']['npm_url'] | default(lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true)) }}"
+    npm_email: "{{ hostvars['localhost']['npm_email'] | default(lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true)) }}"
+    npm_password: "{{ hostvars['localhost']['npm_password'] | default(lookup('env', 'NPM_PASSWORD')) }}"
+    ssh_pubkey: "{{ hostvars['localhost']['homelab_ssh_pubkey'] | default(lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub')) }}"
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+    container_privileged: true
+
+- name: Deploy vaultwarden-green (Proxmox + baseline automation)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: "{{ hostvars['localhost']['vaultwarden_green'].name }}"
+    container_function: security
+    container_ctid: "{{ hostvars['localhost']['vaultwarden_green'].ctid }}"
+    container_ip: "{{ hostvars['localhost']['vaultwarden_green'].ip }}"
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 10
+    netbox_url: "{{ hostvars['localhost']['netbox_url'] | default(lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true)) }}"
+    netbox_token: "{{ hostvars['localhost']['netbox_token'] | default(lookup('env', 'NETBOX_TOKEN')) }}"
+    npm_url: "{{ hostvars['localhost']['npm_url'] | default(lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true)) }}"
+    npm_email: "{{ hostvars['localhost']['npm_email'] | default(lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true)) }}"
+    npm_password: "{{ hostvars['localhost']['npm_password'] | default(lookup('env', 'NPM_PASSWORD')) }}"
+    ssh_pubkey: "{{ hostvars['localhost']['homelab_ssh_pubkey'] | default(lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub')) }}"
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+    container_privileged: true
+
+- name: Netbox IPAM + Postgres + Vaultwarden on both nodes
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/vaultwarden_deploy.yml
+  vars:
+    vaultwarden_blue: "{{ hostvars['localhost']['vaultwarden_blue'] }}"
+    vaultwarden_green: "{{ hostvars['localhost']['vaultwarden_green'] }}"
+    vaultwarden_db_password: "{{ lookup('env', 'VAULTWARDEN_DB_PASSWORD') }}"
+  tasks:
+    - name: Register each container in Netbox (VM + interface + IP)
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      loop:
+        - "{{ vaultwarden_blue }}"
+        - "{{ vaultwarden_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+      vars:
+        nb_container_name: "{{ node.name }}"
+        nb_ctid: "{{ node.ctid }}"
+        nb_ip: "{{ node.ip }}"
+        nb_function: "{{ vaultwarden_function }}"
+        nb_cores: "{{ vaultwarden_cores }}"
+        nb_memory: "{{ vaultwarden_memory }}"
+        nb_disk: "{{ vaultwarden_disk }}"
+
+    - name: Create Vaultwarden database on PostgreSQL primary
+      ansible.builtin.include_tasks: tasks/create-vaultwarden-database.yml
+      when: vaultwarden_skip_db | default(false) | bool == false
+
+    - name: Configure Vaultwarden stack on each LXC
+      ansible.builtin.include_tasks: tasks/configure-vaultwarden-node.yml
+      loop:
+        - "{{ vaultwarden_blue | combine({'node_role': 'active'}) }}"
+        - "{{ vaultwarden_green | combine({'node_role': 'standby'}) }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }} ({{ node.node_role }})"
+
+    - name: Verify homelab_root SSH to new containers
+      command: ssh -o BatchMode=yes -o ConnectTimeout=8 -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf {{ item.name }} /bin/hostname
+      loop:
+        - "{{ vaultwarden_blue }}"
+        - "{{ vaultwarden_green }}"
+      register: ssh_verify
+      changed_when: false
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "=== Vaultwarden LXC deployment complete ==="
+          - "BLUE:  ssh {{ vaultwarden_blue.name }} ({{ vaultwarden_blue.ip }}) CT{{ vaultwarden_blue.ctid }}"
+          - "GREEN: ssh {{ vaultwarden_green.name }} ({{ vaultwarden_green.ip }}) CT{{ vaultwarden_green.ctid }}"
+          - "Health: curl http://{{ vaultwarden_blue.ip }}:{{ vaultwarden_port }}/alive"
+          - "Netbox: http://10.92.3.18"
+          - "Next: HAProxy primary/backup + NPM vault.cloudigan.com (see documentation/VAULTWARDEN-DEPLOYMENT.md)"

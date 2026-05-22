@@ -40,6 +40,34 @@ ansible-playbook playbooks/deploy-proxmox-container.yml \
 
 ---
 
+## Vaultwarden HA pair (homelab-nexus wrapper)
+
+Uses **deploy-proxmox-container.yml** twice + Netbox IP plan + Postgres + Docker.
+
+```bash
+cd /Users/cory/Projects/homelab-nexus
+source .env   # NETBOX_TOKEN, VAULTWARDEN_DB_PASSWORD
+cd ansible
+ansible-playbook playbooks/deploy-vaultwarden-containers.yml
+```
+
+See **documentation/VAULTWARDEN-DEPLOYMENT.md**.
+
+---
+
+## Chapter Hub blue-green (homelab-nexus wrapper)
+
+```bash
+cd /Users/cory/Projects/homelab-nexus
+source .env   # NETBOX_TOKEN, CHAPTER_HUB_DB_PASSWORD
+cd ansible
+ansible-playbook playbooks/deploy-chapter-hub-containers.yml
+```
+
+See **documentation/CHAPTER-HUB-DEPLOYMENT.md**.
+
+---
+
 ## 📋 Available Playbooks
 
 ### Infrastructure

@@ -11,7 +11,7 @@ CONTAINER_NAME="$2"
 IP_ADDRESS="$3"
 FUNCTION="$4"
 
-NETBOX_URL="${NETBOX_URL:-http://10.92.3.11}"
+NETBOX_URL="${NETBOX_URL:-http://10.92.3.18}"
 NETBOX_TOKEN="${NETBOX_TOKEN:-}"
 
 if [[ -z "$NETBOX_TOKEN" ]]; then
@@ -35,11 +35,7 @@ VM_DATA=$(cat <<EOF
     "vcpus": 2,
     "memory": 2048,
     "disk": 32,
-    "comments": "Deployed via automated provisioning pipeline",
-    "tags": [
-        {"name": "lxc"},
-        {"name": "$FUNCTION"}
-    ],
+    "comments": "Deployed via automated provisioning pipeline | function=$FUNCTION | tags=lxc",
     "custom_fields": {
         "ctid": "$CTID"
     }

@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-05-16  
+**Last Updated:** 2026-05-22  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -9,13 +9,12 @@
 
 ## 🎯 Active Work (This Week)
 
-**Current Focus:** Switch SSH key import → NPM proxy header fix (Nextcloud) → Vaultwarden `vault.cloudigan.com` (design → implement)
+**Current Focus:** **Cloudigan Vault MSP** commercial launch (paused) — DNS, Stripe, API webhook, white-label; or TIP Generator Phase 1 / AIStor license rotation.
 
 **Recently completed (2026-05-16)**
-- [x] Proxmox + TrueNAS live inventory; `PROXMOX-INVENTORY-2026-05-14.md` + control plane copy
-- [x] SSH config / APP-MAP / homelab-hosts sync (tip-blue .91, tip-green .92, decommissioned media removed)
-- [x] `homelab_root` on all 39 running LXCs (9 installed); `dc-01` Windows key repaired
-- [x] Control plane: **D-041**, `deploy-homelab-root-keys.md`, `verify_homelab_ssh.sh` improvements
+- [x] **Cloudigan Vault infra** — CT171/172, HAProxy, NPM 107, Ansible deploy playbooks; product doc + **D-HOMELAB-006**
+- [x] Nextcloud verified healthy; CT130 backups + Proxmox `local` cleanup
+- [x] Proxmox + TrueNAS inventory sync; `homelab_root` mass deploy (**D-041**)
 
 **Recently completed (2026-05-12)**
 - [x] Proxmox Tailscale on `prox`: upgrade to **1.96.4**, **`accept-dns=false`** (immutable `resolv.conf`); subnet router unchanged.
@@ -157,7 +156,7 @@
     - [ ] Entra ID SSO research and app registrations
     - [ ] Backup strategy extension to MSP containers
     - [ ] Blue-green deployment pattern for MSP apps
-    - [ ] **Vaultwarden MSP (`vault.cloudigan.com`)** — Bitwarden-compatible password manager on **.com** branding; NPM TLS; `DOMAIN` matches public URL; white label (SMTP, `TEMPLATES_FOLDER`, web vault assets). HA: **primary + backup** backends, **`/alive`** health checks (**D-HOMELAB-004**); Postgres + `DATA_FOLDER` replication for standby. TrueNAS app today; optional move to LXC for HAProxy integration.
+    - [ ] **Vaultwarden MSP (`vault.cloudigan.com`)** — Infra deployed on CT171/172 (**D-HOMELAB-004/006**). Remaining: public DNS + NPM SSL, Stripe tiers, Cloudigan API `vault` webhook, SMTP/white-label, Postgres/`DATA_FOLDER` replication. See `documentation/CLOUDIGAN-VAULT-PRODUCT.md`.
 
 - [x] **PostgreSQL High Availability Setup** (effort: M) - ✅ COMPLETE (Mar 21) - **UNBLOCKED MSP PLATFORM** - Prometheus-based automatic failover system operational. Components: (1) ✅ PostgreSQL 17 streaming replication (CT131 → CT151), (2) ✅ postgres_exporter on both nodes, (3) ✅ Prometheus alert rules for failover detection, (4) ✅ Alertmanager webhook routing, (5) ✅ Webhook receiver on CT150 triggers Semaphore, (6) ✅ Ansible playbooks for failover and recovery. **Failover time:** ~30 seconds. **Documentation:** `documentation/POSTGRESQL-HA-SETUP.md`. **Status:** Protects 5 production databases + ready for 8 new MSP databases.
 

@@ -1,0 +1,73 @@
+---
+# Install Docker + Vaultwarden on LXC via Proxmox pct exec (node = blue/green dict)
+- name: "Install base packages on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq ca-certificates curl gnupg
+    '"
+  changed_when: true
+
+- name: "Install Docker on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      if ! command -v docker >/dev/null; then
+        curl -fsSL https://get.docker.com | sh
+        systemctl enable --now docker
+      fi
+    '"
+  changed_when: true
+
+- name: "Create Vaultwarden directories on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      mkdir -p /opt/vaultwarden/data
+      chmod 700 /opt/vaultwarden/data
+    '"
+
+- name: "Render docker-compose for {{ node.name }}"
+  ansible.builtin.template:
+    src: ../templates/vaultwarden-docker-compose.yml.j2
+    dest: "/tmp/vaultwarden-compose-{{ node.name }}.yml"
+    mode: "0600"
+  vars:
+    vaultwarden_db_password: "{{ lookup('env', 'VAULTWARDEN_DB_PASSWORD') }}"
+  no_log: true
+
+- name: "Copy compose to CT{{ node.ctid }}"
+  shell: |
+    scp -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf \
+      /tmp/vaultwarden-compose-{{ node.name }}.yml \
+      prox:/tmp/vw-compose-{{ node.ctid }}.yml
+    ssh -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf prox \
+      "pct push {{ node.ctid }} /tmp/vw-compose-{{ node.ctid }}.yml /opt/vaultwarden/docker-compose.yml"
+  no_log: true
+
+- name: "Pull Vaultwarden image on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd /opt/vaultwarden && docker compose pull -q
+    '"
+
+- name: "Start Vaultwarden on CT{{ node.ctid }} (active node only — D-HOMELAB-004)"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd /opt/vaultwarden && docker compose up -d
+    '"
+  when: node.node_role | default('active') == 'active'
+
+- name: "Standby CT{{ node.ctid }} — compose staged, service not started"
+  debug:
+    msg: "{{ node.name }} is standby; Vaultwarden not started (avoid dual writers on shared Postgres)."
+  when: node.node_role | default('active') == 'standby'
+
+- name: "Wait for /alive on CT{{ node.ctid }}"
+  ansible.builtin.uri:
+    url: "http://{{ node.ip }}:{{ vaultwarden_port }}/alive"
+    status_code: 200
+  register: alive_check
+  until: alive_check.status == 200
+  retries: 24
+  delay: 5
+  when: node.node_role | default('active') == 'active'

@@ -1,0 +1,54 @@
+---
+# Resume after CT171/172 exist — Netbox (green), Postgres, Vaultwarden
+- name: Finish Vaultwarden deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/vaultwarden_deploy.yml
+  vars:
+    vaultwarden_blue:
+      name: vaultwarden-blue
+      ctid: 171
+      ip: 10.92.3.94
+    vaultwarden_green:
+      name: vaultwarden-green
+      ctid: 172
+      ip: 10.92.3.95
+    vaultwarden_db_password: "{{ lookup('env', 'VAULTWARDEN_DB_PASSWORD') }}"
+  tasks:
+    - name: Register vaultwarden-green in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ vaultwarden_green.name }}"
+        nb_ctid: "{{ vaultwarden_green.ctid }}"
+        nb_ip: "{{ vaultwarden_green.ip }}"
+        nb_function: security
+        nb_cores: 2
+        nb_memory: 2048
+        nb_disk: 10
+
+    - name: Create Vaultwarden database
+      ansible.builtin.include_tasks: tasks/create-vaultwarden-database.yml
+      when: vaultwarden_skip_db | default(false) | bool == false
+
+    - name: Configure Vaultwarden on each LXC
+      ansible.builtin.include_tasks: tasks/configure-vaultwarden-node.yml
+      loop:
+        - "{{ vaultwarden_blue | combine({'node_role': 'active'}) }}"
+        - "{{ vaultwarden_green | combine({'node_role': 'standby'}) }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }} ({{ node.node_role }})"
+
+    - name: Verify SSH
+      command: ssh -o BatchMode=yes -o ConnectTimeout=8 -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf {{ item.name }} /bin/hostname
+      loop:
+        - "{{ vaultwarden_blue }}"
+        - "{{ vaultwarden_green }}"
+      changed_when: false
+
+    - name: Done
+      debug:
+        msg:
+          - "BLUE:  http://{{ vaultwarden_blue.ip }}:8080/alive"
+          - "GREEN: ssh {{ vaultwarden_green.name }} (standby — Vaultwarden not started)"

@@ -1,0 +1,38 @@
+---
+# Vaultwarden blue/green LXC deployment (homelab-nexus)
+# Override with -e or .env via lookup in playbook.
+
+vaultwarden_function: security
+vaultwarden_memory: 2048
+vaultwarden_cores: 2
+vaultwarden_disk: 10
+vaultwarden_port: 8080
+
+# CTID range security: 170-179 (171-172 assigned 2026-05-16)
+vaultwarden_blue:
+  name: vaultwarden-blue
+  ctid: 171
+  ip: 10.92.3.94
+
+vaultwarden_green:
+  name: vaultwarden-green
+  ctid: 172
+  ip: 10.92.3.95
+
+vaultwarden_domain: vault.cloudigan.com
+vaultwarden_public_url: "https://{{ vaultwarden_domain }}"
+
+# Postgres on CT131 (shared); password via env at runtime
+vaultwarden_db_host: "10.92.3.21"
+vaultwarden_db_name: vaultwarden
+vaultwarden_db_user: vaultwarden
+
+ansible_playbooks_root: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks"
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"

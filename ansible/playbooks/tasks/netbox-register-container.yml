@@ -1,0 +1,151 @@
+---
+# Full Netbox VM + eth0 + IP + primary_ip4 (see scripts/provisioning/netbox-register.sh)
+- name: "Netbox | check VM {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/?name={{ nb_container_name }}"
+    method: GET
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+    validate_certs: false
+    return_content: true
+  register: nb_vm_lookup
+
+- name: "Netbox | create VM {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/"
+    method: POST
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      name: "{{ nb_container_name }}"
+      status: active
+      cluster: 1
+      site: 2
+      vcpus: "{{ nb_cores }}"
+      memory: "{{ nb_memory }}"
+      disk: "{{ nb_disk }}"
+      comments: "{{ nb_netbox_comment | default('Proxmox VMID: ' ~ nb_ctid ~ ' | Function: ' ~ nb_function) }}"
+    status_code: [201]
+    validate_certs: false
+  register: nb_vm_create
+  when: nb_vm_lookup.json.count == 0
+
+- name: "Netbox | resolve VM id {{ nb_container_name }}"
+  set_fact:
+    nb_vm_id: "{{ (nb_vm_create.json.id if (nb_vm_lookup.json.count == 0) else nb_vm_lookup.json.results[0].id) | int }}"
+
+- name: "Netbox | patch VM {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/{{ nb_vm_id }}/"
+    method: PATCH
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      vcpus: "{{ nb_cores }}"
+      memory: "{{ nb_memory }}"
+      disk: "{{ nb_disk }}"
+      comments: "{{ nb_netbox_comment | default('Proxmox VMID: ' ~ nb_ctid ~ ' | Function: ' ~ nb_function) }}"
+    status_code: [200]
+    validate_certs: false
+  when: nb_vm_lookup.json.count > 0
+
+- name: "Netbox | list interfaces for {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/interfaces/?virtual_machine_id={{ nb_vm_id }}"
+    method: GET
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+    validate_certs: false
+  register: nb_iface_lookup
+
+- name: "Netbox | create eth0 on {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/interfaces/"
+    method: POST
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      virtual_machine: "{{ nb_vm_id }}"
+      name: eth0
+      type: virtual
+      enabled: true
+    status_code: [201]
+    validate_certs: false
+  register: nb_iface_create
+  when: nb_iface_lookup.json.count == 0
+
+- name: "Netbox | resolve interface id"
+  set_fact:
+    nb_iface_id: "{{ (nb_iface_create.json.id if (nb_iface_lookup.json.count == 0) else nb_iface_lookup.json.results[0].id) | int }}"
+
+- name: "Netbox | check IP {{ nb_ip }}"
+  uri:
+    url: "{{ netbox_url }}/api/ipam/ip-addresses/?address={{ nb_ip }}/24"
+    method: GET
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+    validate_certs: false
+  register: nb_ip_lookup
+
+- name: "Netbox | assign IP {{ nb_ip }} to {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/ipam/ip-addresses/"
+    method: POST
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      address: "{{ nb_ip }}/24"
+      status: active
+      assigned_object_type: virtualization.vminterface
+      assigned_object_id: "{{ nb_iface_id }}"
+      dns_name: "{{ nb_container_name }}.cloudigan.net"
+      description: "{{ nb_ip_description | default('LXC CT' ~ nb_ctid) }}"
+    status_code: [201]
+    validate_certs: false
+  when: nb_ip_lookup.json.count == 0
+
+- name: "Netbox | bind existing IP {{ nb_ip }}"
+  uri:
+    url: "{{ netbox_url }}/api/ipam/ip-addresses/{{ nb_ip_lookup.json.results[0].id }}/"
+    method: PATCH
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      assigned_object_type: virtualization.vminterface
+      assigned_object_id: "{{ nb_iface_id }}"
+      dns_name: "{{ nb_container_name }}.cloudigan.net"
+    status_code: [200]
+    validate_certs: false
+  when: nb_ip_lookup.json.count > 0
+
+- name: "Netbox | refresh IP record id"
+  uri:
+    url: "{{ netbox_url }}/api/ipam/ip-addresses/?address={{ nb_ip }}/24"
+    method: GET
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+    validate_certs: false
+  register: nb_ip_final
+
+- name: "Netbox | set primary IP on {{ nb_container_name }}"
+  uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/{{ nb_vm_id }}/"
+    method: PATCH
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      primary_ip4: "{{ nb_ip_final.json.results[0].id }}"
+    status_code: [200]
+    validate_certs: false

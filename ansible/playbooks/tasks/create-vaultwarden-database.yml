@@ -1,0 +1,37 @@
+---
+# Create vaultwarden DB/user on CT131 (idempotent)
+- name: Require database password
+  assert:
+    that:
+      - vaultwarden_db_password is defined
+      - vaultwarden_db_password | length > 0
+    fail_msg: "Set VAULTWARDEN_DB_PASSWORD in .env before running"
+
+- name: Create Vaultwarden PostgreSQL role and database
+  shell: |
+    ssh -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf postgresql \
+      "sudo -u postgres psql -v ON_ERROR_STOP=1" <<'EOSQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ vaultwarden_db_user }}') THEN
+        CREATE ROLE {{ vaultwarden_db_user }} WITH LOGIN PASSWORD '{{ vaultwarden_db_password }}';
+      END IF;
+    END
+    $$;
+    SELECT 'CREATE DATABASE {{ vaultwarden_db_name }} OWNER {{ vaultwarden_db_user }}'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ vaultwarden_db_name }}')\gexec
+    GRANT ALL PRIVILEGES ON DATABASE {{ vaultwarden_db_name }} TO {{ vaultwarden_db_user }};
+    EOSQL
+  args:
+    executable: /bin/bash
+  no_log: true
+  register: db_create
+  changed_when: "'CREATE DATABASE' in db_create.stdout or 'CREATE ROLE' in db_create.stdout"
+
+- name: Grant schema on vaultwarden database
+  shell: |
+    ssh -F {{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf postgresql "sudo -u postgres psql -v ON_ERROR_STOP=1 -d {{ vaultwarden_db_name }}" <<'EOSQL'
+    GRANT ALL ON SCHEMA public TO {{ vaultwarden_db_user }};
+    ALTER DATABASE {{ vaultwarden_db_name }} OWNER TO {{ vaultwarden_db_user }};
+    EOSQL
+  changed_when: false
