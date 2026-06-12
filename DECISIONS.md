@@ -108,6 +108,30 @@
 **Decision:** **New customer instance** on CT171/172 (not a cutover from TrueNAS). **Stripe checkout → Cloudigan API** webhook (extend D-038 `product_type` routing with `vault`); n8n only for optional non-critical side workflows. Proposed SMB pricing tiers documented in `documentation/CLOUDIGAN-VAULT-PRODUCT.md` (not yet in Stripe).  
 **Consequences:** HAProxy MSP pool uses BLUE primary / GREEN backup only (TrueNAS excluded). Billing enforcement via invites/org seats + API automation, not Vaultwarden-native subscriptions.
 
+## D-HOMELAB-007: NPM multi-domain certs — split when domains decommission
+**Date:** 2026-05-28  
+**Context:** Bitwarden clients failed with "failed to fetch" on `vaultwarden.cloudigan.net`. TrueNAS Vaultwarden was healthy; NPM proxy host 47 used expired Let's Encrypt cert #30 (expired 2026-05-24). Renewal failed because cert #30 bundled decommissioned `tautulli.cloudigan.net` (NXDOMAIN). Homelab personal vaults were never migrated to CT171/172 MSP stack (D-HOMELAB-006).  
+**Decision:** Issue **dedicated per-domain (or small-group) NPM certs** for active hostnames. Do not rely on large multi-domain bundles that include retired services. Homelab personal Vaultwarden stays on TrueNAS @ `https://vaultwarden.cloudigan.net`; MSP product stays @ `https://vault.cloudigan.com`.  
+**Consequences:** `vaultwarden.cloudigan.net` now uses NPM cert #103 (valid through 2026-08-26). Remaining domains on expired cert #30 need individual re-issue. Remove decommissioned hostnames from any cert before renewal attempts.
+
+## D-HOMELAB-009: DNS redundancy — Technitium authority, dual AdGuard, no password in .env
+**Date:** 2026-06-08  
+**Context:** Migrate internal DNS from dc-01 to Technitium (Proxmox primary + TrueNAS secondary) with dual AdGuard filtering; DHCP cutover without dc-01 as client resolver.  
+**Decision:** Clients use **AdGuard** (`10.92.3.11` / `10.92.3.204`) → **Technitium** (`10.92.3.10` / `10.92.3.203`) for resolution. Technitium holds `cloudigan.net` + product zones; **`cloudigan.com` stays on dc-01** (AD) until identity migration. Technitium admin password lives in **`auth.config` (UI only)** — not `TECHNITIUM_PASSWORD` in `.env` or Docker env after initial bootstrap. Optional `TECHNITIUM_API_TOKEN` for automation scripts.  
+**Consequences:** DHCP DNS #1/#2 are AdGuard IPs only. Must add **conditional forward `cloudigan.com` → dc-01** while AD domain-joined machines exist. Per-zone Technitium permissions required for UI visibility (group membership alone insufficient). Do not decommission dc-01 for 2+ weeks. Runbook: `documentation/DNS-REDUNDANCY-MIGRATION.md`, `scripts/dns/STEPS-2-4.md`.
+
+## D-HOMELAB-010: Reolink CX810 in Scrypted — Native plugin, uid per IP, NVR on TrueNAS NFS
+**Date:** 2026-06-12  
+**Context:** Three Reolink CX810 on management LAN (`10.92.0.x`); Scrypted CT180 on `10.92.3.15`; only Baichuan port 9000 open until Reolink app enables HTTP/RTSP/ONVIF.  
+**Decision:** Use **`@apocaliss92/scrypted-reolink-native`** (not `@scrypted/reolink` alone). When adding multiple same-model cameras, pass **`uid` = camera IP** in `createDevice` so nativeIds do not collide. NVR recordings on existing TrueNAS NFS mount **`/mnt/recordings`** (`10.92.0.3:/mnt/media-pool/recordings`). Enable NVR via mixin **31** on each camera.  
+**Consequences:** CX810 default RTMP port may be **1935** (not 9000). Disable HTTPS on camera for Scrypt compatibility. Prefer alphanumeric camera admin password for RTSP. Continuous NVR ~85 GB/camera/day at 2K — set retention explicitly when pool usage matters.
+
+## D-HOMELAB-008: HHV production site — Next.js on standard blue-green pattern
+**Date:** 2026-06-05  
+**Context:** New customer-facing site at `helpfulhirschventures.com` on dedicated blue-green pair (CT198/199).  
+**Decision:** Deploy as **Next.js 14 + TypeScript** on port **3001**, PM2 `hhv-blue` / `hhv-green`, MCP app id `hhv`, HAProxy ACL `is_hhv`, optional Postgres DB `hhv` on CT131 when forms/CRM needed. External DNS + NPM are operator-managed (not Ansible). Placeholder Node app until `heybearc/hhv-website` repo exists.  
+**Consequences:** Follows Chapter Hub / FactorPoint deploy model. `connection_limit=5` on Prisma when DB added.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation
