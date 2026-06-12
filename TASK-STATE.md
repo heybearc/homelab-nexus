@@ -1,81 +1,78 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-06-12 (mid-day)
+**Last updated:** 2026-06-12 (end-day)
 
 ---
 
 ## Current Task
-**DNS post-cutover + Scrypted Reolink NVR** — DNS AD forward still pending; Reolink recording live
+**DNS post-cutover** — AD conditional forward still blocking clean domain logons; Scrypted Reolink NVR **done**
 
 ### What I'm doing right now
-Reolink CX810 ×3 in Scrypted (Driveway/Garage/Front Porch) with NVR recording to TrueNAS. DNS stack live; still need **`cloudigan.com` → dc-01** conditional forward for AD clients.
+Reolink CX810 ×3 recording to TrueNAS via Scrypted NVR (3/3 licenses). **Tomorrow:** Technitium conditional forward `cloudigan.com` → `10.92.0.10` (dc-01) so AD SRV records resolve through new DNS stack.
 
 ### Recent completions
-- ✅ **Reolink CX810 → Scrypted** — `@apocaliss92/scrypted-reolink-native`, cams 60–62, snapshots OK
-- ✅ **Scrypted NVR** — mixin enabled 3/3; recordings on `/mnt/recordings` (TrueNAS NFS)
-- ✅ **Stale Nest recordings removed** — old `scrypted-27`–`30` dirs cleared
-- ✅ **PM2 audit fixes** — cloudigan-api, cloudigan-mail, factorpoint; `pm2 save` + startup on app CTs
-- ✅ **Decommissioned** — ldc-tools + quantshift CTs stopped; factorpoint `registry-gateway` + `OHIO_SOS_*` env removed
-- ✅ **DNS redundancy stack** — Technitium + dual AdGuard, zones, DHCP phase 6 cutover (2026-06-08)
+- ✅ **Reolink CX810 → Scrypted + NVR** — Native plugin, cams 60–62, ~227 GB recording on NFS (2026-06-12)
+- ✅ **Stale Nest recordings cleared** — `scrypted-27`–`30` removed from TrueNAS
+- ✅ **PM2 audit + decommission** — ldc-tools/quantshift stopped; factorpoint legacy env cleaned
+- ✅ **DNS redundancy + DHCP phase 6** — Technitium + dual AdGuard cutover (2026-06-08)
+- ✅ **Mid-day context** — D-HOMELAB-010, TASK-STATE/NOTES/DECISIONS pushed (`4746d81`)
 
 ### Next steps
-1. **Technitium conditional forward:** `cloudigan.com` → `10.92.0.10` (dc-01)
-2. **Scrypted tuning (optional):** Reolink motion zones; explicit NVR retention days; verify Garage timeline
+1. **Technitium conditional forward:** `cloudigan.com` → `10.92.0.10` — verify `dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short`
+2. **Scrypted (optional):** Reolink motion zones; NVR retention days (~30–60); verify Garage camera aim/timeline
 3. **Set Technitium production passwords** on dns + dns-2
 4. **Client server identity** — AD users → local or Entra
-5. **DNS phase 7** — provisioning scripts → Technitium API
-6. **Git** — commit DNS ansible/docs chunk; HHV/mail still paused
+5. **Git** — commit DNS ansible/docs chunk (large diff still uncommitted)
+6. **Backlog:** Linux dev VM spec — Cursor Remote SSH from Mac, RDP from iPad, single repo on VM (discussed, not built)
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
 - **Cloudigan Mail Gateway** — NPM + GitHub push
-- **Cloudigan Vault MSP** — Stripe/public launch
+- **Cloudigan Vault MSP**
 - **TIP Generator Phase 1**
 
 ---
 
 ## Known Issues
 
-- **`cloudigan.com` AD DNS not on new stack** — AdGuard/Technitium return public Wix DNS; `_ldap._tcp.cloudigan.com` SRV empty → domain logons may fail until conditional forward added
-- **Technitium auth reset** — both servers at `admin`/`admin` + `corya`/`TempCory-DNS-2026`; user must set production passwords and skip 2FA until stable
-- **dc-01 must stay up** — AD zone `cloudigan.com`, domain-joined machines; do not decommission for 2+ weeks
-- **NPM cert #30 expired** — tautulli NXDOMAIN blocks renewal (D-HOMELAB-007)
+- **`cloudigan.com` AD DNS not on new stack** — `_ldap._tcp.cloudigan.com` SRV empty via AdGuard until conditional forward added
+- **Technitium auth** — `admin`/`admin` after permission fix; set production passwords
+- **Scrypted NVR growth** — continuous 2K ~85 GB/camera/day; set explicit retention when ready
+- **Reolink admin password** — `@` may break RTSP; alphanumeric recommended
+- **Garage timeline** — main recording folder small vs remote; snapshots OK — verify placement
+- **NPM cert #30 expired** — tautulli NXDOMAIN (D-HOMELAB-007)
 - **cloudigan-mail GitHub** — not pushed
-- **Authentik Embedded Outpost** — cosmetic unhealthy
+- **dc-01** — keep up 2+ weeks during identity migration
 
 ---
 
-## Uncommitted work (end-day)
+## Uncommitted work
 
-- **Ready to commit (focused chunks):** `ansible/` DNS stack, `scripts/dns/*`, `documentation/DNS-REDUNDANCY-MIGRATION.md`, `STEPS-2-4.md`, `.env.example`
+- **Large diff:** ansible DNS stack, HHV/mail/monitoring scripts — commit DNS slice after forwarder verify
 - **Intentionally uncommitted:** `files/Logos/`, `.cursor/`, `.windsurf/`
-- **Not committed tonight** — large mixed diff spanning DNS + HHV + mail + monitoring; commit DNS slice first after forwarder verify
+- **`.cloudy-work/PLAN.md`** — backlog updated locally (submodule); pointer may need separate commit
 
 ---
 
 ## Exact Next Command
 
 ```bash
-# Verify client DNS after DHCP cutover (from any LAN machine)
-nslookup n8n.cloudigan.net
-nslookup theoshift.com
-
-# Confirm AD gap (should be empty until forward added)
 dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short
-
-# After adding cloudigan.com forward on Technitium — should return dc-01 SRV
+# empty → add Technitium forward cloudigan.com → 10.92.0.10, re-test
 ```
 
-**Next action:** Technitium → conditional forward `cloudigan.com` → `10.92.0.10`; optional Scrypted NVR retention + Reolink motion zones.
+**Tomorrow first action:** Technitium UI → conditional forward `cloudigan.com` → `10.92.0.10`.
 
 ---
 
 ## Infrastructure quick reference
 
-| Service | Primary | Standby | UI hostname |
-|---------|---------|---------|-------------|
-| AdGuard (DHCP DNS) | `10.92.3.11` | `10.92.3.204` | dnsfilter / dnsfilter-2 |
-| Technitium | `10.92.3.10` | `10.92.3.203` | dns / dns-2 |
-| AD DNS (legacy) | `10.92.0.10` dc-01 | — | `cloudigan.com` zone |
+| Service | Primary | Standby |
+|---------|---------|---------|
+| AdGuard (DHCP DNS) | `10.92.3.11` | `10.92.3.204` |
+| Technitium | `10.92.3.10` | `10.92.3.203` |
+| Scrypted NVR | CT180 `10.92.3.15` | recordings → TrueNAS NFS |
+| Reolink CX810 | `.184` Driveway, `.189` Garage, `.190` Front Porch | Scrypted ids 60–62 |
+| AD DNS (legacy) | dc-01 `10.92.0.10` | `cloudigan.com` zone |
 
 **DHCP DNS:** `#1 10.92.3.11`, `#2 10.92.3.204`
