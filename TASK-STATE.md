@@ -1,29 +1,28 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-06-12 (end-day)
+**Last updated:** 2026-07-03 (end-day)
 
 ---
 
 ## Current Task
-**DNS post-cutover** — AD conditional forward still blocking clean domain logons; Scrypted Reolink NVR **done**
+**DNS post-cutover** — AD conditional forward still blocking domain-joined Windows; Kimai SSO **fixed on server** (verify Abisai/Alexa login)
 
 ### What I'm doing right now
-Reolink CX810 ×3 recording to TrueNAS via Scrypted NVR (3/3 licenses). **Tomorrow:** Technitium conditional forward `cloudigan.com` → `10.92.0.10` (dc-01) so AD SRV records resolve through new DNS stack.
+Technitium conditional forward `cloudigan.com` → `10.92.0.10` still pending. Kimai Entra SAML repaired on CT111 (authn context, email `$` mapping, cache perms). Personal Ops Center / unified calendar **designed** — build backlog, not started.
 
 ### Recent completions
-- ✅ **Reolink CX810 → Scrypted + NVR** — Native plugin, cams 60–62, ~227 GB recording on NFS (2026-06-12)
-- ✅ **Stale Nest recordings cleared** — `scrypted-27`–`30` removed from TrueNAS
-- ✅ **PM2 audit + decommission** — ldc-tools/quantshift stopped; factorpoint legacy env cleaned
+- ✅ **Kimai Entra SSO** — `requestedAuthnContext: false`, email SAML `$` prefix, cache 500 fixed; Alexa activated; repo scripts updated (2026-06-24 / 2026-07-03)
+- ✅ **Personal Ops Center research** — read-only MVP spec (Next.js/Prisma/Graph/Google/ICS); Thrive/Bethel/JWPub ICS fallbacks (2026-07-03)
+- ✅ **Reolink CX810 → Scrypted + NVR** — Native plugin, cams 60–62, TrueNAS NFS (2026-06-12)
 - ✅ **DNS redundancy + DHCP phase 6** — Technitium + dual AdGuard cutover (2026-06-08)
-- ✅ **Mid-day context** — D-HOMELAB-010, TASK-STATE/NOTES/DECISIONS pushed (`4746d81`)
+- ✅ **PM2 audit + decommission** — ldc-tools/quantshift stopped; factorpoint legacy env cleaned (2026-06-12)
 
 ### Next steps
-1. **Technitium conditional forward:** `cloudigan.com` → `10.92.0.10` — verify `dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short`
-2. **Scrypted (optional):** Reolink motion zones; NVR retention days (~30–60); verify Garage camera aim/timeline
+1. **Technitium conditional forward:** `cloudigan.com` → `10.92.0.10` — `dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short`
+2. **Kimai:** have Abisai + Alexa retry Microsoft login at https://time.cloudigan.net
 3. **Set Technitium production passwords** on dns + dns-2
-4. **Client server identity** — AD users → local or Entra
-5. **Git** — commit DNS ansible/docs chunk (large diff still uncommitted)
-6. **Backlog:** Linux dev VM spec — Cursor Remote SSH from Mac, RDP from iPad, single repo on VM (discussed, not built)
+4. **Git** — commit DNS ansible/docs chunk (large diff still uncommitted)
+5. **POC calendar (backlog):** scaffold read-only MVP when ready — Graph + Google + ICS first
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -36,21 +35,22 @@ Reolink CX810 ×3 recording to TrueNAS via Scrypted NVR (3/3 licenses). **Tomorr
 ## Known Issues
 
 - **`cloudigan.com` AD DNS not on new stack** — `_ldap._tcp.cloudigan.com` SRV empty via AdGuard until conditional forward added
-- **Technitium auth** — `admin`/`admin` after permission fix; set production passwords
-- **Scrypted NVR growth** — continuous 2K ~85 GB/camera/day; set explicit retention when ready
-- **Reolink admin password** — `@` may break RTSP; alphanumeric recommended
-- **Garage timeline** — main recording folder small vs remote; snapshots OK — verify placement
+- **Technitium auth** — `admin`/`admin`; set production passwords
+- **Kimai Abisai** — user not created until email mapping fix; re-test SSO
+- **Scrypted NVR growth** — ~85 GB/camera/day continuous 2K; set retention when ready
 - **NPM cert #30 expired** — tautulli NXDOMAIN (D-HOMELAB-007)
 - **cloudigan-mail GitHub** — not pushed
 - **dc-01** — keep up 2+ weeks during identity migration
+- **TASK-STATE was stale ~3 weeks** — refreshed 2026-07-03
 
 ---
 
 ## Uncommitted work
 
-- **Large diff:** ansible DNS stack, HHV/mail/monitoring scripts — commit DNS slice after forwarder verify
+- **Large diff:** ansible DNS stack, HHV/mail/monitoring — commit DNS slice after forwarder verify
+- **Kimai scripts:** `configure-kimai-entra-saml.sh` etc. — committing with end-day context
 - **Intentionally uncommitted:** `files/Logos/`, `.cursor/`, `.windsurf/`
-- **`.cloudy-work/PLAN.md`** — backlog updated locally (submodule); pointer may need separate commit
+- **`.cloudy-work/PLAN.md`** — updated locally (submodule)
 
 ---
 
@@ -58,10 +58,10 @@ Reolink CX810 ×3 recording to TrueNAS via Scrypted NVR (3/3 licenses). **Tomorr
 
 ```bash
 dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short
-# empty → add Technitium forward cloudigan.com → 10.92.0.10, re-test
+# empty → Technitium UI: conditional forward cloudigan.com → 10.92.0.10
 ```
 
-**Tomorrow first action:** Technitium UI → conditional forward `cloudigan.com` → `10.92.0.10`.
+**Tomorrow first action:** DNS forward verify, or Kimai SSO re-test for Abisai/Alexa.
 
 ---
 
@@ -71,8 +71,8 @@ dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short
 |---------|---------|---------|
 | AdGuard (DHCP DNS) | `10.92.3.11` | `10.92.3.204` |
 | Technitium | `10.92.3.10` | `10.92.3.203` |
+| Kimai | CT111 `10.92.3.76` | https://time.cloudigan.net |
 | Scrypted NVR | CT180 `10.92.3.15` | recordings → TrueNAS NFS |
-| Reolink CX810 | `.184` Driveway, `.189` Garage, `.190` Front Porch | Scrypted ids 60–62 |
 | AD DNS (legacy) | dc-01 `10.92.0.10` | `cloudigan.com` zone |
 
 **DHCP DNS:** `#1 10.92.3.11`, `#2 10.92.3.204`

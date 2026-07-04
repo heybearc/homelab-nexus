@@ -61,7 +61,7 @@ kimai:
                 wantMessagesSigned: false
                 wantAssertionsSigned: false
                 wantNameIdEncrypted: false
-                requestedAuthnContext: true
+                requestedAuthnContext: false
                 signMetadata: false
                 wantXMLValidation: true
                 signatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"

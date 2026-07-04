@@ -85,3 +85,27 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - Scrypted: https://scrypted.cloudigan.net
 - Verify recordings: `ssh scrypted 'df -h /mnt/recordings; du -sh /mnt/recordings/scrypted-6*'`
+
+## 2026-07-03
+
+_Rolled from session (NOTES-TODAY was empty at roll)_
+
+### Focus
+- Kimai Entra SSO repair + user onboarding (Abisai, Alexa)
+- Personal Ops Center / unified life calendar research
+
+### Discoveries / Notes
+- Kimai AADSTS75011: `requestedAuthnContext: true` blocks MFA/FIDO → set `false`
+- Kimai SAML email mapping must use `$` prefix on claim URI or email validation fails
+- Kimai 500: Symfony cache owned by root after `rm -rf var/cache` — rebuild as `www-data`
+- Alexa exists (id 5, disabled→activated); Abisai not created until mapping fix
+- POC calendar: self-hosted read-only MVP; ICS fallback for Thrive/Bethel/congregation without API
+
+### Blockers / Risks
+- DNS AD forward still pending
+- Abisai/Alexa SSO re-test needed
+- Large homelab-nexus git diff still uncommitted (DNS/HHV/mail)
+
+### Links / Commands
+- Kimai: https://time.cloudigan.net
+- DNS: `dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short`
