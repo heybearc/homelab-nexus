@@ -132,6 +132,12 @@
 **Decision:** Deploy as **Next.js 14 + TypeScript** on port **3001**, PM2 `hhv-blue` / `hhv-green`, MCP app id `hhv`, HAProxy ACL `is_hhv`, optional Postgres DB `hhv` on CT131 when forms/CRM needed. External DNS + NPM are operator-managed (not Ansible). Placeholder Node app until `heybearc/hhv-website` repo exists.  
 **Consequences:** Follows Chapter Hub / FactorPoint deploy model. `connection_limit=5` on Prisma when DB added.
 
+## D-HOMELAB-011: TD Synnex PO numbers — Redis atomic counter + Cursor slash command
+**Date:** 2026-07-08  
+**Context:** Need sequential PO numbers for TD Synnex orders (`Cloud-PO-0019` was last used); no procurement/ERP in lab.  
+**Decision:** Store counter in **Redis** on `redis-shared` (CT192) key `synnex:po:counter` with **`INCR`** for atomic allocation. Format **`Cloud-PO-####`** (4-digit pad). Script: `scripts/procurement/next-synnex-po.sh` (SSH fallback when local `redis-cli` missing). Cursor commands: `/next-po` (allocate), `/next-po-peek` (preview).  
+**Consequences:** Next PO after seed 19 is **Cloud-PO-0020** (issued 2026-07-08). Re-seed with `--set N` where N is last issued sequence. No audit log yet — add later if needed (Postgres row or append-only file).
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

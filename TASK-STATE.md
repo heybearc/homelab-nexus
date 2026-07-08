@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-07-03 (end-day)
+**Last updated:** 2026-07-08 (end-day)
 
 ---
 
@@ -11,6 +11,7 @@
 Technitium conditional forward `cloudigan.com` → `10.92.0.10` still pending. Kimai Entra SAML repaired on CT111 (authn context, email `$` mapping, cache perms). Personal Ops Center / unified calendar **designed** — build backlog, not started.
 
 ### Recent completions
+- ✅ **TD Synnex PO counter** — Redis `INCR` on `redis-shared` (`synnex:po:counter`); `scripts/procurement/next-synnex-po.sh`; Cursor `/next-po` + `/next-po-peek`; seeded at 19; **Cloud-PO-0020** issued (2026-07-08)
 - ✅ **Kimai Entra SSO** — `requestedAuthnContext: false`, email SAML `$` prefix, cache 500 fixed; Alexa activated; repo scripts updated (2026-06-24 / 2026-07-03)
 - ✅ **Personal Ops Center research** — read-only MVP spec (Next.js/Prisma/Graph/Google/ICS); Thrive/Bethel/JWPub ICS fallbacks (2026-07-03)
 - ✅ **Reolink CX810 → Scrypted + NVR** — Native plugin, cams 60–62, TrueNAS NFS (2026-06-12)
@@ -48,8 +49,8 @@ Technitium conditional forward `cloudigan.com` → `10.92.0.10` still pending. K
 ## Uncommitted work
 
 - **Large diff:** ansible DNS stack, HHV/mail/monitoring — commit DNS slice after forwarder verify
-- **Kimai scripts:** `configure-kimai-entra-saml.sh` etc. — committing with end-day context
-- **Intentionally uncommitted:** `files/Logos/`, `.cursor/`, `.windsurf/`
+- **PO counter + end-day docs** — committing tonight (`scripts/procurement/`, `.cursor/commands/next-po*.md`, TASK-STATE, DECISIONS)
+- **Intentionally uncommitted:** `files/Logos/`, `.windsurf/`, rest of `.cursor/` (skills/rules)
 - **`.cloudy-work/PLAN.md`** — updated locally (submodule)
 
 ---
