@@ -138,6 +138,12 @@
 **Decision:** Store counter in **Redis** on `redis-shared` (CT192) key `synnex:po:counter` with **`INCR`** for atomic allocation. Format **`Cloud-PO-####`** (4-digit pad). Script: `scripts/procurement/next-synnex-po.sh` (SSH fallback when local `redis-cli` missing). Cursor commands: `/next-po` (allocate), `/next-po-peek` (preview).  
 **Consequences:** Next PO after seed 19 is **Cloud-PO-0020** (issued 2026-07-08). Re-seed with `--set N` where N is last issued sequence. No audit log yet — add later if needed (Postgres row or append-only file).
 
+## D-HOMELAB-012: 3-node cluster — hybrid NFS + local; SX3016F + X520-DA2
+**Date:** 2026-07-24  
+**Context:** Expand to prox1/prox2/prox3 with HA, rolling upgrades, and workload balance without breaking production on current prox. SG3428XMP has only 4× SFP+ (TrueNAS LACP + prox1 dual). NFS via mgmt gateway ~104 MB/s.  
+**Decision:** **Hybrid storage** — TrueNAS NFS (`truenas-proxmox`, 4T `media-pool/vms/proxmox`) for migratable/HA guests only; keep DBs/Scrypted/Plex on **local** disks (pin GPU/TPU workloads to prox1). Buy **Omada SX3016F** for storage-only SFP+/DAC fabric and **2× Intel X520-DA2** (82599) for prox2/prox3. Prefer TrueNAS+Proxmox on the storage switch (not hairpin via Omada uplink). Do **not** use Ceph on PERC RAID. Rename `prox`→`prox1` before `pvecm create`. Cluster join may proceed on 1G before 10G hardware arrives.  
+**Consequences:** HA only for NFS-backed guests. Evacuate `truenas-proxmox` before TrueNAS disk rebuild. Plan: `.cursor/plans/3-node_cluster_architecture_*.plan.md`.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

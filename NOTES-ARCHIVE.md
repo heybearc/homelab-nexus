@@ -109,3 +109,36 @@ _Rolled from session (NOTES-TODAY was empty at roll)_
 ### Links / Commands
 - Kimai: https://time.cloudigan.net
 - DNS: `dig @10.92.3.11 _ldap._tcp.cloudigan.com SRV +short`
+
+## 2026-07-28
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-07-28
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- End-day closeout after Proxmox 3-node / TrueNAS / Scrypted / 10G fabric planning session
+
+### Discoveries / Notes
+- Scrypted NVR is continuous-only (no motion-only mode); Retention Period = 14 days set; prune of older footage started on CT180
+- Interim datastore: TrueNAS `media-pool/vms/proxmox` (4T) → PVE `truenas-proxmox` via `10.92.3.200`
+- `truenas-backups` fixed on `10.92.3.200` (was inactive on `.5.200`)
+- NFS ~104 MB/s via gateway today — need vlan922 host IPs + SX3016F for real 10G path
+- SG3428XMP: 4× SFP+ full (TN LACP 25–26, prox1 dual 27–28). Buy **SX3016F** + **2× X520-DA2** (LinksTek 82599ES clone OK). Keep DAC/SFP+
+- Hybrid cluster: NFS for HA/migrate guests only; pin Plex/Scrypted to prox1; no Ceph on PERC; rename prox→prox1 before pvecm
+
+### Decisions to Promote
+- D-HOMELAB-012: hybrid NFS + local; SX3016F + X520-DA2 (promoted to DECISIONS.md)
+
+### Blockers / Risks
+- Waiting on SX3016F + NICs for equal 10G peers (cluster join can still start on 1G)
+- TrueNAS remains SPOF for NFS-backed guests until rebuild/evacuate
+
+### Links / Commands
+- Plan: `.cursor/plans/3-node_cluster_architecture_*.plan.md`
+- `pvesm status` → `truenas-proxmox`, `truenas-backups`
