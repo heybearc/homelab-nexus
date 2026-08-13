@@ -142,3 +142,35 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - Plan: `.cursor/plans/3-node_cluster_architecture_*.plan.md`
 - `pvesm status` → `truenas-proxmox`, `truenas-backups`
+
+## 2026-08-13
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-07-28
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- ✅ App audit + reusable `deploy-bluegreen-app.yml` → Quote Builder provisioned
+
+### Discoveries / Notes
+- Handoff gate: provision 10.92.3.0/24 → MCP APPS → drop `.no-auto-deploy`
+- Keep/retire (no destroy): LDC, QuantShift, chapter-hub-dev; keep TheoShift/FactorPoint/Chapter Hub/API
+- Cursor MCP runs `Cloudy-Work/shared/mcp-servers/homelab-blue-green-mcp/server.js` — sync both copies
+- Quote Builder: CT200/201, LIVE=blue, STANDBY=green; `deploy_to_standby` smoke OK
+- Operator still: NPM `quotes.cloudigan.net` → `10.92.3.33:80`
+
+### Decisions to Promote
+- Reusable BG Ansible + Technitium DNS as standard for new Node/Next.js apps
+
+### Blockers / Risks
+- Technitium still default admin (use API token)
+- Containers lack GitHub deploy key for HTTPS/SSH pull — stage with `.git` or add deploy key
+
+### Links / Commands
+- `cd ansible && ansible-playbook playbooks/deploy-bluegreen-app.yml -e @group_vars/cloudigan_quote_builder_deploy.yml`
+- Doc: `documentation/BLUEGREEN-APP-ANSIBLE.md`
