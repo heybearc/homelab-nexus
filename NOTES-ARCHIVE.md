@@ -174,3 +174,38 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - `cd ansible && ansible-playbook playbooks/deploy-bluegreen-app.yml -e @group_vars/cloudigan_quote_builder_deploy.yml`
 - Doc: `documentation/BLUEGREEN-APP-ANSIBLE.md`
+
+## 2026-09-13
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-09-13
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Close out Omada CT142 recovery + client-ops notes from 2026-09-08 through 2026-09-10
+
+### Discoveries / Notes
+- Omada CT142 wedged 2026-09-08: Java in disk wait, RAM 1.9/2 GB, UI ports 8043/8088 down, `omada.cloudigan.net` 502. Wi-Fi APs kept serving (this Mac 802.11ax ch40, -45 dBm, 0% loss).
+- Recovered CT142: reboot + RAM 2 GB → 8 GB. `tpeap` active; 8043/8088/8843 listening; UI 200 via direct and NPM. Mongo failed once on first start (OOM) then recovered. Disk 30% used.
+- geo-sapnfs-p001 (2026-09-09): hung Ninja remote PTY (~3h on `systemctl status | less`); killed PTY, restarted ninjarmm-agent-9.0.4181-1. Removed leftover Kaseya after failed uninstall/reinstall. Installed `lsof` to stop Ninja MONWRK errors.
+- SSH recovery (2026-09-10) from ak1-ansible: root key on GEO-PGSQL-P001, GEO-UB-P001, AK1-UB-P002, GEO-SAP-DB-T001. Still no SSH: ak1-ifw03-p001 (no route), GEO-ETL-D001 (no route), ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 (vault pw fail; need console or owner passwords).
+- GEO-SAP-DB-T001 root FS was 100% full: deleted 519 old SBX archived redo logs (mtime +7d), unused kernel; 22% / 79G free. Archive dest still `/oracle/SBX/oraarch` on root (saparch LV 147G unused).
+- joel-win11 VM105 @ 10.92.4.3: DNS/Netbox/vzdump done 2026-09-02; OS install still needs Proxmox console + VirtIO SCSI, then static IP.
+
+### Decisions to Promote
+- D-HOMELAB-015: Omada CT142 stays at 8 GB RAM (2 GB wedges controller; 4 GB still ~full after start)
+
+### Blockers / Risks
+- Five client VMs still unreachable over SSH
+- joel-win11 OS install unfinished
+- Omada DHCP cutover to Technitium still pending (D-HOMELAB-013)
+
+### Links / Commands
+- Omada UI: https://omada.cloudigan.net (CT142 10.92.0.34:8043)
+- `ssh prox 'pct status 142; pct config 142 | grep memory'`
+---

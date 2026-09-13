@@ -142,7 +142,30 @@
 **Date:** 2026-07-24  
 **Context:** Expand to prox1/prox2/prox3 with HA, rolling upgrades, and workload balance without breaking production on current prox. SG3428XMP has only 4× SFP+ (TrueNAS LACP + prox1 dual). NFS via mgmt gateway ~104 MB/s.  
 **Decision:** **Hybrid storage** — TrueNAS NFS (`truenas-proxmox`, 4T `media-pool/vms/proxmox`) for migratable/HA guests only; keep DBs/Scrypted/Plex on **local** disks (pin GPU/TPU workloads to prox1). Buy **Omada SX3016F** for storage-only SFP+/DAC fabric and **2× Intel X520-DA2** (82599) for prox2/prox3. Prefer TrueNAS+Proxmox on the storage switch (not hairpin via Omada uplink). Do **not** use Ceph on PERC RAID. Rename `prox`→`prox1` before `pvecm create`. Cluster join may proceed on 1G before 10G hardware arrives.  
-**Consequences:** HA only for NFS-backed guests. Evacuate `truenas-proxmox` before TrueNAS disk rebuild. Plan: `.cursor/plans/3-node_cluster_architecture_*.plan.md`.
+**Consequences:** HA only for NFS-backed guests. Evacuate `truenas-proxmox` before TrueNAS disk rebuild. Plan: `.cursor/plans/3-node_cluster_architecture_*.plan.md`. **Guest placement for new deploys superseded by D-HOMELAB-014** (all new LXCs/VMs on `truenas-proxmox`).
+
+## D-HOMELAB-013: Technitium is client DNS SoT — AdGuard optional filter
+**Date:** 2026-08-20  
+**Context:** Restarting AdGuard took out client internet/DNS because DHCP pointed only at AdGuard. Dual authority (dc-01 + Technitium) caused zone drift (`quotes` vs `jellyfin`).  
+**Decision:**  
+- **DHCP DNS #1/#2** = Technitium `10.92.3.10` / `10.92.3.203` (authoritative + recursive).  
+- **AdGuard** (`10.92.3.11` / `.204`) is **optional** filtering only — not on the critical path.  
+- Technitium owns `cloudigan.net` + product zones; lab automation writes Technitium API only (`dns-add-record.sh`).  
+- Conditional forwarders on Technitium: `cloudigan.com` + `_msdcs.cloudigan.com` → `10.92.0.10` while AD remains.  
+- Public recursion via Technitium forwarders `1.1.1.1` / `9.9.9.9`.  
+**Consequences:** Omada DHCP must be cut over (see `documentation/DNS-TECHNITIUM-AUTHORITATIVE.md`). AdGuard outages no longer break resolution. dc-01 stays until Entra migration. Supersedes client-path portion of D-HOMELAB-009 (AdGuard-as-DHCP-DNS).
+
+## D-HOMELAB-014: All new Proxmox guests on TrueNAS NFS
+**Date:** 2026-09-02  
+**Context:** New LXCs/VMs were still being created on local `hdd-pool` / `local-lvm` while Windows 11 and ops-stack already used `truenas-proxmox`.  
+**Decision:** **Every new deploy** (Ansible, `provision-container.sh`, Semaphore templates) places guest disks on **`truenas-proxmox`**. Do not use `hdd-pool` or `local-lvm` for new containers or VMs.  
+**Consequences:** Shared playbooks `deploy-proxmox-container.yml` / `deploy-proxmox-vm.yml` default and assert this datastore. Existing local guests are not migrated by this decision. Supercedes new-guest placement in D-HOMELAB-012 (cluster NIC/switch plan unchanged).
+
+## D-HOMELAB-015: Omada Controller CT142 — 8 GB RAM
+**Date:** 2026-09-08  
+**Context:** CT142 `omada-controller` @ `10.92.0.34` wedged: Omada Java stuck in disk wait, cgroup RAM ~1.9/2 GB, only SSH :22 listening, `https://omada.cloudigan.net` 502. Access points kept serving without the controller. A 4 GB bump still sat at ~3.8 GB used right after `tpeap` started (jsvc ~2.5 GB + Java `-Xmx1024m` + mongod). Mongo logged one OOM start (`exit 127`) then recovered.  
+**Decision:** Keep CT142 at **8192 MB RAM** (swap 1024). Do not run the Omada controller at 2 GB.  
+**Consequences:** APs continue independently if the controller dies again; recover with `pct stop 142` (kill if I/O-stuck) then `pct start 142`. UI: `https://omada.cloudigan.net` → NPM → `10.92.0.34:8043`. Rootfs remains NFS `truenas-proxmox` (D-HOMELAB-014).
 
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
