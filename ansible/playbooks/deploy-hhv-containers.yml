@@ -140,5 +140,5 @@
           - "HAProxy: {{ hhv_domain }} → hhv-blue (initial LIVE)"
           - "Monitoring: node_exporter :9100, promtail → Loki on both CTs"
           - "Next: NPM {{ hhv_domain }} → {{ hhv_haproxy_vip }}:80; external DNS A record"
-          - "Next: MCP server.js app id hhv; build Next.js app → github.com/heybearc/hhv-website"
+          - "Next: MCP server.js app id hhv; app repo github.com/heybearc/hhv"
           - "Doc: documentation/HHV-DEPLOYMENT.md"

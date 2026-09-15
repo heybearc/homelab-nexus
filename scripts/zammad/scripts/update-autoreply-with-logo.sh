@@ -1,8 +1,11 @@
 #!/bin/bash
+set -euo pipefail
+TOKEN="${ZAMMAD_API_TOKEN:?Set ZAMMAD_API_TOKEN (Zammad → Profile → Token Access)}"
+
 # Update auto-reply trigger with logo signature embedded
 
 # Get the signature HTML
-SIGNATURE=$(curl -s -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt2_IKxLNC8hQbhZ" \
+SIGNATURE=$(curl -s -H "Authorization: Token ${TOKEN}" \
   https://support.cloudigan.net/api/v1/signatures/2 | jq -r '.body')
 
 # Create the email body with signature
@@ -22,7 +25,7 @@ ${SIGNATURE}"
 
 # Update the trigger
 curl -X PUT \
-  -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt2_IKxLNC8hQbhZ" \
+  -H "Authorization: Token ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d "$(jq -n --arg body "$BODY" '{
     perform: {

@@ -5,6 +5,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SSH_CONFIG="$ROOT/.cloudy-work/ssh_config_master.conf"
+OPS_HUB_ROOT="${OPS_HUB_ROOT:-$HOME/Projects/ops-hub}"
+OPS_HUB_REPO="${OPS_HUB_REPO:-https://github.com/heybearc/ops-hub.git}"
 CTID=202
 HOSTNAME=ops-stack
 IP=10.92.3.83
@@ -57,13 +59,18 @@ npm install -g pm2
 mkdir -p /opt/ops-hub /opt/ops-sync /opt/ntfy
 REMOTE
 
-echo "Syncing ops-hub and ops-sync…"
+if [[ ! -d "$OPS_HUB_ROOT/ops-hub" || ! -d "$OPS_HUB_ROOT/ops-sync" ]]; then
+  echo "Ops Hub source not found at $OPS_HUB_ROOT — cloning ${OPS_HUB_REPO}"
+  git clone "$OPS_HUB_REPO" "$OPS_HUB_ROOT"
+fi
+
+echo "Syncing ops-hub and ops-sync from $OPS_HUB_ROOT…"
 rsync -az --delete --exclude node_modules --exclude .next \
   -e "ssh -F $SSH_CONFIG" \
-  "$ROOT/ops-hub/" "root@${IP}:/opt/ops-hub/"
+  "$OPS_HUB_ROOT/ops-hub/" "root@${IP}:/opt/ops-hub/"
 rsync -az --delete --exclude node_modules --exclude data \
   -e "ssh -F $SSH_CONFIG" \
-  "$ROOT/ops-sync/" "root@${IP}:/opt/ops-sync/"
+  "$OPS_HUB_ROOT/ops-sync/" "root@${IP}:/opt/ops-sync/"
 ssh -F "$SSH_CONFIG" "root@${IP}" "mkdir -p /opt/ops-sync/data"
 
 if [[ -f "$ROOT/.env" ]]; then

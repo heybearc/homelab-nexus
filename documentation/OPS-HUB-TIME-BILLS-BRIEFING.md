@@ -1,6 +1,6 @@
 # Ops Hub — Time Gaps, Bill Reminders, Briefing
 
-Phase 2–4 of the Ops Hub plan. All logic lives in **ops-sync** (`/opt/ops-sync` on CT 10.92.3.83); n8n workflows are thin schedulers that call ops-sync and push to ntfy.
+Phase 2–4 of the Ops Hub plan. All logic lives in **ops-sync** in https://github.com/heybearc/ops-hub (`/opt/ops-sync` on CT 10.92.3.83); n8n workflows are thin schedulers that call ops-sync and push to ntfy.
 
 | Feature | ops-sync endpoint | n8n workflow | Schedule (ET) |
 |---|---|---|---|

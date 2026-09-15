@@ -2,6 +2,8 @@
 
 Self-hosted productivity stack: unified calendar view, Vikunja task pane, Kimai timer, n8n routing, ntfy push.
 
+**App repo:** https://github.com/heybearc/ops-hub (`ops-hub/` UI + `ops-sync/` worker). Infra stays in this repository.
+
 ## Architecture
 
 | Component | Role | URL |
@@ -54,7 +56,7 @@ export ZAMMAD_API_TOKEN=your-token
 
 Uses Cloudigan brand colors (`#2d388a` → `#00aeef` gradient) and the gear + `</>` cog mark from `files/Logos/`.
 
-| Asset | Path |
+| Asset | Path in `heybearc/ops-hub` |
 |-------|------|
 | Favicon (SVG) | `ops-hub/app/icon.svg`, `ops-hub/public/icon.svg` |
 | Favicon (ICO) | `ops-hub/public/favicon.ico` (from Cloudigan browser.ico) |
@@ -78,7 +80,7 @@ chmod +x scripts/ops/bootstrap-ops-stack.sh
 # then re-run ansible-playbook deploy-ops-stack.yml
 ```
 
-Creates **CT202** `ops-stack` @ **10.92.3.83** with ops-hub, ops-sync, ntfy.
+Creates **CT202** `ops-stack` @ **10.92.3.83** with ops-hub, ops-sync, ntfy. Bootstrap rsyncs from `~/Projects/ops-hub` (clone of `heybearc/ops-hub`).
 
 Post-bootstrap (manual):
 
@@ -97,7 +99,7 @@ Copy from `.env.example`:
 
 ## Calendar feeds (ops-sync)
 
-Edit `ops-sync/feeds.json` on the server (or locally before rsync):
+Edit `ops-sync/feeds.json` in the ops-hub repo (or on the server at `/opt/ops-sync` before rsync):
 
 ### Thrive (secular work)
 

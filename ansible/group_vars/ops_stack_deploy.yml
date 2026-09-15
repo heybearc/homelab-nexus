@@ -26,6 +26,8 @@ ops_sync_port: 3002
 ops_ntfy_port: 8080
 ops_ntfy_topic: cory-daily-briefing
 
+ops_hub_git_url: "{{ lookup('env', 'OPS_HUB_REPO') | default('https://github.com/heybearc/ops-hub.git', true) }}"
+ops_hub_local_root: "{{ lookup('env', 'OPS_HUB_ROOT') | default(lookup('env', 'HOME') + '/Projects/ops-hub', true) }}"
 ops_hub_repo_path: /opt/ops-hub
 ops_sync_path: /opt/ops-sync
 ops_ntfy_path: /opt/ntfy

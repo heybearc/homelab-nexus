@@ -24,24 +24,16 @@
 
 ## API Access
 
-**Personal Access Token:**
-```
-doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt2_IKxLNC8hQbhZ
-```
+Use `ZAMMAD_API_TOKEN` from homelab-nexus `.env` (Zammad UI → Profile → Token Access). Never commit the token.
 
 **API Endpoint:** `https://support.cloudigan.net/api/v1/`
 
 **Usage Example:**
 ```bash
-curl -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt2_IKxLNC8hQbhZ" \
+set -a && source .env && set +a
+curl -H "Authorization: Token ${ZAMMAD_API_TOKEN}" \
   https://support.cloudigan.net/api/v1/users/me
 ```
-
-**Token Management:**
-- Created in: Zammad UI → Profile → Token Access
-- Scope: Full API access
-- Rotation: Consider rotating periodically
-- Revocation: Via Zammad UI
 
 ---
 
@@ -101,7 +93,7 @@ curl -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt
 
 ## Scripts
 
-Located in `applications/zammad/scripts/`:
+Located in `scripts/zammad/scripts/` (requires `ZAMMAD_API_TOKEN` in the environment):
 
 1. **update-zammad-trigger.sh** - Updates auto-reply trigger
 2. **create-admin-notification-trigger.sh** - Creates admin notification

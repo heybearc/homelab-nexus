@@ -129,7 +129,7 @@
 ## D-HOMELAB-008: HHV production site — Next.js on standard blue-green pattern
 **Date:** 2026-06-05  
 **Context:** New customer-facing site at `helpfulhirschventures.com` on dedicated blue-green pair (CT198/199).  
-**Decision:** Deploy as **Next.js 14 + TypeScript** on port **3001**, PM2 `hhv-blue` / `hhv-green`, MCP app id `hhv`, HAProxy ACL `is_hhv`, optional Postgres DB `hhv` on CT131 when forms/CRM needed. External DNS + NPM are operator-managed (not Ansible). Placeholder Node app until `heybearc/hhv-website` repo exists.  
+**Decision:** Deploy as **Next.js 14 + TypeScript** on port **3001**, PM2 `hhv-blue` / `hhv-green`, MCP app id `hhv`, HAProxy ACL `is_hhv`, optional Postgres DB `hhv` on CT131 when forms/CRM needed. External DNS + NPM are operator-managed (not Ansible). App repo is **`heybearc/hhv`**.  
 **Consequences:** Follows Chapter Hub / FactorPoint deploy model. `connection_limit=5` on Prisma when DB added.
 
 ## D-HOMELAB-011: TD Synnex PO numbers — Redis atomic counter + Cursor slash command

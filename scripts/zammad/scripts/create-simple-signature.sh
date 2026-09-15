@@ -1,9 +1,11 @@
 #!/bin/bash
+set -euo pipefail
+TOKEN="${ZAMMAD_API_TOKEN:?Set ZAMMAD_API_TOKEN (Zammad → Profile → Token Access)}"
 
 # Create a simple, clean signature for Cloudigan Support
 
 curl -X POST \
-  -H "Authorization: Token doghcRUPpmvQ5QnzTm011XtdW7qI4jRJUWyjN8oPlLAs_OtVAt2_IKxLNC8hQbhZ" \
+  -H "Authorization: Token ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d @- \
   https://support.cloudigan.net/api/v1/signatures << 'EOF'
