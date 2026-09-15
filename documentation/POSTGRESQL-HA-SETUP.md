@@ -1,9 +1,9 @@
 # PostgreSQL High Availability Setup
 
-**Last Updated:** 2026-03-21  
+**Last Updated:** 2026-09-14  
 **Status:** ✅ OPERATIONAL  
-**Failover Type:** Automatic (Prometheus-based)  
-**Failover Time:** ~30 seconds
+**Failover Type:** Watchdog promote + keepalived RW VIP  
+**Failover Time:** ~30 seconds to promote; VIP follows in ~2s after 151 is writable
 
 ---
 
@@ -27,16 +27,22 @@
 
 ### 1. PostgreSQL Nodes
 
-**Primary (CT131):**
-- IP: 10.92.3.21
+**RW VIP (apps use this):**
+- IP: 10.92.3.23
+- DNS: `postgres.cloudigan.net`, `postgresql.cloudigan.net`
+- keepalived VRID 52 — only a node with `pg_is_in_recovery() = f` holds the VIP
+
+**Primary (CT131, prox2):**
+- IP: 10.92.3.21 (replication / admin only)
 - Port: 5432
-- Databases: theoshift_scheduler, semaphore, ldc_tools, quantshift, bni_toolkit
+- OS: Debian 12 / glibc 2.36
 - postgres_exporter: Port 9187
 
-**Standby (CT151):**
+**Standby (CT151, prox3):**
 - IP: 10.92.3.31
 - Port: 5432
-- Streaming replication from CT131
+- OS: Debian 12 / glibc 2.36 (rebuilt 2026-09-14 from shared `truenas-proxmox` template)
+- Streaming replication from CT131, slot `replica_151`
 - postgres_exporter: Port 9187
 
 ### 2. Monitoring (CT150)
@@ -87,8 +93,8 @@
 4. **Promotion:**
    - Verifies primary is truly down (prevents split-brain)
    - Promotes CT151 to primary via `pg_ctl promote`
-   - Verifies promotion successful
-   - Sends Teams notification (if configured)
+   - keepalived on 151 takes VIP `10.92.3.23` once the node is writable (script also adds the VIP if needed)
+   - Apps already using `postgres.cloudigan.net` / `10.92.3.23` reconnect to the new primary
 
 5. **Total Downtime:** ~30 seconds
 

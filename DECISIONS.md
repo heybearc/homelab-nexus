@@ -167,6 +167,16 @@
 **Decision:** Keep CT142 at **8192 MB RAM** (swap 1024). Do not run the Omada controller at 2 GB.  
 **Consequences:** APs continue independently if the controller dies again; recover with `pct stop 142` (kill if I/O-stuck) then `pct start 142`. UI: `https://omada.cloudigan.net` → NPM → `10.92.0.34:8043`. Rootfs remains NFS `truenas-proxmox` (D-HOMELAB-014).
 
+## D-HOMELAB-016: Postgres RW VIP + split-host HA + shared LXC templates
+**Date:** 2026-09-15  
+**Context:** After PVE 9 on all three nodes, HAProxy LIVE+STANDBY were both on prox3 and Postgres primary+replica were both on prox2. Replica CT151 was Ubuntu 24.04 / glibc 2.39 vs primary Debian 12 / glibc 2.36. Apps connected to `10.92.3.21`, so watchdog promote did not move traffic. LXC templates lived only on prox1 `local`.  
+**Decision:**  
+- Place HAProxy pair and Postgres pair on **different nodes** (LIVE 136 + replica 151 + monitoring 150 on **prox3**; STANDBY 139 + primary 131 on **prox2**). GPU CTs stay on prox1. Do not PVE-HA blue-green pairs.  
+- Apps use keepalived **RW VIP `10.92.3.23`** (`postgres.cloudigan.net` / `postgresql.cloudigan.net`, VRID 52). Node IPs `.21`/`.31` are for replication and admin only.  
+- Rebuild CT151 on **Debian 12** from shared NFS templates so libc matches the primary.  
+- `truenas-proxmox` content includes **`vztmpl,iso`**; all nodes use `truenas-proxmox:vztmpl/…`.  
+**Consequences:** Failover = watchdog promote on CT150 + VIP follow. Replication `primary_conninfo` must stay on `.21`/`.31`, never the VIP. 10G fabric / corosync link1 / PVE HA for NFS singletons still wait on SX3016F + X520 (D-HOMELAB-012).
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

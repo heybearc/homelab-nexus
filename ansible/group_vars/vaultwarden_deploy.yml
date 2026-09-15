@@ -6,6 +6,7 @@ vaultwarden_function: security
 vaultwarden_memory: 2048
 vaultwarden_cores: 2
 vaultwarden_disk: 10
+vaultwarden_storage: truenas-proxmox
 vaultwarden_port: 8080
 
 # CTID range security: 170-179 (171-172 assigned 2026-05-16)
@@ -23,7 +24,7 @@ vaultwarden_domain: vault.cloudigan.com
 vaultwarden_public_url: "https://{{ vaultwarden_domain }}"
 
 # Postgres on CT131 (shared); password via env at runtime
-vaultwarden_db_host: "10.92.3.21"
+vaultwarden_db_host: "10.92.3.23"
 vaultwarden_db_name: vaultwarden
 vaultwarden_db_user: vaultwarden
 

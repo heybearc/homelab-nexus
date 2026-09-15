@@ -10,7 +10,7 @@
 
 | Role | Host | CTID | IP (planned) | Notes |
 |------|------|------|--------------|--------|
-| **BLUE** | `vaultwarden-blue` | 171 | Netbox next free (e.g. `10.92.3.94`) | Proxmox LXC, `hdd-pool`, `vmbr0923` |
+| **BLUE** | `vaultwarden-blue` | 171 | Netbox next free (e.g. `10.92.3.94`) | Proxmox LXC, `truenas-proxmox`, `vmbr0923` |
 | **GREEN** | `vaultwarden-green` | 172 | Netbox next free (e.g. `10.92.3.95`) | Standby peer for HAProxy `backup` |
 | **Homelab (separate)** | TrueNAS app | — | `10.92.5.200:8080` | Personal use only — **not** in MSP HAProxy pool |
 | **Public URL** | NPM → HAProxy VIP | — | `https://vault.cloudigan.com` | Customer MSP product |

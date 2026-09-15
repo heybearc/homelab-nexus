@@ -56,7 +56,7 @@
           - "=== Vaultwarden LXC plan ==="
           - "BLUE:  CT{{ vaultwarden_blue.ctid }} {{ vaultwarden_blue.name }} @ {{ vaultwarden_blue.ip }}"
           - "GREEN: CT{{ vaultwarden_green.ctid }} {{ vaultwarden_green.name }} @ {{ vaultwarden_green.ip }}"
-          - "Storage: hdd-pool | Bridge: vmbr0923 | {{ vaultwarden_cores }}c / {{ vaultwarden_memory }}MB / {{ vaultwarden_disk }}G"
+          - "Storage: {{ vaultwarden_storage | default('truenas-proxmox') }} | Bridge: vmbr0923 | {{ vaultwarden_cores }}c / {{ vaultwarden_memory }}MB / {{ vaultwarden_disk }}G"
           - "Shared playbook: {{ ansible_playbooks_root }}/deploy-proxmox-container.yml"
 
 - name: Deploy vaultwarden-blue (Proxmox + baseline automation)
@@ -69,6 +69,7 @@
     container_memory: 2048
     container_cores: 2
     container_disk: 10
+    container_storage: truenas-proxmox
     netbox_url: "{{ hostvars['localhost']['netbox_url'] | default(lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true)) }}"
     netbox_token: "{{ hostvars['localhost']['netbox_token'] | default(lookup('env', 'NETBOX_TOKEN')) }}"
     npm_url: "{{ hostvars['localhost']['npm_url'] | default(lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true)) }}"
@@ -90,6 +91,7 @@
     container_memory: 2048
     container_cores: 2
     container_disk: 10
+    container_storage: truenas-proxmox
     netbox_url: "{{ hostvars['localhost']['netbox_url'] | default(lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true)) }}"
     netbox_token: "{{ hostvars['localhost']['netbox_token'] | default(lookup('env', 'NETBOX_TOKEN')) }}"
     npm_url: "{{ hostvars['localhost']['npm_url'] | default(lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true)) }}"

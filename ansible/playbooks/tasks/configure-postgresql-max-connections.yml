@@ -1,0 +1,47 @@
+---
+# Raise shared PostgreSQL max_connections (CT131). Requires restart to apply.
+- name: Assert max_connections target
+  ansible.builtin.assert:
+    that:
+      - postgresql_max_connections | int >= 100
+      - postgresql_max_connections | int <= 500
+    fail_msg: "postgresql_max_connections must be between 100 and 500"
+
+- name: Backup postgresql.conf
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec {{ postgresql_ctid }} -- cp -a \
+      /etc/postgresql/17/main/postgresql.conf \
+      /etc/postgresql/17/main/postgresql.conf.bak-ansible-{{ ansible_date_time.date }}"
+  changed_when: true
+
+- name: Set max_connections in postgresql.conf
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec {{ postgresql_ctid }} -- bash -c '
+      set -euo pipefail
+      CONF=/etc/postgresql/17/main/postgresql.conf
+      if grep -qE \"^#?max_connections\" \"\$CONF\"; then
+        sed -i -E \"s/^#?max_connections = .*/max_connections = {{ postgresql_max_connections }}/\" \"\$CONF\"
+      else
+        echo \"max_connections = {{ postgresql_max_connections }}\" >> \"\$CONF\"
+      fi
+      grep \"^max_connections\" \"\$CONF\"
+    '"
+  register: pg_max_conn_line
+  changed_when: true
+
+- name: Restart PostgreSQL to apply max_connections
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec {{ postgresql_ctid }} -- systemctl restart postgresql"
+  changed_when: true
+
+- name: Verify max_connections
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec {{ postgresql_ctid }} -- sudo -u postgres psql -tAc \"SHOW max_connections;\""
+  register: pg_max_verify
+  changed_when: false
+
+- name: Report PostgreSQL max_connections
+  ansible.builtin.debug:
+    msg:
+      - "{{ pg_max_conn_line.stdout_lines | default([]) }}"
+      - "Verified: {{ pg_max_verify.stdout | trim }}"

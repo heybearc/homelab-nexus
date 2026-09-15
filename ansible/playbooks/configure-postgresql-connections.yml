@@ -1,0 +1,16 @@
+---
+# Tune shared PostgreSQL connection capacity on CT131.
+# Apply pool limits on app containers separately (scripts/postgres/patch-prisma-connection-pool.sh).
+#
+# Usage:
+#   cd ansible && ansible-playbook playbooks/configure-postgresql-connections.yml
+#
+- name: Configure PostgreSQL max_connections on primary
+  hosts: localhost
+  gather_facts: true
+  vars:
+    postgresql_ctid: 131
+    postgresql_max_connections: 200
+    homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-postgresql-max-connections.yml
