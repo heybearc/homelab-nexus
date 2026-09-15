@@ -60,6 +60,17 @@ Thumbs.db
 dumps/
 backups/
 
+# Node / Ops Hub
+node_modules/
+.next/
+ops-sync/data/
+*.tsbuildinfo
+
+# Local install media and brand dumps (multi-GB ISOs / vendor packages)
+files/
+*.iso
+*.mp4
+
 # Local Configuration Overrides
 local-config/
 personal-settings/
