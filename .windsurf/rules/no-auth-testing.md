@@ -1,0 +1,1 @@
+../../.cloudy-work/.windsurf/rules/no-auth-testing.md

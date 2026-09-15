@@ -1,0 +1,1 @@
+../../.cloudy-work/.windsurf/rules/theoshift-debugging-context.md

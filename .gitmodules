@@ -1,3 +1,6 @@
 [submodule ".cloudy-work"]
 	path = .cloudy-work
 	url = https://github.com/heybearc/Cloudy-Work.git
+[submodule "cloudigan-mail"]
+	path = cloudigan-mail
+	url = https://github.com/heybearc/cloudigan-mail.git

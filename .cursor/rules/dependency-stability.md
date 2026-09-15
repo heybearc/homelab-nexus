@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/dependency-stability.md

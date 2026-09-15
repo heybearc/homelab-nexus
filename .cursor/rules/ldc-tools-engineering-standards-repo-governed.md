@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/ldc-tools-engineering-standards-repo-governed.md

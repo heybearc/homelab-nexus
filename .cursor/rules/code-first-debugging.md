@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/code-first-debugging.md

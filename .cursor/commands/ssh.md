@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/commands/ssh.md

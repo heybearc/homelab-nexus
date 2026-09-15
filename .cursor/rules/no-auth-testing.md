@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/no-auth-testing.md

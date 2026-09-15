@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/theoshift-debugging-context.md

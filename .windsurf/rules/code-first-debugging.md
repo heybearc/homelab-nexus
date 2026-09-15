@@ -1,0 +1,1 @@
+../../.cloudy-work/.windsurf/rules/code-first-debugging.md

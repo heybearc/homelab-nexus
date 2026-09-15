@@ -1,0 +1,1 @@
+../../.cloudy-work/.windsurf/rules/haproxy-verification.md

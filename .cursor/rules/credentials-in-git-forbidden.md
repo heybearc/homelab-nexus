@@ -1,0 +1,1 @@
+../../.cloudy-work/.cursor/rules/credentials-in-git-forbidden.md

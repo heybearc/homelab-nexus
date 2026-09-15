@@ -1,0 +1,1 @@
+../../.cloudy-work/.windsurf/rules/ldc-tools-engineering-standards-repo-governed.md
