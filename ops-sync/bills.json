@@ -1,0 +1,15 @@
+{
+  "_comment": "Recurring bills → Vikunja tasks. Each enabled bill creates one task per due month (idempotent). `day` = day of month (clamped to month length). `months` optional (e.g. [1,4,7,10] quarterly, [3] yearly). `autopay: true` makes the task a confirm-only reminder. Set enabled=true once you've filled in real bills.",
+  "projectId": null,
+  "leadDays": 3,
+  "dueHour": "09:00",
+  "bills": [
+    { "name": "Electric", "day": 15, "enabled": false, "autopay": false, "amount": "", "url": "", "notes": "" },
+    { "name": "Gas", "day": 20, "enabled": false, "autopay": false, "amount": "", "url": "", "notes": "" },
+    { "name": "Water / Sewer", "day": 1, "enabled": false, "autopay": false, "amount": "", "url": "", "notes": "" },
+    { "name": "Internet", "day": 5, "enabled": false, "autopay": true, "amount": "", "url": "", "notes": "" },
+    { "name": "Mortgage / Rent", "day": 1, "enabled": false, "autopay": true, "amount": "", "url": "", "notes": "" },
+    { "name": "Car insurance", "day": 12, "enabled": false, "autopay": false, "amount": "", "url": "", "notes": "" },
+    { "name": "Property tax", "day": 15, "months": [1, 7], "enabled": false, "autopay": false, "amount": "", "url": "", "notes": "" }
+  ]
+}

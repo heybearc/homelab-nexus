@@ -1,0 +1,26 @@
+{
+  "feeds": [
+    {
+      "name": "Thrive (secular work)",
+      "url": "",
+      "lifeArea": "thrive",
+      "enabled": false,
+      "_comment": "Paste ICS URL from Thrive → Settings → Calendar sync"
+    },
+    {
+      "name": "Congregation / theocratic",
+      "url": "",
+      "lifeArea": "theocratic",
+      "enabled": false,
+      "_comment": "JW Tools, Bethel, or congregation calendar ICS URL"
+    }
+  ],
+  "google": {
+    "enabled": true,
+    "_comment": "OAuth accounts stored in data/google-accounts.json via ops-hub Connect Google"
+  },
+  "microsoft": {
+    "enabled": true,
+    "_comment": "OAuth accounts stored in data/microsoft-accounts.json via ops-hub Connect Microsoft"
+  }
+}
