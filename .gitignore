@@ -75,3 +75,7 @@ files/
 local-config/
 personal-settings/
 .windsurf/workflows/*.md
+
+# Dangling Cloudy-Work command links (targets not on current MC)
+.cursor/commands/test-release-steps.md
+.cursor/commands/workflow-cleanup.md
