@@ -1,0 +1,40 @@
+---
+# DC-01 (Windows AD DNS) records for Cloudigan Mail Gateway
+# Service hostname → HAProxy VIP; color hostnames → node IPs; container hostnames → node IPs
+
+- name: Define Cloudigan Mail DNS records
+  ansible.builtin.set_fact:
+    cloudigan_mail_dns_records:
+      - { name: mail, ip: "{{ cloudigan_mail_haproxy_vip }}" }
+      - { name: blue-mail, ip: "{{ cloudigan_mail_blue.ip }}" }
+      - { name: green-mail, ip: "{{ cloudigan_mail_green.ip }}" }
+      - { name: "{{ cloudigan_mail_blue.name }}", ip: "{{ cloudigan_mail_blue.ip }}" }
+      - { name: "{{ cloudigan_mail_green.name }}", ip: "{{ cloudigan_mail_green.ip }}" }
+
+- name: Add DNS A records on DC-01
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} dc-01 "powershell -Command \"Add-DnsServerResourceRecordA -Name '{{ item.name }}' -ZoneName {{ cloudigan_mail_dns_zone }} -IPv4Address {{ item.ip }} -CreatePtr -ErrorAction SilentlyContinue\""
+  loop: "{{ cloudigan_mail_dns_records }}"
+  loop_control:
+    label: "{{ item.name }}.{{ cloudigan_mail_dns_zone }} → {{ item.ip }}"
+  register: dns_add
+  changed_when: dns_add.rc == 0
+  failed_when: false
+
+- name: Verify mail.cloudigan.net resolves to HAProxy VIP
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} dc-01 \
+      "powershell -Command \"(Resolve-DnsName -Name mail.{{ cloudigan_mail_dns_zone }} -Type A).IPAddress\""
+  register: mail_dns_verify
+  changed_when: false
+  failed_when: cloudigan_mail_haproxy_vip not in (mail_dns_verify.stdout | default(''))
+
+- name: DNS summary
+  ansible.builtin.debug:
+    msg:
+      - "DC-01 DNS ({{ cloudigan_mail_dns_zone }}):"
+      - "  mail → {{ cloudigan_mail_haproxy_vip }} (HAProxy VIP)"
+      - "  blue-mail → {{ cloudigan_mail_blue.ip }}"
+      - "  green-mail → {{ cloudigan_mail_green.ip }}"
+      - "  {{ cloudigan_mail_blue.name }} → {{ cloudigan_mail_blue.ip }}"
+      - "  {{ cloudigan_mail_green.name }} → {{ cloudigan_mail_green.ip }}"

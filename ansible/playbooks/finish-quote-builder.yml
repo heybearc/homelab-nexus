@@ -1,0 +1,41 @@
+---
+# Resume after LXC + app configure (CTIDs already exist)
+- name: Finish Quote Builder HAProxy DNS monitoring
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/bluegreen_app_defaults.yml
+    - ../group_vars/cloudigan_quote_builder_deploy.yml
+  tasks:
+    - name: Derive naming helpers
+      set_fact:
+        bg_acl: "{{ bg_acl }}"
+        bg_backend_prefix: "{{ bg_backend_prefix }}"
+        bg_state_file: "{{ bg_state_file }}"
+        bg_public_url: "{{ bg_public_url }}"
+        bg_app_name: "{{ bg_app_name }}"
+
+    - name: Sync monitoring stack
+      ansible.builtin.include_tasks: tasks/sync-monitoring-stack.yml
+
+    - name: Configure HAProxy
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-haproxy.yml
+
+    - name: Configure Technitium DNS
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-dns.yml
+
+    - name: Verify SSH and health
+      shell: |
+        ssh -o BatchMode=yes -o ConnectTimeout=12 -F {{ homelab_ssh_config }} root@{{ item.ip }} hostname
+        curl -sf -o /dev/null -w '%{http_code}' http://{{ item.ip }}:{{ bg_port }}{{ bg_health_path }}
+      loop:
+        - "{{ bg_blue }}"
+        - "{{ bg_green }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: bg_health
+      changed_when: false
+
+    - name: Health results
+      debug:
+        msg: "{{ bg_health.results | map(attribute='stdout') | list }}"

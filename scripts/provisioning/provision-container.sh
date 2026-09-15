@@ -37,6 +37,7 @@ TRUENAS_HOST="${TRUENAS_HOST:-10.92.0.3}"
 GATEWAY="10.92.3.1"
 SUBNET="24"
 TEMPLATE="local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+STORAGE="${STORAGE:-truenas-proxmox}"
 
 # Function to print colored output
 print_status() {
@@ -286,6 +287,7 @@ echo "Gateway: $GATEWAY"
 echo "Memory: ${MEMORY}MB"
 echo "CPU Cores: $CORES"
 echo "Disk: ${DISK}GB"
+echo "Storage: $STORAGE"
 echo "Privileged: $([ "$PRIVILEGED" = "1" ] && echo "Yes" || echo "No")"
 [[ -n "$DOMAIN" ]] && echo "Domain: $DOMAIN (port $PORT, SSL: $SSL)"
 echo ""
@@ -320,8 +322,8 @@ CREATE_CMD="pct create $CTID $TEMPLATE \
     --memory $MEMORY \
     --cores $CORES \
     --net0 name=eth0,bridge=vmbr0923,ip=${IP_ADDRESS}/${SUBNET},gw=${GATEWAY} \
-    --storage local-lvm \
-    --rootfs local-lvm:${DISK} \
+    --storage ${STORAGE} \
+    --rootfs ${STORAGE}:${DISK} \
     $UNPRIVILEGED_FLAG \
     --features nesting=1 \
     --onboot 1 \

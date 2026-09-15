@@ -1,0 +1,50 @@
+---
+- name: Require Technitium API token
+  ansible.builtin.assert:
+    that:
+      - technitium_api_token | length > 8
+    fail_msg: >-
+      Set TECHNITIUM_API_TOKEN in .env (Technitium UI → Administration → API Tokens),
+      then re-run: ansible-playbook playbooks/deploy-jellyfin.yml --start-at-task 'Configure Technitium DNS'.
+      Manual alternative: A record jellyfin.cloudigan.net → 10.92.3.3 (NPM).
+      LXC/NPM/Jellyfin are already up at http://{{ jellyfin_ip }}:{{ jellyfin_port }}.
+
+- name: Add jellyfin.cloudigan.net A record → NPM
+  ansible.builtin.uri:
+    url: "{{ technitium_url }}/api/zones/records/add"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      domain: "{{ jellyfin_domain }}"
+      type: A
+      ipAddress: "{{ jellyfin_dns_target_ip }}"
+      ttl: 300
+      overwrite: "true"
+      ptr: "false"
+    return_content: true
+    status_code: [200]
+  register: jellyfin_dns_add
+  no_log: true
+  delegate_to: localhost
+
+- name: Check Technitium add status
+  ansible.builtin.fail:
+    msg: "Technitium record add failed: {{ jellyfin_dns_add.content }}"
+  when: >
+    jellyfin_dns_add.json.status | default('') not in ['ok', 'success']
+    and ('already exists' not in (jellyfin_dns_add.json.errorMessage | default('') | lower))
+    and ('exists' not in (jellyfin_dns_add.content | default('') | lower))
+  delegate_to: localhost
+
+- name: Verify AdGuard resolves jellyfin to NPM
+  ansible.builtin.command:
+    argv:
+      - dig
+      - +short
+      - "{{ jellyfin_domain }}"
+      - "@10.92.3.11"
+  register: jellyfin_dig
+  changed_when: false
+  failed_when: jellyfin_dns_target_ip not in (jellyfin_dig.stdout | default(''))
+  delegate_to: localhost

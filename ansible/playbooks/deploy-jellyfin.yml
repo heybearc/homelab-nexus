@@ -1,0 +1,74 @@
+---
+# Deploy Jellyfin LXC (CT122 @ 10.92.3.20) + Technitium DNS + NPM
+#
+#   cd /Users/cory/Projects/homelab-nexus
+#   set -a && source .env && set +a
+#   cd ansible && ansible-playbook playbooks/deploy-jellyfin.yml
+
+- name: Deploy Jellyfin
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/jellyfin_deploy.yml
+  tasks:
+    - name: Require Netbox and NPM credentials
+      ansible.builtin.assert:
+        that:
+          - netbox_token | length > 0
+          - npm_password | length > 0
+        fail_msg: "Set NETBOX_TOKEN and NPM_PASSWORD in homelab-nexus/.env"
+
+    - name: Require TrueNAS datastore (D-HOMELAB-014)
+      ansible.builtin.assert:
+        that:
+          - jellyfin_storage == 'truenas-proxmox'
+        fail_msg: "New LXCs must use truenas-proxmox (got {{ jellyfin_storage }})."
+
+    - name: Show deployment plan
+      ansible.builtin.debug:
+        msg:
+          - "Jellyfin CT{{ jellyfin_ctid }} {{ jellyfin_name }} @ {{ jellyfin_ip }}/24 gw {{ jellyfin_gateway }} {{ jellyfin_bridge }}"
+          - "{{ jellyfin_cores }}c / {{ jellyfin_memory }}MB / {{ jellyfin_disk }}G on {{ jellyfin_storage }}"
+          - "LXC DNS: {{ jellyfin_nameserver }} search {{ jellyfin_searchdomain }}"
+          - "Zone A: {{ jellyfin_domain }} → {{ jellyfin_dns_target_ip }} (NPM)"
+          - "NPM: {{ jellyfin_domain }} → {{ jellyfin_ip }}:{{ jellyfin_port }}"
+          - "Media: {{ jellyfin_media_host_path }} → {{ jellyfin_media_mp }}"
+
+    - name: Verify CTID is free or already jellyfin
+      ansible.builtin.command: >
+        ssh prox "test -f /etc/pve/lxc/{{ jellyfin_ctid }}.conf && grep -E '^hostname: {{ jellyfin_name }}$' /etc/pve/lxc/{{ jellyfin_ctid }}.conf || test ! -f /etc/pve/lxc/{{ jellyfin_ctid }}.conf"
+      changed_when: false
+
+    - name: Create LXC
+      ansible.builtin.include_tasks: tasks/create-jellyfin-lxc.yml
+
+    - name: Register in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ jellyfin_name }}"
+        nb_ctid: "{{ jellyfin_ctid }}"
+        nb_ip: "{{ jellyfin_ip }}"
+        nb_function: "{{ jellyfin_function }}"
+        nb_cores: "{{ jellyfin_cores }}"
+        nb_memory: "{{ jellyfin_memory }}"
+        nb_disk: "{{ jellyfin_disk }}"
+        nb_netbox_comment: "Jellyfin | {{ jellyfin_domain }} | CT{{ jellyfin_ctid }}"
+        nb_dns_name: "{{ jellyfin_domain }}"
+
+    - name: Install Jellyfin + monitoring
+      ansible.builtin.include_tasks: tasks/configure-jellyfin-node.yml
+
+    - name: Configure NPM reverse proxy
+      ansible.builtin.include_tasks: tasks/configure-jellyfin-npm.yml
+
+    - name: Configure Technitium DNS
+      ansible.builtin.include_tasks: tasks/configure-jellyfin-dns.yml
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "SSH: ssh jellyfin  (or root@{{ jellyfin_ip }})"
+          - "Setup wizard: http://{{ jellyfin_ip }}:{{ jellyfin_port }}"
+          - "Public/LAN URL: https://{{ jellyfin_domain }} (after NPM SSL; HTTP if LE pending)"
+          - "Libraries: {{ jellyfin_media_mp }} (TrueNAS media-pool)"
+          - "If HTTPS failed: add public A {{ jellyfin_domain }} → WAN IP, re-run NPM SSL"

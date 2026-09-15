@@ -1,0 +1,73 @@
+{
+  "name": "Uptime Kuma · Sync Monitors",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.92.3.82:18771/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Sync-Token",
+              "value": "={{$env.UK_SYNC_TOKEN}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "sync-request",
+      "name": "POST Sync Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nreturn [{\n  json: {\n    ok: body.ok === true,\n    returncode: body.returncode,\n    summary: body.stdout ? body.stdout.split('\\n').filter(Boolean).slice(-5).join('\\n') : '',\n    stderr: body.stderr || ''\n  }\n}];"
+      },
+      "id": "parse-result",
+      "name": "Parse Sync Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "POST Sync Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Sync Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Sync Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

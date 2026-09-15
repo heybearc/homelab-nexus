@@ -1,0 +1,114 @@
+---
+# Node/PM2 stack on LXC (expects bg_* vars + node = blue/green dict)
+- name: "Install Node 20 + PM2 on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq curl ca-certificates gnupg ufw git
+      if ! command -v node >/dev/null || ! node -v | grep -q \"^v20\"; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y -qq nodejs
+      fi
+      npm install -g pm2
+      mkdir -p {{ bg_path }}
+    '"
+  changed_when: true
+
+- name: "Stage local app to CT{{ node.ctid }}"
+  when: bg_src_local | length > 0
+  shell: |
+    set -euo pipefail
+    export COPYFILE_DISABLE=1
+    tar --exclude=node_modules --exclude=.next --exclude=.cloudy-work --exclude=.cursor \
+      -C "{{ bg_src_local }}" -cf /tmp/bg-src-{{ node.ctid }}.tar .
+    scp -F {{ homelab_ssh_config }} /tmp/bg-src-{{ node.ctid }}.tar prox:/tmp/bg-src-{{ node.ctid }}.tar
+    ssh -F {{ homelab_ssh_config }} prox \
+      "pct push {{ node.ctid }} /tmp/bg-src-{{ node.ctid }}.tar /tmp/bg-src.tar && \
+       pct exec {{ node.ctid }} -- bash -c 'mkdir -p {{ bg_path }} && tar -xf /tmp/bg-src.tar -C {{ bg_path }} && rm -f /tmp/bg-src.tar && git config --global --add safe.directory {{ bg_path }} || true'"
+    rm -f /tmp/bg-src-{{ node.ctid }}.tar
+  changed_when: true
+
+- name: "Clone app repo on CT{{ node.ctid }}"
+  when: bg_src_local | length == 0
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      if [ -d {{ bg_path }}/.git ]; then
+        cd {{ bg_path }} && git fetch origin && git checkout {{ bg_branch }} && git pull --ff-only origin {{ bg_branch }}
+      else
+        rm -rf {{ bg_path }}
+        git clone --branch {{ bg_branch }} {{ bg_repo }} {{ bg_path }}
+      fi
+    '"
+  changed_when: true
+
+- name: Render .env for {{ node.name }}
+  ansible.builtin.template:
+    src: ../templates/bluegreen.env.j2
+    dest: "/tmp/bg-{{ node.name }}.env"
+    mode: "0600"
+  delegate_to: localhost
+
+- name: "Copy .env to CT{{ node.ctid }}"
+  shell: |
+    scp -F {{ homelab_ssh_config }} /tmp/bg-{{ node.name }}.env prox:/tmp/bg-env-{{ node.ctid }}.env
+    ssh -F {{ homelab_ssh_config }} prox "pct push {{ node.ctid }} /tmp/bg-env-{{ node.ctid }}.env {{ bg_path }}/.env"
+    ssh prox "pct exec {{ node.ctid }} -- chmod 600 {{ bg_path }}/.env"
+  no_log: true
+
+- name: "Install + build Next.js on CT{{ node.ctid }}"
+  when: bg_deploy_type == 'nextjs'
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ bg_path }}
+      npm ci 2>/dev/null || npm install
+      npm run build
+    '"
+  changed_when: true
+
+- name: "Install deps for node-service on CT{{ node.ctid }}"
+  when: bg_deploy_type == 'node-service'
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ bg_path }}
+      if [ -f package.json ]; then npm ci 2>/dev/null || npm install; fi
+    '"
+  changed_when: true
+
+- name: "Start PM2 {{ node.pm2_name }} (nextjs) on CT{{ node.ctid }}"
+  when: bg_deploy_type == 'nextjs'
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ bg_path }}
+      pm2 delete {{ node.pm2_name }} 2>/dev/null || true
+      pm2 start npm --name {{ node.pm2_name }} -- start
+      pm2 save
+    '"
+  changed_when: true
+
+- name: "Start PM2 {{ node.pm2_name }} (node-service) on CT{{ node.ctid }}"
+  when: bg_deploy_type == 'node-service'
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ bg_path }}
+      pm2 delete {{ node.pm2_name }} 2>/dev/null || true
+      pm2 start {{ bg_pm2_script | default("server.js") }} --name {{ node.pm2_name }}
+      pm2 save
+    '"
+  changed_when: true
+
+- name: "UFW allow SSH + app port on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      ufw --force enable 2>/dev/null || true
+      ufw allow 22/tcp
+      ufw allow {{ bg_port }}/tcp
+      ufw allow from 10.92.0.0/16 to any port 9100 comment node-exporter
+    '"
+  changed_when: true
+
+- name: "Add SSH host key for {{ node.ip }}"
+  shell: |
+    ssh-keyscan -H {{ node.ip }} >> {{ lookup('env', 'HOME') }}/.ssh/known_hosts 2>/dev/null || true
+  changed_when: false
+  failed_when: false

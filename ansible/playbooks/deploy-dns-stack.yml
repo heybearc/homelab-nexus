@@ -1,0 +1,85 @@
+---
+# Deploy DNS redundancy stack (Technitium primary + TrueNAS secondaries)
+#
+# Prereqs: .env with NETBOX_TOKEN (Technitium password is set in UI, not .env)
+# Does NOT change DHCP or dc-01 — see documentation/DNS-REDUNDANCY-MIGRATION.md
+#
+# Run:
+#   cd ansible && ansible-playbook playbooks/deploy-dns-stack.yml
+
+- name: Plan DNS stack deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - name: Require Netbox token
+      ansible.builtin.assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in homelab-nexus/.env"
+
+    - name: Verify Technitium CTID is free
+      ansible.builtin.command: ssh prox "test ! -f /etc/pve/lxc/{{ technitium_primary.ctid }}.conf"
+      changed_when: false
+
+    - name: Show deployment plan
+      ansible.builtin.debug:
+        msg:
+          - "=== DNS stack plan ==="
+          - "Technitium PRIMARY: CT{{ technitium_primary.ctid }} {{ technitium_primary.ip }} ({{ technitium_primary.hostname }})"
+          - "AdGuard PRIMARY:    CT{{ adguard_primary.ctid }} {{ adguard_primary.ip }} (existing)"
+          - "Technitium STANDBY: {{ technitium_secondary.ip }} on {{ truenas_host }}"
+          - "AdGuard STANDBY:    {{ adguard_secondary.ip }} on {{ truenas_host }}"
+          - "Zone: {{ dns_zone }}"
+          - "Next: migrate-dns-phase.sh 0 (dc-01 bootstrap records) BEFORE cutover"
+
+- name: Create Technitium primary LXC + Netbox
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/create-technitium-lxc.yml
+
+- name: Install Technitium on primary + configure zone
+  hosts: proxmox_lxc
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/install-technitium-docker.yml
+    - ansible.builtin.include_tasks: tasks/configure-technitium-primary-zone.yml
+
+- name: Deploy DNS secondaries on TrueNAS
+  hosts: truenas_hosts
+  gather_facts: true
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-truenas-dns-aliases.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-technitium-secondary.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-adguard-secondary.yml
+
+- name: Configure AdGuard primary upstream
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-adguard-upstream.yml
+      vars:
+        adguard_host: "{{ adguard_primary.ip }}"
+        adguard_port: "{{ adguard_primary.web_port }}"
+        technitium_upstream: "{{ technitium_primary.ip }}"
+        technitium_upstream_fallback: "{{ technitium_secondary.ip }}"
+
+    - name: Post-deploy summary
+      ansible.builtin.debug:
+        msg:
+          - "DNS stack deployed (no client cutover yet)."
+          - "Technitium UI: http://{{ technitium_primary.hostname }}:{{ technitium_primary.web_port }}"
+          - "AdGuard UI:    http://{{ adguard_primary.hostname }}:{{ adguard_primary.web_port }}"
+          - "Standby UI:    http://{{ technitium_secondary.hostname }}:{{ technitium_secondary.web_port }}"
+          - "Run: ./scripts/dns/migrate-dns-phase.sh 2  # import zone from dc-01"

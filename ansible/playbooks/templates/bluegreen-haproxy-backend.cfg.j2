@@ -1,0 +1,14 @@
+# {{ bg_app_name }} — {{ bg_domain }}
+backend {{ bg_backend_prefix }}-blue
+    balance roundrobin
+    option httpchk GET {{ bg_health_path }}
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server blue1 {{ bg_blue.ip }}:{{ bg_port }} check inter 5s fall 3 rise 2
+
+backend {{ bg_backend_prefix }}-green
+    balance roundrobin
+    option httpchk GET {{ bg_health_path }}
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server green1 {{ bg_green.ip }}:{{ bg_port }} check inter 5s fall 3 rise 2

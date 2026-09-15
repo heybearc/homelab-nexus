@@ -1,0 +1,57 @@
+---
+- name: Check if Technitium CT already exists
+  ansible.builtin.command: ssh prox "test -f /etc/pve/lxc/{{ technitium_primary.ctid }}.conf"
+  delegate_to: localhost
+  register: ct_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create Technitium primary LXC on Proxmox
+  ansible.builtin.command: >-
+    ssh prox pct create {{ technitium_primary.ctid }}
+    local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst
+    --hostname {{ technitium_primary.name }}
+    --memory {{ technitium_primary.memory }}
+    --cores {{ technitium_primary.cores }}
+    --net0 name=eth0,bridge=vmbr0923,ip={{ technitium_primary.ip }}/24,gw=10.92.3.1
+    --storage {{ technitium_primary.storage | default('truenas-proxmox') }}
+    --rootfs {{ technitium_primary.storage | default('truenas-proxmox') }}:{{ technitium_primary.disk }}
+    --unprivileged 1
+    --features nesting=1
+    --onboot 1
+    --start 1
+  delegate_to: localhost
+  register: pct_create
+  changed_when: pct_create.rc == 0
+  when: ct_exists.rc != 0
+
+- name: Wait for Technitium LXC SSH
+  ansible.builtin.command: >-
+    ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new
+    -i {{ lookup('env', 'HOME') }}/.ssh/homelab_root
+    root@{{ technitium_primary.ip }} hostname
+  delegate_to: localhost
+  register: ssh_wait
+  until: ssh_wait.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+
+- name: Install homelab_root SSH key on Technitium LXC
+  ansible.builtin.shell: |
+    PUB=$(cat "$HOME/.ssh/homelab_root.pub")
+    ssh prox "pct exec {{ technitium_primary.ctid }} -- bash -c 'mkdir -p /root/.ssh && grep -qF \"$PUB\" /root/.ssh/authorized_keys 2>/dev/null || echo \"$PUB\" >> /root/.ssh/authorized_keys && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys'"
+  delegate_to: localhost
+  changed_when: true
+
+- name: Register Technitium primary in Netbox
+  ansible.builtin.include_tasks: netbox-register-container.yml
+  vars:
+    nb_container_name: "{{ technitium_primary.name }}"
+    nb_ctid: "{{ technitium_primary.ctid }}"
+    nb_ip: "{{ technitium_primary.ip }}"
+    nb_function: network
+    nb_cores: "{{ technitium_primary.cores }}"
+    nb_memory: "{{ technitium_primary.memory }}"
+    nb_disk: "{{ technitium_primary.disk }}"
+    nb_dns_name: "{{ technitium_primary.hostname }}"

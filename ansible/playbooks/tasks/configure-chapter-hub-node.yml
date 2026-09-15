@@ -1,0 +1,135 @@
+---
+# Node.js app stack on Chapter Hub LXC (node = blue/green dict with ctid, ip, name, pm2_name)
+- name: "Install Node 20 + PM2 + git on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq git curl ca-certificates gnupg build-essential
+      if ! command -v node >/dev/null || ! node -v | grep -q \"^v20\"; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y -qq nodejs
+      fi
+      npm install -g pm2
+      mkdir -p {{ chapter_hub_migration_backup_path }}
+    '"
+  changed_when: true
+
+- name: "Stage app tree from sandbox (private repo; git credentials on CT119)"
+  shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ chapter_hub_sandbox_ssh }} \
+      "cd {{ chapter_hub_app_path }} && tar --exclude=node_modules --exclude=.next -cf - ." \
+      > /tmp/chapter-hub-src-{{ node.ctid }}.tar
+    scp -F {{ homelab_ssh_config }} /tmp/chapter-hub-src-{{ node.ctid }}.tar prox:/tmp/ch-src-{{ node.ctid }}.tar
+    ssh -F {{ homelab_ssh_config }} prox \
+      "pct push {{ node.ctid }} /tmp/ch-src-{{ node.ctid }}.tar /tmp/ch-src.tar && \
+       pct exec {{ node.ctid }} -- bash -c 'mkdir -p {{ chapter_hub_app_path }} && tar -xf /tmp/ch-src.tar -C {{ chapter_hub_app_path }} && rm -f /tmp/ch-src.tar'"
+    rm -f /tmp/chapter-hub-src-{{ node.ctid }}.tar
+  changed_when: true
+
+- name: "Install git credentials on CT{{ node.ctid }} for MCP pullGithub"
+  shell: |
+    ssh -F {{ homelab_ssh_config }} {{ chapter_hub_sandbox_ssh }} 'cat ~/.git-credentials' > /tmp/git-credentials
+    scp -F {{ homelab_ssh_config }} /tmp/git-credentials prox:/tmp/git-credentials
+    ssh -F {{ homelab_ssh_config }} prox \
+      "pct push {{ node.ctid }} /tmp/git-credentials /root/.git-credentials && \
+       pct exec {{ node.ctid }} -- bash -c 'chmod 600 /root/.git-credentials && git config --global credential.helper store'"
+    rm -f /tmp/git-credentials
+  no_log: true
+  changed_when: true
+
+- name: "Fetch sandbox .env template"
+  command: >
+    ssh -F {{ homelab_ssh_config }} {{ chapter_hub_sandbox_ssh }}
+    cat {{ chapter_hub_app_path }}/.env
+  register: chapter_hub_sandbox_env
+  changed_when: false
+  no_log: true
+  delegate_to: localhost
+
+- name: "Assert DB password or DATABASE_URL available"
+  assert:
+    that:
+      - chapter_hub_db_password | length > 0 or ('DATABASE_URL=' in chapter_hub_sandbox_env.stdout)
+    fail_msg: >-
+      Set CHAPTER_HUB_DB_PASSWORD in homelab-nexus/.env, or ensure sandbox .env has DATABASE_URL.
+
+- name: "Write sandbox .env raw for {{ node.name }}"
+  ansible.builtin.copy:
+    dest: "/tmp/chapter-hub-{{ node.name }}.env.raw"
+    mode: "0600"
+    content: "{{ chapter_hub_sandbox_env.stdout }}\n"
+  no_log: true
+  delegate_to: localhost
+
+- name: "Build production .env for {{ node.name }}"
+  shell: |
+    set -euo pipefail
+    raw="/tmp/chapter-hub-{{ node.name }}.env.raw"
+    out="/tmp/chapter-hub-{{ node.name }}.env"
+    sed -E \
+      -e 's|^NEXTAUTH_URL=.*|NEXTAUTH_URL={{ chapter_hub_public_url }}|' \
+      -e 's|^APP_URL=.*|APP_URL={{ chapter_hub_public_url }}|' \
+      -e 's|^NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL={{ chapter_hub_public_url }}|' \
+      "$raw" > "$out"
+    {% if chapter_hub_db_password | length > 0 %}
+    python3 - <<'PY'
+    import pathlib, re
+    out = pathlib.Path("{{ '/tmp/chapter-hub-' ~ node.name ~ '.env' }}")
+    url = """{{ chapter_hub_database_url }}"""
+    text = out.read_text()
+    if re.search(r'^DATABASE_URL=', text, re.M):
+        text = re.sub(r'^DATABASE_URL=.*', f'DATABASE_URL={url}', text, count=1, flags=re.M)
+    else:
+        text = text.rstrip() + f'\nDATABASE_URL={url}\n'
+    out.write_text(text)
+    PY
+    {% endif %}
+    chmod 600 "$out"
+    rm -f "$raw"
+  args:
+    executable: /bin/bash
+  no_log: true
+  delegate_to: localhost
+
+- name: "Copy .env to CT{{ node.ctid }}"
+  shell: |
+    scp -F {{ homelab_ssh_config }} /tmp/chapter-hub-{{ node.name }}.env prox:/tmp/ch-env-{{ node.ctid }}.env
+    ssh -F {{ homelab_ssh_config }} prox "pct push {{ node.ctid }} /tmp/ch-env-{{ node.ctid }}.env {{ chapter_hub_app_path }}/.env"
+    ssh prox "pct exec {{ node.ctid }} -- chmod 600 {{ chapter_hub_app_path }}/.env"
+  no_log: true
+
+- name: "Install deps, migrate, build on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      set -euo pipefail
+      cd {{ chapter_hub_app_path }}
+      npm ci
+      npx prisma generate
+      npx prisma migrate deploy
+      npm run build
+    '"
+  register: chapter_hub_build
+  changed_when: true
+  async: 1800
+  poll: 15
+
+- name: "Start PM2 {{ node.pm2_name }} on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ chapter_hub_app_path }}
+      pm2 delete {{ node.pm2_name }} 2>/dev/null || true
+      pm2 start npm --name {{ node.pm2_name }} -- start
+      pm2 save
+    '"
+  changed_when: true
+
+- name: "Health check on {{ node.ip }}"
+  ansible.builtin.uri:
+    url: "http://{{ node.ip }}:{{ chapter_hub_port }}/api/auth/providers"
+    status_code: 200
+  register: chapter_hub_health
+  until: chapter_hub_health.status == 200
+  retries: 30
+  delay: 10

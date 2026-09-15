@@ -1,0 +1,129 @@
+---
+# Deploy Chapter Hub blue/green LXCs + app stack + HAProxy (D-020: 10.92.3.0/24)
+#
+# Prereqs:
+#   - homelab-nexus/.env: NETBOX_TOKEN, CHAPTER_HUB_DB_PASSWORD (or DATABASE_URL on sandbox)
+#   - ansible-playbooks repo sibling: ../ansible-playbooks
+#   - SSH: prox, homelab_root, sandbox bni-toolkit-dev
+#
+# Run:
+#   cd ansible && ansible-playbook playbooks/deploy-chapter-hub-containers.yml
+
+- name: Plan Chapter Hub deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/chapter_hub_deploy.yml
+  tasks:
+    - name: Require Netbox token
+      assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in homelab-nexus/.env"
+
+    - name: Verify CTIDs are free on Proxmox
+      command: ssh prox "test ! -f /etc/pve/lxc/{{ item }}.conf"
+      loop:
+        - "{{ chapter_hub_blue.ctid }}"
+        - "{{ chapter_hub_green.ctid }}"
+      changed_when: false
+
+    - name: Show deployment plan
+      debug:
+        msg:
+          - "=== Chapter Hub LXC plan ==="
+          - "BLUE:  CT{{ chapter_hub_blue.ctid }} {{ chapter_hub_blue.name }} @ {{ chapter_hub_blue.ip }}"
+          - "GREEN: CT{{ chapter_hub_green.ctid }} {{ chapter_hub_green.name }} @ {{ chapter_hub_green.ip }}"
+          - "URL: {{ chapter_hub_public_url }} | PM2: {{ chapter_hub_blue.pm2_name }} / {{ chapter_hub_green.pm2_name }}"
+
+- name: Deploy chapter-hub-blue (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: chapter-hub-blue
+    container_function: dev
+    container_ctid: 193
+    container_ip: 10.92.3.96
+    container_memory: 4096
+    container_cores: 2
+    container_disk: 32
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Deploy chapter-hub-green (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: chapter-hub-green
+    container_function: dev
+    container_ctid: 194
+    container_ip: 10.92.3.97
+    container_memory: 4096
+    container_cores: 2
+    container_disk: 32
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Netbox, app stack, HAProxy
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/chapter_hub_deploy.yml
+  tasks:
+    - name: Register containers in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      loop:
+        - "{{ chapter_hub_blue }}"
+        - "{{ chapter_hub_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+      vars:
+        nb_container_name: "{{ node.name }}"
+        nb_ctid: "{{ node.ctid }}"
+        nb_ip: "{{ node.ip }}"
+        nb_function: "{{ chapter_hub_function }}"
+        nb_cores: "{{ chapter_hub_cores }}"
+        nb_memory: "{{ chapter_hub_memory }}"
+        nb_disk: "{{ chapter_hub_disk }}"
+        nb_netbox_comment: "Chapter Hub blue-green | CT{{ node.ctid }}"
+
+    - name: Configure Chapter Hub on blue
+      ansible.builtin.include_tasks: tasks/configure-chapter-hub-node.yml
+      vars:
+        node: "{{ chapter_hub_blue }}"
+
+    - name: Configure Chapter Hub on green
+      ansible.builtin.include_tasks: tasks/configure-chapter-hub-node.yml
+      vars:
+        node: "{{ chapter_hub_green }}"
+
+    - name: Configure HAProxy for Chapter Hub
+      ansible.builtin.include_tasks: tasks/configure-chapter-hub-haproxy.yml
+
+    - name: Sync monitoring stack from registry
+      ansible.builtin.include_tasks: tasks/sync-monitoring-stack.yml
+
+    - name: Verify SSH to new nodes
+      command: >
+        ssh -o BatchMode=yes -o ConnectTimeout=12 -F {{ homelab_ssh_config }}
+        root@{{ item }} /bin/hostname
+      loop:
+        - "{{ chapter_hub_blue.ip }}"
+        - "{{ chapter_hub_green.ip }}"
+      register: ssh_verify
+      changed_when: false
+      failed_when: false
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "=== Chapter Hub deployment complete ==="
+          - "BLUE:  ssh {{ chapter_hub_blue.name }} ({{ chapter_hub_blue.ip }}) CT{{ chapter_hub_blue.ctid }}"
+          - "GREEN: ssh {{ chapter_hub_green.name }} ({{ chapter_hub_green.ip }}) CT{{ chapter_hub_green.ctid }}"
+          - "Health: curl -sI http://{{ chapter_hub_blue.ip }}:{{ chapter_hub_port }}/api/auth/providers"
+          - "HAProxy: hub.cloudigan.net → chapter-hub-blue (initial LIVE)"
+          - "Next: Update MCP server.js, NPM hub.cloudigan.net, deploy_to_standby / switch_traffic"
+          - "Doc: documentation/CHAPTER-HUB-DEPLOYMENT.md"

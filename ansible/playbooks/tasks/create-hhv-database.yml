@@ -1,0 +1,38 @@
+---
+# Create hhv DB/user on CT131 (idempotent)
+- name: Require HHV database password
+  assert:
+    that:
+      - hhv_db_password | length > 0
+    fail_msg: "Set HHV_DB_PASSWORD in homelab-nexus/.env before creating database"
+
+- name: Create HHV PostgreSQL role and database
+  shell: |
+    ssh -F {{ homelab_ssh_config }} postgresql \
+      "sudo -u postgres psql -v ON_ERROR_STOP=1" <<'EOSQL'
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ hhv_db_user }}') THEN
+        CREATE ROLE {{ hhv_db_user }} WITH LOGIN PASSWORD '{{ hhv_db_password }}';
+      END IF;
+    END
+    $$;
+    SELECT 'CREATE DATABASE {{ hhv_db_name }} OWNER {{ hhv_db_user }}'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ hhv_db_name }}')\gexec
+    GRANT ALL PRIVILEGES ON DATABASE {{ hhv_db_name }} TO {{ hhv_db_user }};
+    EOSQL
+  args:
+    executable: /bin/bash
+  no_log: true
+  register: hhv_db_create
+  changed_when: "'CREATE DATABASE' in hhv_db_create.stdout or 'CREATE ROLE' in hhv_db_create.stdout"
+
+- name: Grant schema on hhv database
+  shell: |
+    ssh -F {{ homelab_ssh_config }} postgresql "sudo -u postgres psql -v ON_ERROR_STOP=1 -d {{ hhv_db_name }}" <<'EOSQL'
+    GRANT ALL ON SCHEMA public TO {{ hhv_db_user }};
+    ALTER DATABASE {{ hhv_db_name }} OWNER TO {{ hhv_db_user }};
+    EOSQL
+  args:
+    executable: /bin/bash
+  no_log: true

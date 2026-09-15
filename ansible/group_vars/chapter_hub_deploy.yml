@@ -1,0 +1,48 @@
+---
+# Chapter Hub blue/green LXC deployment (homelab-nexus)
+# Secrets: CHAPTER_HUB_DB_PASSWORD in .env (optional if DATABASE_URL in CHAPTER_HUB_ENV_SOURCE)
+
+chapter_hub_function: dev
+chapter_hub_memory: 4096
+chapter_hub_cores: 2
+chapter_hub_disk: 32
+chapter_hub_port: 3001
+chapter_hub_app_path: /opt/chapter-hub
+chapter_hub_repo: https://github.com/heybearc/chapter-hub.git
+chapter_hub_branch: main
+chapter_hub_domain: hub.cloudigan.net
+chapter_hub_public_url: "https://{{ chapter_hub_domain }}"
+
+chapter_hub_blue:
+  name: chapter-hub-blue
+  ctid: 193
+  ip: 10.92.3.96
+  pm2_name: chapter-hub-blue
+
+chapter_hub_green:
+  name: chapter-hub-green
+  ctid: 194
+  ip: 10.92.3.97
+  pm2_name: chapter-hub-green
+
+chapter_hub_db_host: "10.92.3.23"
+chapter_hub_db_port: 5432
+chapter_hub_db_name: chapter_hub
+chapter_hub_db_user: chapter_hub
+chapter_hub_db_password: "{{ lookup('env', 'CHAPTER_HUB_DB_PASSWORD') | default('', true) }}"
+chapter_hub_database_url: >-
+  postgresql://{{ chapter_hub_db_user }}:{{ chapter_hub_db_password }}@{{ chapter_hub_db_host }}:{{ chapter_hub_db_port }}/{{ chapter_hub_db_name }}?schema=public&connect_timeout=10&connection_limit=5&pool_timeout=10
+
+chapter_hub_sandbox_ssh: chapter-hub-dev
+chapter_hub_migration_backup_path: /mnt/data/chapter-hub-backups/database/manual
+
+ansible_playbooks_root: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks"
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"

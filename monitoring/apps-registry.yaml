@@ -1,0 +1,332 @@
+# Homelab monitoring registry — single source of truth for Prometheus, Watchdog, and Uptime Kuma.
+# Run: ./scripts/monitoring/sync-monitoring-stack.sh after any change.
+# Decommission: ./scripts/monitoring/decommission-app.sh <app_id>
+#
+# state: active | paused | archived
+#   active   — scraped, watchdog-enabled, alerts fire
+#   paused   — scraped but watchdog skips restarts (e.g. Windows VM powered off intentionally)
+#   archived — removed from Prometheus/Watchdog; decommission checklist applies
+
+defaults:
+  node_exporter_port: 9100
+  scrape_interval: 15s
+  monitor_label: "true"
+
+apps:
+  # ── Production blue-green ─────────────────────────────────────────────
+  - id: theoshift
+    tier: production
+    instances:
+      - { instance: theoshift-blue, ctid: 134, ip: 10.92.3.24 }
+      - { instance: theoshift-green, ctid: 132, ip: 10.92.3.22 }
+    uptime:
+      - { name: "TheoShift Production (Public)", url: "https://theoshift.com" }
+
+  - id: factorpoint
+    tier: production
+    instances:
+      - { instance: factorpoint-blue, ctid: 185, ip: 10.92.3.183 }
+      - { instance: factorpoint-green, ctid: 187, ip: 10.92.3.187 }
+    uptime:
+      - { name: "FactorPoint Production (Public)", url: "https://factorpoint.io", accepted_codes: '["200-299","307"]' }
+
+  - id: chapter-hub
+    tier: production
+    instances:
+      - { instance: chapter-hub-blue, ctid: 193, ip: 10.92.3.96 }
+      - { instance: chapter-hub-green, ctid: 194, ip: 10.92.3.97 }
+    uptime:
+      - { name: "Chapter Hub (Public)", url: "https://hub.cloudigan.net" }
+
+  - id: cloudigan-api
+    tier: production
+    instances:
+      - { instance: cloudigan-api-blue, ctid: 181, ip: 10.92.3.181 }
+      - { instance: cloudigan-api-green, ctid: 182, ip: 10.92.3.182 }
+    app_metrics:
+      port: 3000
+      path: /metrics
+    uptime:
+      - { name: "Cloudigan API (Public)", url: "https://api.cloudigan.net/health" }
+      - { name: "Cloudigan API Blue (Internal)", url: "http://10.92.3.181:3000/health" }
+
+  - id: cloudigan-mail
+    tier: production
+    instances:
+      - { instance: cloudigan-mail-blue, ctid: 196, ip: 10.92.3.184 }
+      - { instance: cloudigan-mail-green, ctid: 197, ip: 10.92.3.185 }
+    uptime:
+      - { name: "Cloudigan Mail (Public)", url: "https://mail.cloudigan.net/health" }
+
+  - id: hhv
+    tier: production
+    instances:
+      - { instance: hhv-blue, ctid: 198, ip: 10.92.3.98 }
+      - { instance: hhv-green, ctid: 199, ip: 10.92.3.99 }
+    uptime:
+      - { name: "HHV Blue (Internal Health)", url: "http://10.92.3.98:3001/health" }
+
+  - id: tip-generator
+    tier: production
+    instances:
+      - { instance: tip-blue, ctid: 190, ip: 10.92.3.91 }
+      - { instance: tip-green, ctid: 191, ip: 10.92.3.92 }
+    uptime:
+      - { name: "TIP Generator (Public)", url: "https://tip.cloudigan.net" }
+
+  - id: cloudigan-quote-builder
+    tier: production
+    instances:
+      - { instance: cloudigan-quote-builder-blue, ctid: 200, ip: 10.92.3.100 }
+      - { instance: cloudigan-quote-builder-green, ctid: 201, ip: 10.92.3.101 }
+    uptime:
+      - { name: "cloudigan-quote-builder (Public)", url: "https://quotes.cloudigan.net" }
+
+  # ── Archived / decommissioned (kept for history + cleanup checklist) ───
+  - id: quantshift
+    tier: production
+    state: archived
+    instances:
+      - { instance: qs-primary, ctid: 100, ip: 10.92.3.27 }
+      - { instance: qs-standby, ctid: 101, ip: 10.92.3.28 }
+      - { instance: qs-blue, ctid: 137, ip: 10.92.3.29 }
+      - { instance: qs-green, ctid: 138, ip: 10.92.3.30 }
+    bot_metrics:
+      - { instance: qs-primary, ctid: 100, ip: 10.92.3.27, ports: [9200, 9201] }
+      - { instance: qs-standby, ctid: 101, ip: 10.92.3.28, ports: [9200, 9201] }
+    redis_exporter:
+      - { instance: qs-primary, ctid: 100, ip: 10.92.3.27, port: 9121 }
+
+  - id: ldc-tools
+    tier: production
+    state: archived
+    instances:
+      - { instance: ldc-prod, ctid: 133, ip: 10.92.3.23 }
+      - { instance: ldc-staging, ctid: 135, ip: 10.92.3.25 }
+    uptime:
+      - { name: "LDC Tools Production (Public)", url: "https://ldctools.com", active: false }
+
+  # ── Infrastructure ──────────────────────────────────────────────────────
+  - id: postgresql
+    tier: infrastructure
+    instances:
+      - { instance: postgres, ctid: 131, ip: 10.92.3.21 }
+    postgres_exporter:
+      - { instance: postgres, ctid: 131, ip: 10.92.3.21, port: 9187 }
+    watchdog_failover: true
+
+  - id: postgresql-replica
+    tier: infrastructure
+    instances:
+      - { instance: postgres-replica, ctid: 151, ip: 10.92.3.31 }
+    postgres_exporter:
+      - { instance: postgres-replica, ctid: 151, ip: 10.92.3.31, port: 9187, role: standby }
+
+  - id: haproxy
+    tier: infrastructure
+    instances:
+      - { instance: haproxy, ctid: 136, ip: 10.92.3.26 }
+      - { instance: haproxy-standby, ctid: 139, ip: 10.92.3.32 }
+    haproxy_exporter:
+      - { instance: haproxy, ctid: 136, ip: 10.92.3.26, port: 9101 }
+      - { instance: haproxy-standby, ctid: 139, ip: 10.92.3.32, port: 9101 }
+
+  - id: redis-shared
+    tier: infrastructure
+    instances:
+      - { instance: redis-shared, ctid: 192, ip: 10.92.3.93 }
+    port_checks:
+      - { name: "Redis Shared CT192", host: 10.92.3.93, port: 6379 }
+
+  - id: nginx-proxy
+    tier: infrastructure
+    instances:
+      - { instance: nginx-proxy, ctid: 121, ip: 10.92.3.3 }
+    uptime:
+      - { name: "NPM Admin (Internal)", url: "http://10.92.3.3:81" }
+
+  - id: adguard
+    tier: infrastructure
+    instances:
+      - { instance: adguard, ctid: 140, ip: 10.92.3.11 }
+    uptime:
+      - { name: "AdGuard Home (Internal)", url: "http://10.92.3.11:3000" }
+
+  - id: netbox
+    tier: infrastructure
+    instances:
+      - { instance: netbox, ctid: 141, ip: 10.92.3.18 }
+    uptime:
+      - { name: "Netbox (Public)", url: "https://netbox.cloudigan.net" }
+
+  - id: authentik
+    tier: infrastructure
+    instances:
+      - { instance: authentik, ctid: 170, ip: 10.92.3.75 }
+    uptime:
+      - { name: "Authentik (Public)", url: "https://auth.cloudigan.net" }
+
+  - id: n8n
+    tier: infrastructure
+    instances:
+      - { instance: n8n, ctid: 188, ip: 10.92.3.79 }
+    uptime:
+      - { name: "n8n (Public)", url: "https://flows.cloudigan.net/healthz" }
+
+  - id: uptime-kuma
+    tier: infrastructure
+    instances:
+      - { instance: uptime-kuma, ctid: 153, ip: 10.92.3.82 }
+    uptime:
+      - { name: "Uptime Kuma (Public)", url: "https://uptime.cloudigan.net" }
+      - { name: "Uptime Kuma (Internal)", url: "http://127.0.0.1:3001" }
+
+  - id: monitoring-stack
+    tier: infrastructure
+    instances:
+      - { instance: monitor, ctid: 150, ip: 10.92.3.2, local: true }
+    uptime:
+      - { name: "Grafana (Internal)", url: "http://10.92.3.2:3000" }
+      - { name: "Prometheus (Internal)", url: "http://10.92.3.2:9090" }
+      - { name: "Loki (Internal)", url: "http://10.92.3.2:3100/ready" }
+
+  - id: ansible-control
+    tier: infrastructure
+    instances:
+      - { instance: ansible-control, ctid: 183, ip: 10.92.3.90 }
+
+  - id: zammad
+    tier: infrastructure
+    instances:
+      - { instance: zammad, ctid: 186, ip: 10.92.3.77 }
+
+  - id: librenms
+    tier: infrastructure
+    instances:
+      - { instance: librenms, ctid: 152, ip: 10.92.3.81 }
+
+  - id: qa-01
+    tier: infrastructure
+    instances:
+      - { instance: qa-01, ctid: 115, ip: 10.92.3.13 }
+
+  # ── Media / utility ─────────────────────────────────────────────────────
+  - id: plex
+    tier: media
+    instances:
+      - { instance: plex, ctid: 128, ip: 10.92.3.17 }
+
+  - id: jellyfin
+    tier: media
+    instances:
+      - { instance: jellyfin, ctid: 122, ip: 10.92.3.20 }
+    uptime:
+      - { name: "Jellyfin (Public)", url: "https://jellyfin.cloudigan.net" }
+
+  - id: radarr
+    tier: media
+    instances:
+      - { instance: radarr, ctid: 124, ip: 10.92.3.7 }
+
+  - id: sonarr
+    tier: media
+    instances:
+      - { instance: sonarr, ctid: 125, ip: 10.92.3.8 }
+
+  - id: readarr
+    tier: media
+    instances:
+      - { instance: readarr, ctid: 120, ip: 10.92.3.4 }
+
+  - id: sabnzbd
+    tier: media
+    instances:
+      - { instance: sabnzbd, ctid: 127, ip: 10.92.3.16 }
+
+  - id: calibre-web
+    tier: media
+    instances:
+      - { instance: calibre-web, ctid: 129, ip: 10.92.3.19 }
+
+  - id: bookstack
+    tier: media
+    instances:
+      - { instance: bookstack, ctid: 130, ip: 10.92.3.50 }
+
+  - id: kimai
+    tier: media
+    instances:
+      - { instance: kimai, ctid: 111, ip: 10.92.3.76 }
+
+  - id: plane
+    tier: media
+    instances:
+      - { instance: plane, ctid: 184, ip: 10.92.3.51 }
+
+  - id: vikunja
+    tier: media
+    instances:
+      - { instance: vikunja, ctid: 189, ip: 10.92.3.80 }
+
+  - id: ops-stack
+    tier: media
+    instances:
+      - { instance: ops-stack, ctid: 202, ip: 10.92.3.83 }
+    uptime_kuma:
+      - { name: "Ops Hub (Public)", url: "https://ops.cloudigan.net" }
+      - { name: "ntfy push (Public)", url: "https://push.cloudigan.net" }
+
+  - id: scrypted
+    tier: media
+    instances:
+      - { instance: scrypted, ctid: 180, ip: 10.92.3.15 }
+
+  - id: vaultwarden
+    tier: media
+    instances:
+      - { instance: vaultwarden-blue, ctid: 171, ip: 10.92.3.94 }
+      - { instance: vaultwarden-green, ctid: 172, ip: 10.92.3.95 }
+
+  - id: chapter-hub-dev
+    tier: sandbox
+    state: paused
+    instances:
+      - { instance: chapter-hub-dev, ctid: 119, ip: 10.92.3.12 }
+
+  # ── External / special scrape targets ───────────────────────────────────
+  - id: truenas
+    tier: infrastructure
+    state: paused
+    custom_jobs:
+      - job_name: truenas
+        targets: ["localhost:9200"]
+        labels: { instance: truenas, role: storage, monitor: "false" }
+        scrape_timeout: 10s
+
+  - id: windows-cloudy-renvis01
+    tier: infrastructure
+    state: paused
+    custom_jobs:
+      - job_name: windows-servers
+        targets: ["10.92.4.2:9182"]
+        labels: { instance: cloudy-renvis01, os: windows, vm_id: "106", monitor: "false" }
+
+  - id: windows-justin-win11
+    tier: infrastructure
+    state: paused
+    custom_jobs:
+      - job_name: windows-workstations
+        targets: ["10.92.4.3:9182"]
+        labels: { instance: justin-win11, os: windows, vm_id: "105", monitor: "false" }
+
+decommission_checklist:
+  - Remove or set state: archived in monitoring/apps-registry.yaml
+  - Run ./scripts/monitoring/sync-monitoring-stack.sh
+  - Run Uptime Kuma sync (n8n workflow or POST /sync on CT153)
+  - Remove HAProxy backends + ACLs (app-specific Ansible task)
+  - Remove NPM proxy host + SSL cert
+  - Remove AdGuard/DC-01 DNS records
+  - Remove Netbox IP/device entries (proxmox-netbox-sync or manual)
+  - Remove Prometheus/Grafana dashboards if app-specific
+  - Stop and destroy Proxmox CT/VM
+  - Update MCP homelab-blue-green server.js if blue-green app

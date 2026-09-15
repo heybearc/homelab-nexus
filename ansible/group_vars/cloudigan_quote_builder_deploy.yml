@@ -1,0 +1,46 @@
+---
+# Cloudigan Quote Builder — first consumer of deploy-bluegreen-app.yml
+# Run:
+#   cd ansible && ansible-playbook playbooks/deploy-bluegreen-app.yml \
+#     -e @group_vars/cloudigan_quote_builder_deploy.yml
+
+bg_app_id: cloudigan-quote-builder
+bg_app_name: Cloudigan Quote Builder
+bg_app_short: quote-builder
+bg_domain: quotes.cloudigan.net
+bg_public_url: "https://quotes.cloudigan.net"
+bg_blue_host: blue-quotes.cloudigan.net
+bg_green_host: green-quotes.cloudigan.net
+bg_acl: is_cloudigan_quote_builder
+bg_backend_prefix: cloudigan-quote-builder
+bg_state_file: cloudigan-quote-builder-deployment-state.json
+
+bg_path: /opt/cloudigan-quote-builder
+bg_repo: https://github.com/heybearc/cloudigan-quote-builder.git
+bg_branch: main
+bg_src_local: "{{ lookup('env', 'HOME') }}/Projects/cloudigan-quote-builder"
+bg_deploy_type: nextjs
+bg_port: 3001
+bg_health_path: /
+bg_function: utility
+bg_memory: 2048
+bg_cores: 2
+bg_disk: 16
+
+bg_blue:
+  name: quote-builder-blue
+  ctid: 200
+  ip: 10.92.3.100
+  pm2_name: cloudigan-quote-builder-blue
+
+bg_green:
+  name: quote-builder-green
+  ctid: 201
+  ip: 10.92.3.101
+  pm2_name: cloudigan-quote-builder-green
+
+bg_configure_dns: true
+bg_configure_monitoring: true
+bg_skip_netbox: true
+bg_skip_npm: true
+bg_skip_wix_dns: true

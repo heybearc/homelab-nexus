@@ -1,0 +1,69 @@
+---
+# Node.js HHV stack on LXC (node = blue/green dict)
+- name: "Install Node 20 + PM2 on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq curl ca-certificates gnupg ufw
+      if ! command -v node >/dev/null || ! node -v | grep -q \"^v20\"; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y -qq nodejs
+      fi
+      npm install -g pm2
+      mkdir -p {{ hhv_app_path }} {{ hhv_migration_backup_path }}
+    '"
+  changed_when: true
+
+- name: "Stage HHV app to CT{{ node.ctid }}"
+  shell: |
+    set -euo pipefail
+    tar -C "{{ hhv_src_local }}" -cf /tmp/hhv-src.tar .
+    scp -F {{ homelab_ssh_config }} /tmp/hhv-src.tar prox:/tmp/hhv-src-{{ node.ctid }}.tar
+    ssh -F {{ homelab_ssh_config }} prox \
+      "pct push {{ node.ctid }} /tmp/hhv-src-{{ node.ctid }}.tar /tmp/hhv-src.tar && \
+       pct exec {{ node.ctid }} -- bash -c 'mkdir -p {{ hhv_app_path }} && tar -xf /tmp/hhv-src.tar -C {{ hhv_app_path }} && rm -f /tmp/hhv-src.tar'"
+    rm -f /tmp/hhv-src.tar
+  changed_when: true
+
+- name: Render .env for {{ node.name }}
+  ansible.builtin.template:
+    src: ../templates/hhv.env.j2
+    dest: "/tmp/hhv-{{ node.name }}.env"
+    mode: "0600"
+  delegate_to: localhost
+
+- name: "Copy .env to CT{{ node.ctid }}"
+  shell: |
+    scp -F {{ homelab_ssh_config }} /tmp/hhv-{{ node.name }}.env prox:/tmp/hhv-env-{{ node.ctid }}.env
+    ssh -F {{ homelab_ssh_config }} prox "pct push {{ node.ctid }} /tmp/hhv-env-{{ node.ctid }}.env {{ hhv_app_path }}/.env"
+    ssh prox "pct exec {{ node.ctid }} -- chmod 600 {{ hhv_app_path }}/.env"
+  no_log: true
+
+- name: "Start PM2 {{ node.pm2_name }} on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ hhv_app_path }}
+      pm2 delete {{ node.pm2_name }} 2>/dev/null || true
+      pm2 start server.js --name {{ node.pm2_name }}
+      pm2 save
+    '"
+  changed_when: true
+
+- name: "UFW allow SSH + app port on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      ufw --force enable 2>/dev/null || true
+      ufw allow 22/tcp
+      ufw allow {{ hhv_port }}/tcp
+    '"
+  changed_when: true
+
+- name: "Health check {{ node.ip }}:{{ hhv_port }}/health"
+  ansible.builtin.uri:
+    url: "http://{{ node.ip }}:{{ hhv_port }}/health"
+    status_code: 200
+  register: hhv_health
+  until: hhv_health.status == 200
+  retries: 24
+  delay: 5

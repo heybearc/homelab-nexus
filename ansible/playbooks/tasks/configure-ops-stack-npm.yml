@@ -1,0 +1,9 @@
+---
+- name: Configure NPM proxy hosts for Ops stack
+  ansible.builtin.include_tasks: configure-ops-stack-npm-host.yml
+  vars:
+    ops_npm_domain: "{{ item.domain }}"
+    ops_npm_forward_port: "{{ item.port }}"
+  loop:
+    - { domain: "{{ ops_stack_domain }}", port: "{{ ops_stack_port }}" }
+    - { domain: "{{ ops_stack_ntfy_domain }}", port: "{{ ops_ntfy_port }}" }

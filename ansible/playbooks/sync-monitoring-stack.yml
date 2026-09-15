@@ -1,0 +1,13 @@
+---
+# Regenerate Prometheus, Watchdog, and Alertmanager config from monitoring/apps-registry.yaml
+#
+#   cd ansible && ansible-playbook playbooks/sync-monitoring-stack.yml
+
+- name: Sync monitoring stack (Prometheus + Watchdog + Alertmanager)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Run sync-monitoring-stack.sh
+      ansible.builtin.include_tasks: tasks/sync-monitoring-stack.yml

@@ -1,0 +1,178 @@
+---
+# Deploy a blue/green Node/Next.js app on 10.92.3.0/24 (D-020)
+#
+# Required: -e @group_vars/<app>_deploy.yml defining bg_app_id, bg_domain, bg_blue, bg_green, …
+# Example:
+#   cd ansible && ansible-playbook playbooks/deploy-bluegreen-app.yml \
+#     -e @group_vars/cloudigan_quote_builder_deploy.yml
+#
+# Docs: documentation/BLUEGREEN-APP-ANSIBLE.md
+
+- name: Plan blue-green deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/bluegreen_app_defaults.yml
+  tasks:
+    - name: Require core vars
+      assert:
+        that:
+          - bg_app_id is defined and bg_app_id | length > 0
+          - bg_domain is defined and bg_domain | length > 0
+          - bg_blue is defined
+          - bg_green is defined
+          - bg_path is defined
+          - bg_repo is defined
+        fail_msg: "Pass -e @group_vars/<app>_deploy.yml with bg_app_id, bg_domain, bg_blue, bg_green, bg_path, bg_repo"
+
+    - name: Derive naming helpers
+      set_fact:
+        bg_acl: "{{ bg_acl | default('is_' + (bg_app_id | replace('-', '_'))) }}"
+        bg_backend_prefix: "{{ bg_backend_prefix | default(bg_app_id) }}"
+        bg_state_file: "{{ bg_state_file | default(bg_app_id + '-deployment-state.json') }}"
+        bg_public_url: "{{ bg_public_url | default('https://' + bg_domain) }}"
+        bg_app_name: "{{ bg_app_name | default(bg_app_id) }}"
+
+    - name: Require Netbox token when Netbox registration enabled
+      assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in homelab-nexus/.env"
+      when: not (bg_skip_netbox | bool)
+
+    - name: Verify CTIDs are free on Proxmox
+      command: ssh prox "test ! -f /etc/pve/lxc/{{ item }}.conf"
+      loop:
+        - "{{ bg_blue.ctid }}"
+        - "{{ bg_green.ctid }}"
+      changed_when: false
+
+    - name: Show deployment plan
+      debug:
+        msg:
+          - "=== {{ bg_app_name }} ({{ bg_app_id }}) ==="
+          - "BLUE:  CT{{ bg_blue.ctid }} {{ bg_blue.name }} @ {{ bg_blue.ip }} PM2={{ bg_blue.pm2_name }}"
+          - "GREEN: CT{{ bg_green.ctid }} {{ bg_green.name }} @ {{ bg_green.ip }} PM2={{ bg_green.pm2_name }}"
+          - "Domain: {{ bg_domain }} | ACL: {{ bg_acl }} | port {{ bg_port }}"
+          - "Path: {{ bg_path }} | type: {{ bg_deploy_type }}"
+          - "Storage: {{ bg_storage | default('truenas-proxmox') }}"
+          - "NPM (you): {{ bg_domain }} → {{ bg_haproxy_vip }}:80"
+
+- name: Deploy blue LXC (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: "{{ bg_blue.name }}"
+    container_function: "{{ bg_function }}"
+    container_ctid: "{{ bg_blue.ctid }}"
+    container_ip: "{{ bg_blue.ip }}"
+    container_memory: "{{ bg_memory }}"
+    container_cores: "{{ bg_cores }}"
+    container_disk: "{{ bg_disk }}"
+    container_storage: "{{ bg_storage | default('truenas-proxmox') }}"
+    skip_netbox: "{{ bg_skip_netbox }}"
+    skip_npm: "{{ bg_skip_npm }}"
+    skip_wix_dns: "{{ bg_skip_wix_dns }}"
+
+- name: Deploy green LXC (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: "{{ bg_green.name }}"
+    container_function: "{{ bg_function }}"
+    container_ctid: "{{ bg_green.ctid }}"
+    container_ip: "{{ bg_green.ip }}"
+    container_memory: "{{ bg_memory }}"
+    container_cores: "{{ bg_cores }}"
+    container_disk: "{{ bg_disk }}"
+    container_storage: "{{ bg_storage | default('truenas-proxmox') }}"
+    skip_netbox: "{{ bg_skip_netbox }}"
+    skip_npm: "{{ bg_skip_npm }}"
+    skip_wix_dns: "{{ bg_skip_wix_dns }}"
+
+- name: Configure app, monitoring, HAProxy, DNS
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/bluegreen_app_defaults.yml
+  tasks:
+    - name: Re-derive naming helpers
+      set_fact:
+        bg_acl: "{{ bg_acl | default('is_' + (bg_app_id | replace('-', '_'))) }}"
+        bg_backend_prefix: "{{ bg_backend_prefix | default(bg_app_id) }}"
+        bg_state_file: "{{ bg_state_file | default(bg_app_id + '-deployment-state.json') }}"
+        bg_public_url: "{{ bg_public_url | default('https://' + bg_domain) }}"
+        bg_app_name: "{{ bg_app_name | default(bg_app_id) }}"
+
+    - name: Register containers in Netbox
+      when: netbox_token | default('') | length > 0
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      loop:
+        - "{{ bg_blue }}"
+        - "{{ bg_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+      vars:
+        nb_container_name: "{{ node.name }}"
+        nb_ctid: "{{ node.ctid }}"
+        nb_ip: "{{ node.ip }}"
+        nb_function: "{{ bg_function }}"
+        nb_cores: "{{ bg_cores }}"
+        nb_memory: "{{ bg_memory }}"
+        nb_disk: "{{ bg_disk }}"
+        nb_netbox_comment: "{{ bg_app_name }} blue-green | {{ bg_domain }} | CT{{ node.ctid }}"
+
+    - name: Configure blue node
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-node.yml
+      vars:
+        node: "{{ bg_blue }}"
+
+    - name: Configure green node
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-node.yml
+      vars:
+        node: "{{ bg_green }}"
+
+    - name: Install monitoring agents
+      when: bg_configure_monitoring | bool
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-monitoring.yml
+      loop:
+        - "{{ bg_blue }}"
+        - "{{ bg_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+
+    - name: Register in apps-registry.yaml
+      when: bg_configure_monitoring | bool
+      ansible.builtin.include_tasks: tasks/register-bluegreen-monitoring.yml
+
+    - name: Sync monitoring stack
+      when: bg_configure_monitoring | bool
+      ansible.builtin.include_tasks: tasks/sync-monitoring-stack.yml
+
+    - name: Configure HAProxy
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-haproxy.yml
+
+    - name: Configure Technitium DNS
+      when: bg_configure_dns | bool
+      ansible.builtin.include_tasks: tasks/configure-bluegreen-dns.yml
+
+    - name: Verify SSH to new nodes
+      command: >
+        ssh -o BatchMode=yes -o ConnectTimeout=12 -F {{ homelab_ssh_config }}
+        root@{{ item }} hostname
+      loop:
+        - "{{ bg_blue.ip }}"
+        - "{{ bg_green.ip }}"
+      changed_when: false
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "=== {{ bg_app_name }} deployment complete ==="
+          - "BLUE:  {{ bg_blue.name }} {{ bg_blue.ip }} CT{{ bg_blue.ctid }}"
+          - "GREEN: {{ bg_green.name }} {{ bg_green.ip }} CT{{ bg_green.ctid }}"
+          - "Health: curl -s -o /dev/null -w '%{http_code}' http://{{ bg_blue.ip }}:{{ bg_port }}{{ bg_health_path }}"
+          - "HAProxy: {{ bg_domain }} → {{ bg_backend_prefix }}-blue (initial LIVE)"
+          - "Next: add MCP APPS entry for {{ bg_app_id }}; NPM → {{ bg_haproxy_vip }}:80"
+          - "Next: remove .no-auto-deploy in app repo; deploy_to_standby"
+          - "Doc: documentation/BLUEGREEN-APP-ANSIBLE.md"

@@ -1,0 +1,67 @@
+---
+- name: Install Docker prerequisites
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - curl
+    state: present
+    update_cache: true
+
+- name: Enable Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Create Technitium data directory
+  ansible.builtin.file:
+    path: /opt/technitium
+    state: directory
+    mode: "0755"
+
+- name: Deploy Technitium docker compose
+  ansible.builtin.copy:
+    dest: /opt/technitium/docker-compose.yml
+    mode: "0644"
+    content: |
+      services:
+        technitium:
+          image: technitium/dns-server:latest
+          container_name: technitium
+          restart: unless-stopped
+          network_mode: host
+          environment:
+            - DNS_SERVER_DOMAIN=technitium-primary
+          volumes:
+            - /opt/technitium/data:/etc/dns
+
+- name: Start Technitium
+  ansible.builtin.command: docker-compose up -d
+  args:
+    chdir: /opt/technitium
+  register: technitium_up
+  changed_when: "'Started' in technitium_up.stdout or 'Creating' in technitium_up.stdout"
+
+- name: Wait for Technitium web API
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ technitium_primary.web_port }}/"
+    status_code: [200, 302]
+  register: technitium_health
+  until: technitium_health.status in [200, 302]
+  retries: 24
+  delay: 5
+
+- name: Open UFW for DNS from homelab VLANs
+  ansible.builtin.command: >-
+    ufw allow from 10.92.0.0/16 to any port 53 comment technitium-dns
+  register: ufw53
+  changed_when: "'Rule added' in ufw53.stdout"
+  failed_when: false
+
+- name: Open UFW for Technitium web UI
+  ansible.builtin.command: >-
+    ufw allow from 10.92.0.0/16 to any port {{ technitium_primary.web_port }} comment technitium-web
+  register: ufwweb
+  changed_when: "'Rule added' in ufwweb.stdout"
+  failed_when: false

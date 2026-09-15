@@ -1,0 +1,40 @@
+---
+- name: Technitium A record {{ ops_dns_fqdn }} → NPM
+  ansible.builtin.uri:
+    url: "{{ technitium_url }}/api/zones/records/add"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      domain: "{{ ops_dns_fqdn }}"
+      type: A
+      ipAddress: "{{ ops_stack_dns_target_ip }}"
+      ttl: 300
+      overwrite: "true"
+      ptr: "false"
+    return_content: true
+    status_code: [200]
+  register: ops_dns_add
+  no_log: true
+  delegate_to: localhost
+
+- name: Check Technitium add status for {{ ops_dns_fqdn }}
+  ansible.builtin.fail:
+    msg: "Technitium record add failed for {{ ops_dns_fqdn }}: {{ ops_dns_add.content }}"
+  when: >
+    ops_dns_add.json.status | default('') not in ['ok', 'success']
+    and ('already exists' not in (ops_dns_add.json.errorMessage | default('') | lower))
+    and ('exists' not in (ops_dns_add.content | default('') | lower))
+  delegate_to: localhost
+
+- name: Verify Technitium resolves {{ ops_dns_fqdn }}
+  ansible.builtin.command:
+    argv:
+      - dig
+      - +short
+      - "{{ ops_dns_fqdn }}"
+      - "@10.92.3.10"
+  register: ops_dns_dig
+  changed_when: false
+  failed_when: ops_stack_dns_target_ip not in (ops_dns_dig.stdout | default(''))
+  delegate_to: localhost

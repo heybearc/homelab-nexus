@@ -1,0 +1,144 @@
+---
+# Deploy Helpful Hirsch Ventures (HHV) blue/green LXCs + monitoring + HAProxy (D-020)
+#
+# Prereqs (homelab-nexus/.env):
+#   NETBOX_TOKEN
+#   Optional: HHV_DB_PASSWORD (creates Postgres DB hhv on CT131)
+#
+# Run:
+#   cd ansible && ansible-playbook playbooks/deploy-hhv-containers.yml
+#
+# You configure: external DNS + NPM → HAProxy VIP 10.92.3.33:80
+
+- name: Plan HHV deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/hhv_deploy.yml
+  tasks:
+    - name: Require Netbox token
+      assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in homelab-nexus/.env"
+
+    - name: Verify CTIDs are free on Proxmox
+      command: ssh prox "test ! -f /etc/pve/lxc/{{ item }}.conf"
+      loop:
+        - "{{ hhv_blue.ctid }}"
+        - "{{ hhv_green.ctid }}"
+      changed_when: false
+
+    - name: Show deployment plan
+      debug:
+        msg:
+          - "=== HHV (Helpful Hirsch Ventures) ==="
+          - "BLUE:  CT{{ hhv_blue.ctid }} {{ hhv_blue.name }} @ {{ hhv_blue.ip }}"
+          - "GREEN: CT{{ hhv_green.ctid }} {{ hhv_green.name }} @ {{ hhv_green.ip }}"
+          - "URL: {{ hhv_public_url }} | PM2: {{ hhv_blue.pm2_name }} / {{ hhv_green.pm2_name }}"
+          - "NPM (you): {{ hhv_domain }} → {{ hhv_haproxy_vip }}:80"
+
+- name: Deploy hhv-blue (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: hhv-blue
+    container_function: utility
+    container_ctid: 198
+    container_ip: 10.92.3.98
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 16
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Deploy hhv-green (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: hhv-green
+    container_function: utility
+    container_ctid: 199
+    container_ip: 10.92.3.99
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 16
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Netbox, app, monitoring, HAProxy
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/hhv_deploy.yml
+  tasks:
+    - name: Register containers in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      loop:
+        - "{{ hhv_blue }}"
+        - "{{ hhv_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+      vars:
+        nb_container_name: "{{ node.name }}"
+        nb_ctid: "{{ node.ctid }}"
+        nb_ip: "{{ node.ip }}"
+        nb_function: "{{ hhv_function }}"
+        nb_cores: "{{ hhv_cores }}"
+        nb_memory: "{{ hhv_memory }}"
+        nb_disk: "{{ hhv_disk }}"
+        nb_netbox_comment: "HHV blue-green | {{ hhv_domain }} | CT{{ node.ctid }}"
+
+    - name: Create HHV database on PostgreSQL (optional)
+      ansible.builtin.include_tasks: tasks/create-hhv-database.yml
+      when: hhv_db_password | length > 0
+
+    - name: Configure HHV on blue
+      ansible.builtin.include_tasks: tasks/configure-hhv-node.yml
+      vars:
+        node: "{{ hhv_blue }}"
+
+    - name: Configure HHV on green
+      ansible.builtin.include_tasks: tasks/configure-hhv-node.yml
+      vars:
+        node: "{{ hhv_green }}"
+
+    - name: Install monitoring agents on both nodes
+      ansible.builtin.include_tasks: tasks/configure-hhv-monitoring.yml
+      loop:
+        - "{{ hhv_blue }}"
+        - "{{ hhv_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+
+    - name: Add Prometheus scrape targets for HHV
+      ansible.builtin.include_tasks: tasks/sync-monitoring-stack.yml
+
+    - name: Configure HAProxy for HHV
+      ansible.builtin.include_tasks: tasks/configure-hhv-haproxy.yml
+
+    - name: Verify SSH to new nodes
+      command: >
+        ssh -o BatchMode=yes -o ConnectTimeout=12 -F {{ homelab_ssh_config }}
+        root@{{ item }} hostname
+      loop:
+        - "{{ hhv_blue.ip }}"
+        - "{{ hhv_green.ip }}"
+      changed_when: false
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "=== HHV deployment complete ==="
+          - "BLUE:  ssh hhv-blue ({{ hhv_blue.ip }}) CT{{ hhv_blue.ctid }}"
+          - "GREEN: ssh hhv-green ({{ hhv_green.ip }}) CT{{ hhv_green.ctid }}"
+          - "Health: curl -s http://{{ hhv_blue.ip }}:{{ hhv_port }}/health"
+          - "HAProxy: {{ hhv_domain }} → hhv-blue (initial LIVE)"
+          - "Monitoring: node_exporter :9100, promtail → Loki on both CTs"
+          - "Next: NPM {{ hhv_domain }} → {{ hhv_haproxy_vip }}:80; external DNS A record"
+          - "Next: MCP server.js app id hhv; build Next.js app → github.com/heybearc/hhv-website"
+          - "Doc: documentation/HHV-DEPLOYMENT.md"

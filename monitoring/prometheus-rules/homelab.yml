@@ -1,0 +1,207 @@
+groups:
+  - name: container_health
+    interval: 30s
+    rules:
+      - alert: ContainerDown
+        expr: up{monitor="true"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.instance }} is DOWN"
+          description: "{{ $labels.instance }} ({{ $labels.container }}, app {{ $labels.app }}) unreachable for 2+ minutes."
+
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle",monitor="true"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }}"
+
+      - alert: HighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes{monitor="true"} / node_memory_MemTotal_bytes{monitor="true"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }}"
+
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/",monitor="true"} / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/",monitor="true"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }}"
+
+      - alert: CriticalDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/",monitor="true"} / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/",monitor="true"})) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL disk on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }}"
+
+  - name: bot_health
+    interval: 30s
+    rules:
+      - alert: BotContainerDown
+        expr: up{job=~"bot_.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "QuantShift bot container DOWN: {{ $labels.instance }}"
+          description: "Bot container {{ $labels.instance }} is unreachable."
+
+      - alert: BotProcessDown
+        expr: node_systemd_unit_state{name=~"quantshift-(equity|crypto).service",state="active",monitor="true"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "QuantShift bot process DOWN: {{ $labels.name }}"
+          description: "{{ $labels.name }} is not active for 3+ minutes."
+
+      - alert: BotServiceFailed
+        expr: node_systemd_unit_state{name=~"quantshift-(equity|crypto).service",state="failed",monitor="true"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "QuantShift bot service FAILED: {{ $labels.name }}"
+          description: "{{ $labels.name }} has entered the failed state."
+
+  - name: postgres_health
+    interval: 30s
+    rules:
+      - alert: PostgresDown
+        expr: up{job=~"postgres_exporter.*",container="ct131"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is DOWN"
+          description: "PostgreSQL on CT131 is unreachable."
+
+      - alert: PostgresTooManyConnections
+        expr: sum(pg_stat_activity_count) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL high connection count"
+          description: "{{ $value }} active connections (limit ~100)"
+
+  - name: haproxy_health
+    interval: 30s
+    rules:
+      - alert: HAProxyDown
+        expr: up{job=~"haproxy_stats_haproxy$"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HAProxy is DOWN"
+          description: "HAProxy on CT136 is unreachable."
+
+      - alert: HAProxyBackendDown
+        expr: haproxy_backend_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HAProxy backend {{ $labels.backend }} is DOWN"
+          description: "HAProxy backend {{ $labels.backend }} has no healthy servers."
+
+  - name: truenas_health
+    interval: 30s
+    rules:
+      - alert: TrueNASPoolDegraded
+        expr: truenas_pool_healthy == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} is DEGRADED"
+          description: "Pool {{ $labels.pool }} is not healthy."
+
+      - alert: TrueNASDiskFaulted
+        expr: truenas_disk_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS disk FAULTED in pool {{ $labels.pool }}"
+          description: "Disk {{ $labels.disk }} in pool {{ $labels.pool }} is faulted."
+
+      - alert: TrueNASDiskWriteErrors
+        expr: truenas_disk_write_errors > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS disk {{ $labels.disk }} has write errors"
+          description: "Disk {{ $labels.disk }} has {{ $value }} write errors."
+
+      - alert: TrueNASDiskReadErrors
+        expr: truenas_disk_read_errors > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS disk {{ $labels.disk }} has read errors"
+          description: "Disk {{ $labels.disk }} has {{ $value }} read errors."
+
+      - alert: TrueNASAppDown
+        expr: truenas_app_running == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS app {{ $labels.app }} is not running"
+          description: "TrueNAS app {{ $labels.app }} is stopped or in error state."
+
+      - alert: TrueNASCriticalAlert
+        expr: truenas_alerts_critical > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS has {{ $value }} critical alert(s)"
+          description: "Check TrueNAS UI for critical alerts."
+
+      - alert: TrueNASExporterDown
+        expr: up{job="truenas"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS exporter is unreachable"
+          description: "TrueNAS exporter on CT150:9200 is down or TrueNAS API unreachable."
+
+  - name: scrypted_streams
+    interval: 30s
+    rules:
+      - alert: ScryptedStreamStorm
+        expr: scrypted_baichuan_disconnects{window="3m"} > 40
+        for: 4m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scrypted camera streams in a reconnect storm"
+          description: "{{ $value }} Baichuan disconnects in 3 minutes on {{ $labels.instance }}. Local watchdog should restart scrypted.service; if this stays firing, streams are still dead."
+
+      - alert: ScryptedStreamsUnhealthy
+        expr: scrypted_stream_healthy == 0
+        for: 8m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scrypted streams unhealthy"
+          description: "Scrypted on {{ $labels.instance }} is not delivering video (service down or Baichuan storm). Watchdog cooldown 20m."

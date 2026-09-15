@@ -1,0 +1,90 @@
+---
+- name: Check if Windows 11 VM already exists
+  ansible.builtin.command: ssh prox "test -f /etc/pve/qemu-server/{{ win11_vmid }}.conf"
+  delegate_to: localhost
+  register: win11_vm_exists
+  failed_when: false
+  changed_when: false
+
+- name: Read existing VM config
+  ansible.builtin.command: ssh prox "qm config {{ win11_vmid }}"
+  delegate_to: localhost
+  register: win11_existing_cfg
+  changed_when: false
+  when: win11_vm_exists.rc == 0
+
+- name: Parse existing VM name
+  ansible.builtin.set_fact:
+    win11_existing_name: "{{ win11_existing_cfg.stdout_lines | select('match', '^name: ') | first | regex_replace('^name: ', '') }}"
+  when: win11_vm_exists.rc == 0
+
+- name: Assert VMID {{ win11_vmid }} is this guest (or a known previous name)
+  ansible.builtin.assert:
+    that:
+      - win11_existing_name in ([win11_name] + (win11_previous_names | default([])))
+    fail_msg: >-
+      VMID {{ win11_vmid }} is '{{ win11_existing_name }}', not {{ win11_name }}
+      (or previous {{ win11_previous_names | default([]) | join(', ') }}).
+      Pick a free VMID or destroy the conflicting guest first.
+  when: win11_vm_exists.rc == 0
+
+- name: Rename Proxmox VM to {{ win11_name }}
+  ansible.builtin.command: >-
+    ssh prox "qm set {{ win11_vmid }}
+    --name {{ win11_name }}
+    --description '{{ win11_name }} | {{ win11_domain }} | {{ win11_ip }}/{{ win11_cidr }} VLAN 924 | Win11 23H2'"
+  delegate_to: localhost
+  when:
+    - win11_vm_exists.rc == 0
+    - win11_existing_name != win11_name
+
+- name: Create Windows 11 QEMU guest on Proxmox
+  ansible.builtin.shell: >
+    ssh prox "qm create {{ win11_vmid }}
+    --name {{ win11_name }}
+    --ostype {{ win11_ostype }}
+    --machine {{ win11_machine }}
+    --bios ovmf
+    --cpu {{ win11_cpu }}
+    --cores {{ win11_cores }}
+    --sockets {{ win11_sockets }}
+    --memory {{ win11_memory }}
+    --scsihw virtio-scsi-single
+    --scsi0 {{ win11_storage }}:{{ win11_disk }},cache=writeback,iothread=1
+    --net0 virtio,bridge={{ win11_bridge }}
+    --ide2 {{ win11_iso }},media=cdrom
+    --ide3 {{ win11_virtio_iso }},media=cdrom
+    --boot 'order=ide2;scsi0'
+    --agent enabled=1
+    --onboot {{ win11_onboot }}
+    --description '{{ win11_name }} | {{ win11_domain }} | {{ win11_ip }}/{{ win11_cidr }} VLAN 924 | Win11 23H2'"
+  delegate_to: localhost
+  register: win11_qm_create
+  changed_when: win11_qm_create.rc == 0
+  when: win11_vm_exists.rc != 0
+
+- name: Add OVMF EFI disk
+  ansible.builtin.command: ssh prox "qm set {{ win11_vmid }} --efidisk0 {{ win11_storage }}:1,efitype=4m,pre-enrolled-keys=1"
+  delegate_to: localhost
+  when: win11_vm_exists.rc != 0
+
+- name: Add TPM 2.0 (required for Windows 11 setup)
+  ansible.builtin.command: ssh prox "qm set {{ win11_vmid }} --tpmstate0 {{ win11_storage }}:1,version=v2.0"
+  delegate_to: localhost
+  when: win11_vm_exists.rc != 0
+
+- name: Start Windows 11 VM
+  ansible.builtin.command: ssh prox "qm start {{ win11_vmid }}"
+  delegate_to: localhost
+  register: win11_qm_start
+  changed_when: win11_qm_start.rc == 0
+  failed_when: false
+  when: win11_autostart | bool
+
+- name: Treat already-running as ok
+  ansible.builtin.fail:
+    msg: "qm start {{ win11_vmid }} failed: {{ win11_qm_start.stderr | default(win11_qm_start.stdout) }}"
+  when:
+    - win11_autostart | bool
+    - win11_qm_start.rc | default(0) != 0
+    - "'already running' not in (win11_qm_start.stderr | default('') + win11_qm_start.stdout | default('')) | lower"

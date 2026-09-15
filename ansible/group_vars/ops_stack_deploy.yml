@@ -1,0 +1,57 @@
+---
+# Ops Hub stack — ntfy + ops-sync + ops-hub on single LXC
+ops_stack_name: ops-stack
+ops_stack_function: productivity
+ops_stack_ctid: 202
+ops_stack_ip: "10.92.3.83"
+ops_stack_cidr: 24
+ops_stack_gateway: "10.92.3.1"
+ops_stack_bridge: vmbr0923
+ops_stack_memory: 4096
+ops_stack_cores: 2
+ops_stack_disk: 32
+ops_stack_domain: ops.cloudigan.net
+ops_stack_ntfy_domain: push.cloudigan.net
+ops_stack_template: local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst
+ops_stack_storage: truenas-proxmox
+
+ops_stack_nameserver: "10.92.3.10"
+ops_stack_nameserver_secondary: "10.92.3.203"
+ops_stack_searchdomain: cloudigan.net
+ops_stack_dns_target_ip: "10.92.3.3"
+ops_stack_dns_zone: cloudigan.net
+
+ops_stack_port: 3001
+ops_sync_port: 3002
+ops_ntfy_port: 8080
+ops_ntfy_topic: cory-daily-briefing
+
+ops_hub_repo_path: /opt/ops-hub
+ops_sync_path: /opt/ops-sync
+ops_ntfy_path: /opt/ntfy
+
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+npm_ssl: true
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+technitium_url: "{{ lookup('env', 'TECHNITIUM_URL') | default('http://10.92.3.10:5380', true) }}"
+technitium_api_token: >-
+  {{
+    lookup('env', 'TECHNITIUM_API_TOKEN')
+    | default(lookup('file', lookup('env', 'HOME') + '/.cache/technitium-token', errors='ignore'), true)
+    | default('', true)
+    | trim
+  }}
+
+vikunja_api_url: "{{ lookup('env', 'VIKUNJA_API_URL') | default('https://tasks.cloudigan.net/api/v1', true) }}"
+vikunja_api_token: "{{ lookup('env', 'VIKUNJA_API_TOKEN') | default('', true) }}"
+kimai_api_token: "{{ lookup('env', 'KIMAI_API_TOKEN') | default('', true) }}"
+kimai_api_user: "{{ lookup('env', 'KIMAI_API_USER') | default('cory@cloudigan.com', true) }}"
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"
+provisioning_scripts: "{{ playbook_dir }}/../../scripts/provisioning"

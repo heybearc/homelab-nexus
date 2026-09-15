@@ -1,0 +1,41 @@
+---
+- name: List Proxmox backup jobs
+  ansible.builtin.command: ssh prox "pvesh get /cluster/backup --output-format json"
+  delegate_to: localhost
+  register: win11_backup_jobs
+  changed_when: false
+
+- name: Detect existing backup job for VM {{ win11_vmid }}
+  ansible.builtin.set_fact:
+    win11_backup_exists: >-
+      {{
+        (win11_backup_jobs.stdout | from_json)
+        | selectattr('vmid', 'defined')
+        | map(attribute='vmid')
+        | map('string')
+        | select('regex', '(^|,)' ~ (win11_vmid | string) ~ '(,|$)')
+        | list | length > 0
+      }}
+
+- name: Create daily vzdump job for VM {{ win11_vmid }}
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pvesh
+      - create
+      - /cluster/backup
+      - --vmid
+      - "{{ win11_vmid }}"
+      - --storage
+      - "{{ win11_backup_storage }}"
+      - --schedule
+      - "{{ win11_backup_schedule }}"
+      - --mode
+      - snapshot
+      - --compress
+      - zstd
+      - --enabled
+      - "1"
+  delegate_to: localhost
+  when: not (win11_backup_exists | bool)

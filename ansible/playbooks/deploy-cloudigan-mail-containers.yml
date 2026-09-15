@@ -1,0 +1,127 @@
+---
+# Deploy Cloudigan Mail Gateway blue/green LXCs + app + HAProxy (D-020)
+#
+# Prereqs (homelab-nexus/.env):
+#   NETBOX_TOKEN
+#   M365_CLIENT_ID, M365_TENANT_ID, M365_CLIENT_SECRET
+#   Optional: CLOUDIGAN_MAIL_API_KEYS=chapter-hub:...,cloudigan-api:...
+#
+# Run:
+#   cd ansible && ansible-playbook playbooks/deploy-cloudigan-mail-containers.yml
+
+- name: Plan Cloudigan Mail deployment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/cloudigan_mail_deploy.yml
+  tasks:
+    - name: Require Netbox token
+      assert:
+        that:
+          - netbox_token | length > 0
+        fail_msg: "Set NETBOX_TOKEN in homelab-nexus/.env"
+
+    - name: Verify CTIDs are free on Proxmox
+      command: ssh prox "test ! -f /etc/pve/lxc/{{ item }}.conf"
+      loop:
+        - "{{ cloudigan_mail_blue.ctid }}"
+        - "{{ cloudigan_mail_green.ctid }}"
+      changed_when: false
+
+    - name: Show deployment plan
+      debug:
+        msg:
+          - "=== Cloudigan Mail Gateway ==="
+          - "BLUE:  CT{{ cloudigan_mail_blue.ctid }} {{ cloudigan_mail_blue.name }} @ {{ cloudigan_mail_blue.ip }}"
+          - "GREEN: CT{{ cloudigan_mail_green.ctid }} {{ cloudigan_mail_green.name }} @ {{ cloudigan_mail_green.ip }}"
+          - "URL: {{ cloudigan_mail_public_url }} | port {{ cloudigan_mail_port }}"
+
+- name: Deploy cloudigan-mail-blue (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: cloudigan-mail-blue
+    container_function: utility
+    container_ctid: 196
+    container_ip: 10.92.3.184
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 16
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Deploy cloudigan-mail-green (Proxmox baseline)
+  ansible.builtin.import_playbook: "{{ playbook_dir }}/../../../ansible-playbooks/playbooks/deploy-proxmox-container.yml"
+  vars:
+    container_name: cloudigan-mail-green
+    container_function: utility
+    container_ctid: 197
+    container_ip: 10.92.3.185
+    container_memory: 2048
+    container_cores: 2
+    container_disk: 16
+    container_storage: truenas-proxmox
+    skip_netbox: true
+    skip_npm: true
+    skip_wix_dns: true
+
+- name: Netbox, app stack, HAProxy
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/cloudigan_mail_deploy.yml
+  tasks:
+    - name: Register containers in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      loop:
+        - "{{ cloudigan_mail_blue }}"
+        - "{{ cloudigan_mail_green }}"
+      loop_control:
+        loop_var: node
+        label: "{{ node.name }}"
+      vars:
+        nb_container_name: "{{ node.name }}"
+        nb_ctid: "{{ node.ctid }}"
+        nb_ip: "{{ node.ip }}"
+        nb_function: "{{ cloudigan_mail_function }}"
+        nb_cores: "{{ cloudigan_mail_cores }}"
+        nb_memory: "{{ cloudigan_mail_memory }}"
+        nb_disk: "{{ cloudigan_mail_disk }}"
+        nb_netbox_comment: "Cloudigan Mail Gateway blue-green | CT{{ node.ctid }}"
+
+    - name: Configure mail gateway on blue
+      ansible.builtin.include_tasks: tasks/configure-cloudigan-mail-node.yml
+      vars:
+        node: "{{ cloudigan_mail_blue }}"
+
+    - name: Configure mail gateway on green
+      ansible.builtin.include_tasks: tasks/configure-cloudigan-mail-node.yml
+      vars:
+        node: "{{ cloudigan_mail_green }}"
+
+    - name: Configure HAProxy for Cloudigan Mail
+      ansible.builtin.include_tasks: tasks/configure-cloudigan-mail-haproxy.yml
+
+    - name: Configure DC-01 DNS for Cloudigan Mail
+      ansible.builtin.include_tasks: tasks/configure-cloudigan-mail-dns.yml
+
+    - name: Verify SSH hostnames
+      command: >
+        ssh -o BatchMode=yes -o ConnectTimeout=12 -F {{ homelab_ssh_config }}
+        root@{{ item }} hostname
+      loop:
+        - "{{ cloudigan_mail_blue.ip }}"
+        - "{{ cloudigan_mail_green.ip }}"
+      changed_when: false
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "=== Cloudigan Mail Gateway deployed ==="
+          - "BLUE:  {{ cloudigan_mail_blue.name }} @ {{ cloudigan_mail_blue.ip }} CT{{ cloudigan_mail_blue.ctid }}"
+          - "GREEN: {{ cloudigan_mail_green.name }} @ {{ cloudigan_mail_green.ip }} CT{{ cloudigan_mail_green.ctid }}"
+          - "Health: curl -s http://{{ cloudigan_mail_blue.ip }}:{{ cloudigan_mail_port }}/health"
+          - "HAProxy: mail.cloudigan.net → cloudigan-mail-blue (initial LIVE)"
+          - "Next: NPM mail.cloudigan.net → VIP 10.92.3.33; store API keys in vault"
+          - "Doc: documentation/CLOUDIGAN-MAIL-DEPLOYMENT.md"

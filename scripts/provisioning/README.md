@@ -11,7 +11,7 @@
 This pipeline automates the complete deployment process for new Proxmox LXC containers, including:
 
 1. **Auto-assign CTID** - Automatically assigns next available CTID from appropriate range
-2. **Proxmox LXC Creation** - Creates and starts container with specified resources
+2. **Proxmox LXC Creation** - Creates and starts container on TrueNAS `truenas-proxmox`
 3. **Netbox IPAM Registration** - Registers VM, interface, and IP in Netbox
 4. **NPM Reverse Proxy** - Creates proxy host entry with optional SSL
 5. **DNS Registration** - Adds A record to AdGuard Home

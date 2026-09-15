@@ -1,0 +1,40 @@
+---
+# Append HHV node_exporter targets to Prometheus on monitoring-stack (CT150)
+- name: Check if HHV targets already in prometheus.yml
+  shell: |
+    ssh -F {{ homelab_ssh_config }} monitoring-stack "grep -q '{{ hhv_blue.ip }}:9100' /etc/prometheus/prometheus.yml"
+  register: hhv_prom_exists
+  changed_when: false
+  failed_when: false
+
+- name: Add HHV scrape targets to Prometheus
+  when: hhv_prom_exists.rc != 0
+  shell: |
+    ssh -F {{ homelab_ssh_config }} monitoring-stack "python3 - <<'PY'
+    from pathlib import Path
+    cfg = Path('/etc/prometheus/prometheus.yml')
+    text = cfg.read_text()
+    block = '''
+      - job_name: hhv
+        static_configs:
+          - targets: ['{{ hhv_blue.ip }}:9100']
+            labels:
+              instance: hhv-blue
+              ctid: '{{ hhv_blue.ctid }}'
+          - targets: ['{{ hhv_green.ip }}:9100']
+            labels:
+              instance: hhv-green
+              ctid: '{{ hhv_green.ctid }}'
+    '''
+    marker = '  - job_name: node'
+    if '{{ hhv_blue.ip }}:9100' in text:
+        print('already present')
+        raise SystemExit(0)
+    if marker not in text:
+        raise SystemExit('insert marker not found')
+    text = text.replace(marker, block + marker, 1)
+    cfg.write_text(text)
+    print('prometheus targets added')
+    PY
+    systemctl reload prometheus || systemctl restart prometheus"
+  changed_when: true

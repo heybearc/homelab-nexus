@@ -1,0 +1,34 @@
+---
+# Shared defaults for deploy-bluegreen-app.yml (override per-app via -e @group_vars/<app>_deploy.yml)
+
+bg_function: utility
+bg_memory: 2048
+bg_cores: 2
+bg_disk: 16
+bg_storage: truenas-proxmox
+bg_port: 3001
+bg_subnet_gw: "10.92.3.1"
+bg_haproxy_vip: "10.92.3.33"
+bg_haproxy_ctid: 136
+bg_dns_zone: cloudigan.net
+bg_loki_url: "{{ lookup('env', 'LOKI_URL') | default('http://10.92.3.2:3100', true) }}"
+bg_prometheus_monitor_host: "10.92.3.2"
+bg_branch: main
+bg_health_path: /
+bg_deploy_type: nextjs
+bg_skip_netbox: true
+bg_skip_npm: true
+bg_skip_wix_dns: true
+bg_configure_dns: true
+bg_configure_monitoring: true
+bg_src_local: ""
+bg_env_extra: {}
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"
+provisioning_scripts: "{{ playbook_dir }}/../../scripts/provisioning"
+dns_scripts: "{{ playbook_dir }}/../../scripts/dns"
+homelab_nexus_root: "{{ playbook_dir }}/../.."

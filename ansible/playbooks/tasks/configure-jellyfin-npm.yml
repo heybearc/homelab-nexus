@@ -1,0 +1,109 @@
+---
+- name: Login to Nginx Proxy Manager
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/tokens"
+    method: POST
+    body_format: json
+    body:
+      identity: "{{ npm_email }}"
+      secret: "{{ npm_password }}"
+    status_code: [200]
+    return_content: true
+  register: npm_login
+  no_log: true
+  delegate_to: localhost
+
+- name: List existing NPM proxy hosts
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    return_content: true
+    status_code: [200]
+  register: npm_hosts
+  no_log: true
+  delegate_to: localhost
+
+- name: Find existing jellyfin proxy
+  ansible.builtin.set_fact:
+    jellyfin_npm_existing: "{{ npm_hosts.json | selectattr('domain_names', 'contains', jellyfin_domain) | list }}"
+
+- name: Create NPM proxy host for Jellyfin
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      domain_names: ["{{ jellyfin_domain }}"]
+      forward_scheme: http
+      forward_host: "{{ jellyfin_ip }}"
+      forward_port: "{{ jellyfin_port | int }}"
+      access_list_id: 0
+      certificate_id: 0
+      ssl_forced: false
+      caching_enabled: false
+      block_exploits: true
+      advanced_config: ""
+      allow_websocket_upgrade: true
+      http2_support: true
+      hsts_enabled: false
+      hsts_subdomains: false
+      meta:
+        letsencrypt_agree: true
+        dns_challenge: false
+    status_code: [201]
+    return_content: true
+  register: npm_create
+  when: jellyfin_npm_existing | length == 0
+  delegate_to: localhost
+
+- name: Resolve NPM proxy id
+  ansible.builtin.set_fact:
+    jellyfin_npm_id: "{{ (npm_create.json.id if (jellyfin_npm_existing | length == 0) else jellyfin_npm_existing[0].id) }}"
+
+- name: Request Let's Encrypt cert for Jellyfin
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/certificates"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      provider: letsencrypt
+      domain_names: ["{{ jellyfin_domain }}"]
+      meta:
+        letsencrypt_email: "{{ npm_email }}"
+        letsencrypt_agree: true
+        dns_challenge: false
+    status_code: [200, 201]
+    return_content: true
+  register: npm_cert
+  failed_when: false
+  when: npm_ssl | bool
+  delegate_to: localhost
+
+- name: Attach SSL cert to Jellyfin proxy
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts/{{ jellyfin_npm_id }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      domain_names: ["{{ jellyfin_domain }}"]
+      forward_scheme: http
+      forward_host: "{{ jellyfin_ip }}"
+      forward_port: "{{ jellyfin_port | int }}"
+      certificate_id: "{{ npm_cert.json.id }}"
+      ssl_forced: true
+      allow_websocket_upgrade: true
+      http2_support: true
+    status_code: [200]
+  when:
+    - npm_ssl | bool
+    - npm_cert.status | default(0) in [200, 201]
+    - npm_cert.json.id is defined
+  delegate_to: localhost

@@ -1,0 +1,8 @@
+    acl is_cloudigan_mail hdr(host) -i {{ cloudigan_mail_domain }}
+    acl is_cloudigan_mail hdr(host) -i www.{{ cloudigan_mail_domain }}
+    acl is_cloudigan_mail_blue hdr(host) -i blue-{{ cloudigan_mail_domain }}
+    acl is_cloudigan_mail_green hdr(host) -i green-{{ cloudigan_mail_domain }}
+
+    use_backend cloudigan-mail-blue if is_cloudigan_mail
+    use_backend cloudigan-mail-blue if is_cloudigan_mail_blue
+    use_backend cloudigan-mail-green if is_cloudigan_mail_green

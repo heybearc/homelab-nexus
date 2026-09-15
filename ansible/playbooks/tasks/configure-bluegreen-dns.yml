@@ -1,0 +1,28 @@
+---
+# Technitium A records for main + blue/green hostnames (zone = bg_dns_zone)
+- name: Derive DNS hostnames from domain
+  set_fact:
+    bg_dns_main_host: "{{ bg_domain | regex_replace('\\.' + bg_dns_zone + '$', '') }}"
+    bg_dns_blue_host: "{{ (bg_blue_host | default('blue-' + bg_dns_main_host)) | regex_replace('\\.' + bg_dns_zone + '$', '') }}"
+    bg_dns_green_host: "{{ (bg_green_host | default('green-' + bg_dns_main_host)) | regex_replace('\\.' + bg_dns_zone + '$', '') }}"
+
+- name: Add Technitium A records
+  shell: |
+    DNS_ZONE={{ bg_dns_zone }} {{ dns_scripts }}/technitium-api.sh add {{ item.host }} {{ item.ip }}
+  loop:
+    - { host: "{{ bg_dns_main_host }}", ip: "{{ bg_haproxy_vip }}" }
+    - { host: "{{ bg_dns_blue_host }}", ip: "{{ bg_blue.ip }}" }
+    - { host: "{{ bg_dns_green_host }}", ip: "{{ bg_green.ip }}" }
+  loop_control:
+    label: "{{ item.host }}.{{ bg_dns_zone }} → {{ item.ip }}"
+  register: bg_dns_add
+  changed_when: "'success' in (bg_dns_add.stdout | default('') | lower) or bg_dns_add.rc == 0"
+  failed_when: false
+
+- name: DNS summary
+  debug:
+    msg:
+      - "{{ bg_dns_main_host }}.{{ bg_dns_zone }} → {{ bg_haproxy_vip }}"
+      - "{{ bg_dns_blue_host }}.{{ bg_dns_zone }} → {{ bg_blue.ip }}"
+      - "{{ bg_dns_green_host }}.{{ bg_dns_zone }} → {{ bg_green.ip }}"
+      - "If Technitium auth failed, set TECHNITIUM_API_TOKEN or run: {{ dns_scripts }}/technitium-api.sh login"

@@ -1,0 +1,50 @@
+---
+- name: Create Technitium standby directory
+  ansible.builtin.file:
+    path: /root/dns-stack/technitium-standby
+    state: directory
+    mode: "0755"
+
+- name: Deploy Technitium standby compose
+  ansible.builtin.copy:
+    dest: /root/dns-stack/technitium-standby/docker-compose.yml
+    mode: "0644"
+    content: |
+      services:
+        technitium-standby:
+          image: technitium/dns-server:latest
+          container_name: {{ technitium_secondary.docker_name }}
+          restart: unless-stopped
+          network_mode: host
+          environment:
+            - DNS_SERVER_DOMAIN=technitium-standby
+          volumes:
+            - /root/dns-stack/technitium-standby/data:/etc/dns
+
+- name: Pull Technitium image via TrueNAS API
+  ansible.builtin.command: midclt call app.image.pull '{"image":"technitium/dns-server:latest"}'
+  changed_when: true
+
+- name: Start Technitium standby (root cron — truenas_admin lacks docker group)
+  ansible.builtin.shell: |
+    midclt call cronjob.create '{
+      "user": "root",
+      "command": "/usr/bin/docker rm -f technitium-standby 2>/dev/null; /usr/bin/docker run -d --name technitium-standby --restart unless-stopped -p {{ technitium_secondary.ip }}:53:53/udp -p {{ technitium_secondary.ip }}:53:53/tcp -p {{ technitium_secondary.ip }}:{{ technitium_secondary.web_port }}:5380/tcp -e DNS_SERVER_DOMAIN=technitium-standby -v /mnt/media-pool/vms/dns-stack/technitium-standby/data:/etc/dns technitium/dns-server:latest",
+      "description": "technitium-standby",
+      "enabled": false,
+      "stdout": false,
+      "stderr": false,
+      "schedule": {"minute": "0", "hour": "3", "dom": "*", "month": "*", "dow": "*"}
+    }'
+  register: tech_cron
+  changed_when: true
+
+- name: Run Technitium start cron once
+  ansible.builtin.command: midclt call cronjob.run {{ (tech_cron.stdout | from_json).id }} true
+  changed_when: true
+
+- name: Secondary zone setup note
+  ansible.builtin.debug:
+    msg:
+      - "In Technitium STANDBY UI (http://{{ technitium_secondary.ip }}:{{ technitium_secondary.web_port }}):"
+      - "  Add Secondary Zone → {{ dns_zone }} → primary {{ technitium_primary.ip }} + TSIG {{ dns_tsig_key_name }}"

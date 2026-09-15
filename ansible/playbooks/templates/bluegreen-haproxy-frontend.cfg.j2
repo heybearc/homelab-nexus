@@ -1,0 +1,11 @@
+    acl {{ bg_acl }} hdr(host) -i {{ bg_domain }}
+    acl {{ bg_acl }} hdr(host) -i www.{{ bg_domain }}
+{# Prefer blue-<label>.rest (e.g. blue-quotes.cloudigan.net); keep dotted blue.<fqdn> as alias #}
+    acl {{ bg_acl }}_blue hdr(host) -i {{ bg_blue_host | default('blue-' + (bg_domain.split('.')[0]) + '.' + (bg_domain.split('.')[1:] | join('.'))) }}
+    acl {{ bg_acl }}_blue hdr(host) -i blue.{{ bg_domain }}
+    acl {{ bg_acl }}_green hdr(host) -i {{ bg_green_host | default('green-' + (bg_domain.split('.')[0]) + '.' + (bg_domain.split('.')[1:] | join('.'))) }}
+    acl {{ bg_acl }}_green hdr(host) -i green.{{ bg_domain }}
+
+    use_backend {{ bg_backend_prefix }}-blue if {{ bg_acl }}
+    use_backend {{ bg_backend_prefix }}-blue if {{ bg_acl }}_blue
+    use_backend {{ bg_backend_prefix }}-green if {{ bg_acl }}_green

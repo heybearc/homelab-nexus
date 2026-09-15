@@ -1,0 +1,14 @@
+# Cloudigan Mail Gateway — mail.cloudigan.net
+backend cloudigan-mail-blue
+    balance roundrobin
+    option httpchk GET /health
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server blue1 {{ cloudigan_mail_blue.ip }}:{{ cloudigan_mail_port }} check inter 5s fall 3 rise 2
+
+backend cloudigan-mail-green
+    balance roundrobin
+    option httpchk GET /health
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server green1 {{ cloudigan_mail_green.ip }}:{{ cloudigan_mail_port }} check inter 5s fall 3 rise 2

@@ -1,0 +1,35 @@
+---
+# Rename a Netbox VM that still has a previous hostname so register is idempotent.
+- name: Look up previous Netbox VM names
+  ansible.builtin.uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/?name={{ item }}"
+    method: GET
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+    validate_certs: false
+    return_content: true
+  loop: "{{ win11_previous_names | default([]) }}"
+  register: win11_nb_prev
+  when:
+    - item | length > 0
+    - item != win11_name
+  delegate_to: localhost
+
+- name: Rename previous Netbox VM to {{ win11_name }}
+  ansible.builtin.uri:
+    url: "{{ netbox_url }}/api/virtualization/virtual-machines/{{ item.json.results[0].id }}/"
+    method: PATCH
+    headers:
+      Authorization: "Token {{ netbox_token }}"
+      Content-Type: application/json
+    body_format: json
+    body:
+      name: "{{ win11_name }}"
+    status_code: [200]
+    validate_certs: false
+  loop: "{{ win11_nb_prev.results | default([]) }}"
+  when:
+    - item.json is defined
+    - (item.json.count | default(0) | int) > 0
+    - (item.json.results[0].name | default('')) != win11_name
+  delegate_to: localhost

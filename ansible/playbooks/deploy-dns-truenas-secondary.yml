@@ -1,0 +1,10 @@
+---
+- name: Deploy DNS secondaries on TrueNAS
+  hosts: truenas_hosts
+  gather_facts: true
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-truenas-dns-aliases.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-technitium-secondary.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-adguard-secondary.yml

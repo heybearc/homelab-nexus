@@ -1,0 +1,8 @@
+---
+# Creates empty primary zone + TSIG prep. Record import via migrate-dns-phase.sh 2
+- name: Note — zone import is manual/scripted post-deploy
+  ansible.builtin.debug:
+    msg:
+      - "Primary zone '{{ dns_zone }}' created via migrate-dns-phase.sh after dc-01 export."
+      - "Configure TSIG key '{{ dns_tsig_key_name }}' in Technitium UI:"
+      - "  Settings → TSIG → add key, then Zone Options → Zone Transfer → allow {{ technitium_secondary.ip }}"

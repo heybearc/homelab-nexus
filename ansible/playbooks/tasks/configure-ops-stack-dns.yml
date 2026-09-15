@@ -1,0 +1,16 @@
+---
+- name: Require Technitium API token
+  ansible.builtin.assert:
+    that:
+      - technitium_api_token | length > 8
+    fail_msg: >-
+      Set TECHNITIUM_API_TOKEN in .env (Technitium UI → Administration → API Tokens).
+      Manual: A records ops.cloudigan.net and push.cloudigan.net → {{ ops_stack_dns_target_ip }} (NPM).
+
+- name: Add Technitium DNS for Ops Hub public names
+  ansible.builtin.include_tasks: configure-ops-stack-dns-record.yml
+  loop:
+    - "{{ ops_stack_domain }}"
+    - "{{ ops_stack_ntfy_domain }}"
+  loop_control:
+    loop_var: ops_dns_fqdn

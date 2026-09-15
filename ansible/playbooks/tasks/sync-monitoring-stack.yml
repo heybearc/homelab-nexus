@@ -1,0 +1,7 @@
+---
+- name: Sync monitoring stack on CT150 from apps-registry.yaml
+  ansible.builtin.shell: |
+    bash {{ playbook_dir }}/../../scripts/monitoring/sync-monitoring-stack.sh
+  args:
+    chdir: "{{ playbook_dir }}/../.."
+  changed_when: true

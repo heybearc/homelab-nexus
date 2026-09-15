@@ -1,0 +1,50 @@
+---
+- name: Create AdGuard standby directory
+  ansible.builtin.file:
+    path: /root/dns-stack/adguard-standby
+    state: directory
+    mode: "0755"
+
+- name: Deploy AdGuard standby compose
+  ansible.builtin.copy:
+    dest: /root/dns-stack/adguard-standby/docker-compose.yml
+    mode: "0644"
+    content: |
+      services:
+        adguard-standby:
+          image: adguard/adguardhome:latest
+          container_name: {{ adguard_secondary.docker_name }}
+          restart: unless-stopped
+          network_mode: host
+          volumes:
+            - /root/dns-stack/adguard-standby/work:/opt/adguardhome/work
+            - /root/dns-stack/adguard-standby/conf:/opt/adguardhome/conf
+
+- name: Pull AdGuard image via TrueNAS API
+  ansible.builtin.command: midclt call app.image.pull '{"image":"adguard/adguardhome:latest"}'
+  changed_when: true
+
+- name: Start AdGuard standby (root cron — truenas_admin lacks docker group)
+  ansible.builtin.shell: |
+    midclt call cronjob.create '{
+      "user": "root",
+      "command": "/usr/bin/docker rm -f adguard-standby 2>/dev/null; /usr/bin/docker run -d --name adguard-standby --restart unless-stopped -p {{ adguard_secondary.ip }}:53:53/udp -p {{ adguard_secondary.ip }}:53:53/tcp -p {{ adguard_secondary.ip }}:853:853/tcp -p {{ adguard_secondary.ip }}:{{ adguard_secondary.web_port }}:3000/tcp -v /mnt/media-pool/vms/dns-stack/adguard-standby/work:/opt/adguardhome/work -v /mnt/media-pool/vms/dns-stack/adguard-standby/conf:/opt/adguardhome/conf adguard/adguardhome:latest",
+      "description": "adguard-standby",
+      "enabled": false,
+      "stdout": false,
+      "stderr": false,
+      "schedule": {"minute": "0", "hour": "3", "dom": "*", "month": "*", "dow": "*"}
+    }'
+  register: ag_cron
+  changed_when: true
+
+- name: Run AdGuard start cron once
+  ansible.builtin.command: midclt call cronjob.run {{ (ag_cron.stdout | from_json).id }} true
+  changed_when: true
+
+- name: AdGuard standby initial setup note
+  ansible.builtin.debug:
+    msg:
+      - "Complete AdGuard standby setup at http://{{ adguard_secondary.ip }}:{{ adguard_secondary.web_port }}"
+      - "Bind DNS to {{ adguard_secondary.ip }}; upstream local={{ technitium_secondary.ip }}, fallback={{ technitium_primary.ip }}"
+      - "Sync blocklists from primary AdGuard after first login."

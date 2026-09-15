@@ -1,0 +1,21 @@
+---
+# node_exporter (9100) + promtail → Loki on HHV LXC
+- name: "Install unzip for promtail on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq; apt-get install -y -qq unzip wget tar'"
+  changed_when: true
+
+- name: "Run install-monitoring.sh for {{ node.name }}"
+  shell: |
+    PROXMOX_HOST=10.92.0.5 LOKI_URL={{ hhv_loki_url }} \
+      bash {{ provisioning_scripts }}/install-monitoring.sh {{ node.ctid }} {{ node.name }}
+  changed_when: true
+
+- name: "Verify node_exporter on CT{{ node.ctid }} (via prox — not hairpinned from Mac)"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- curl -sf -o /dev/null -w '%{http_code}' http://127.0.0.1:9100/metrics" | grep -q 200
+  register: hhv_node_exporter
+  until: hhv_node_exporter.rc == 0
+  retries: 12
+  delay: 5
+  changed_when: false

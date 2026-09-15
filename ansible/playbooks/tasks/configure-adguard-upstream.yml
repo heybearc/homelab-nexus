@@ -1,0 +1,10 @@
+---
+# Document AdGuard upstream change — full API config varies by AdGuard version.
+# Phase 3 script applies this; task records intended state.
+- name: AdGuard upstream configuration reminder
+  ansible.builtin.debug:
+    msg:
+      - "AdGuard {{ adguard_host }}: set Private reverse DNS / Local domains for {{ dns_zone }}"
+      - "  Upstream DNS for cloudigan.net → {{ technitium_upstream }} (fallback {{ technitium_upstream_fallback }})"
+      - "  Public upstreams: {{ dns_public_upstreams | join(', ') }}"
+      - "Run ./scripts/dns/migrate-dns-phase.sh 3 to apply when ready."

@@ -1,0 +1,111 @@
+---
+# Node.js mail gateway on LXC (node = blue/green dict)
+- name: "Install Node 20 + PM2 on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq curl ca-certificates gnupg ufw
+      if ! command -v node >/dev/null || ! node -v | grep -q \"^v20\"; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y -qq nodejs
+      fi
+      npm install -g pm2
+      mkdir -p {{ cloudigan_mail_app_path }}/data
+    '"
+  changed_when: true
+
+- name: "Stage cloudigan-mail app to CT{{ node.ctid }}"
+  shell: |
+    set -euo pipefail
+    tar --exclude=node_modules --exclude=data -C "{{ cloudigan_mail_src_local }}" -cf /tmp/cloudigan-mail-src.tar .
+    scp -F {{ homelab_ssh_config }} /tmp/cloudigan-mail-src.tar prox:/tmp/cm-src-{{ node.ctid }}.tar
+    ssh -F {{ homelab_ssh_config }} prox \
+      "pct push {{ node.ctid }} /tmp/cm-src-{{ node.ctid }}.tar /tmp/cm-src.tar && \
+       pct exec {{ node.ctid }} -- bash -c 'mkdir -p {{ cloudigan_mail_app_path }} && tar -xf /tmp/cm-src.tar -C {{ cloudigan_mail_app_path }} && rm -f /tmp/cm-src.tar'"
+    rm -f /tmp/cloudigan-mail-src.tar
+  changed_when: true
+
+- name: Generate API keys when not provided in .env
+  when: cloudigan_mail_api_keys | length == 0
+  run_once: true
+  shell: |
+    ch_key=$(openssl rand -hex 32)
+    api_key=$(openssl rand -hex 32)
+    n8n_key=$(openssl rand -hex 32)
+    printf 'chapter-hub:%s,cloudigan-api:%s,n8n-cron:%s' "$ch_key" "$api_key" "$n8n_key"
+  register: cloudigan_mail_generated_keys
+  changed_when: false
+  delegate_to: localhost
+
+- name: Set effective API keys
+  run_once: true
+  set_fact:
+    cloudigan_mail_api_keys_effective: >-
+      {{ cloudigan_mail_api_keys if (cloudigan_mail_api_keys | length > 0)
+         else cloudigan_mail_generated_keys.stdout }}
+
+- name: "Assert M365 credentials present"
+  run_once: true
+  assert:
+    that:
+      - m365_client_id | length > 0
+      - m365_tenant_id | length > 0
+      - m365_client_secret | length > 0
+    fail_msg: >-
+      Set M365_CLIENT_ID, M365_TENANT_ID, M365_CLIENT_SECRET in homelab-nexus/.env
+      (copy from: ssh cloudigan-api-blue 'grep ^M365_ /opt/cloudigan-api/.env')
+
+- name: Render .env for {{ node.name }}
+  ansible.builtin.template:
+    src: ../templates/cloudigan-mail.env.j2
+    dest: "/tmp/cloudigan-mail-{{ node.name }}.env"
+    mode: "0600"
+  vars:
+    cloudigan_mail_api_keys_effective: "{{ cloudigan_mail_api_keys_effective }}"
+  no_log: true
+  delegate_to: localhost
+
+- name: "Copy .env to CT{{ node.ctid }}"
+  shell: |
+    scp -F {{ homelab_ssh_config }} /tmp/cloudigan-mail-{{ node.name }}.env prox:/tmp/cm-env-{{ node.ctid }}.env
+    ssh -F {{ homelab_ssh_config }} prox "pct push {{ node.ctid }} /tmp/cm-env-{{ node.ctid }}.env {{ cloudigan_mail_app_path }}/.env"
+    ssh prox "pct exec {{ node.ctid }} -- chmod 600 {{ cloudigan_mail_app_path }}/.env"
+  no_log: true
+
+- name: "npm ci on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c 'cd {{ cloudigan_mail_app_path }} && npm ci --omit=dev'"
+  changed_when: true
+
+- name: "Start PM2 {{ node.pm2_name }} on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      cd {{ cloudigan_mail_app_path }}
+      pm2 delete {{ node.pm2_name }} 2>/dev/null || true
+      pm2 start server.js --name {{ node.pm2_name }}
+      pm2 save
+    '"
+  changed_when: true
+
+- name: "Optional UFW allow app sources on CT{{ node.ctid }}"
+  shell: |
+    ssh prox "pct exec {{ node.ctid }} -- bash -c '
+      ufw --force enable 2>/dev/null || true
+      ufw allow 22/tcp
+      ufw allow {{ cloudigan_mail_port }}/tcp
+    '"
+  changed_when: true
+
+- name: "Health check {{ node.ip }}:{{ cloudigan_mail_port }}/health"
+  ansible.builtin.uri:
+    url: "http://{{ node.ip }}:{{ cloudigan_mail_port }}/health"
+    status_code: 200
+  register: mail_health
+  until: mail_health.status == 200
+  retries: 24
+  delay: 5
+
+- name: "Record mailerConfigured for {{ node.name }}"
+  set_fact:
+    mail_node_health: "{{ mail_health.json }}"

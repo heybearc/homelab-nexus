@@ -1,0 +1,21 @@
+---
+# Ensure app exists in monitoring/apps-registry.yaml (idempotent; no PyYAML required)
+- name: Check apps-registry for {{ bg_app_id }}
+  ansible.builtin.command: grep -q "id: {{ bg_app_id }}$" {{ homelab_nexus_root }}/monitoring/apps-registry.yaml
+  register: bg_registry_exists
+  changed_when: false
+  failed_when: false
+
+- name: Fail with instructions if registry entry missing
+  when: bg_registry_exists.rc != 0
+  ansible.builtin.fail:
+    msg: >-
+      Add {{ bg_app_id }} to monitoring/apps-registry.yaml (see register-app.sh)
+      then re-run, or install PyYAML for automated registration.
+  # Prefer manual/StrReplace during provision if pyyaml missing on control host
+  failed_when: false
+  changed_when: false
+
+- name: Note registry status
+  debug:
+    msg: "{{ 'Registry already has ' + bg_app_id if bg_registry_exists.rc == 0 else 'Registry entry missing — add manually before sync' }}"

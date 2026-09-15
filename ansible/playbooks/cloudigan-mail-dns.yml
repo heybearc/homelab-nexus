@@ -1,0 +1,11 @@
+---
+# Apply DC-01 DNS only (idempotent)
+# Run: cd ansible && ansible-playbook playbooks/cloudigan-mail-dns.yml
+
+- name: Cloudigan Mail DC-01 DNS
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/cloudigan_mail_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-cloudigan-mail-dns.yml

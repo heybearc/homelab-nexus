@@ -1,0 +1,17 @@
+[Unit]
+Description=Uptime Kuma monitor sync webhook
+After=network.target uptime-kuma.service
+Wants=uptime-kuma.service
+
+[Service]
+Type=simple
+Environment=UK_SYNC_HOST=0.0.0.0
+Environment=UK_SYNC_PORT=18771
+Environment=UK_SYNC_TOKEN_FILE=/opt/uptime-kuma-app/.sync-token
+Environment=UK_SYNC_SCRIPT=/opt/uptime-kuma-app/sync-uptime-kuma-monitors.sh
+ExecStart=/usr/bin/python3 /opt/uptime-kuma-app/sync-webhook.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

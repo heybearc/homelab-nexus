@@ -1,0 +1,53 @@
+---
+# Jellyfin media LXC (single node, not blue-green)
+# Subnet 10.92.3.0/24 + vmbr0923 (D-020).
+# DNS authority: Technitium (cloudigan.net) + DC for AD zones. AdGuard is filter-only.
+
+jellyfin_name: jellyfin
+jellyfin_ctid: 122
+jellyfin_function: media
+jellyfin_ip: "10.92.3.20"
+jellyfin_cidr: 24
+jellyfin_gateway: "10.92.3.1"
+jellyfin_bridge: vmbr0923
+jellyfin_memory: 8192
+jellyfin_cores: 4
+jellyfin_disk: 32
+jellyfin_port: 8096
+jellyfin_domain: jellyfin.cloudigan.net
+jellyfin_template: local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst
+jellyfin_storage: truenas-proxmox
+
+# Same media bind as Plex CT128
+jellyfin_media_host_path: /mnt/pve/media-pool
+jellyfin_media_mp: /mnt/data
+
+# LXC resolver: Technitium authoritative (AdGuard is optional filter, not in critical path)
+jellyfin_nameserver: "10.92.3.10"
+jellyfin_nameserver_secondary: "10.92.3.203"
+jellyfin_searchdomain: cloudigan.net
+
+# Zone record managed in Technitium (not AdGuard rewrites)
+jellyfin_dns_target_ip: "10.92.3.3"
+jellyfin_dns_zone: cloudigan.net
+technitium_url: "{{ lookup('env', 'TECHNITIUM_URL') | default('http://10.92.3.10:5380', true) }}"
+technitium_api_token: >-
+  {{
+    lookup('env', 'TECHNITIUM_API_TOKEN')
+    | default(lookup('file', lookup('env', 'HOME') + '/.cache/technitium-token', errors='ignore'), true)
+    | default('', true)
+    | trim
+  }}
+
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+npm_ssl: true
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+jellyfin_loki_url: "{{ lookup('env', 'LOKI_URL') | default('http://10.92.3.2:3100', true) }}"
+provisioning_scripts: "{{ playbook_dir }}/../../scripts/provisioning"
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"

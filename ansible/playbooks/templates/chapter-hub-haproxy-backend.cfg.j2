@@ -1,0 +1,14 @@
+# Chapter Hub — hub.cloudigan.net
+backend chapter-hub-blue
+    balance roundrobin
+    option httpchk GET /api/auth/providers
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server blue1 {{ chapter_hub_blue.ip }}:{{ chapter_hub_port }} check inter 5s fall 3 rise 2
+
+backend chapter-hub-green
+    balance roundrobin
+    option httpchk GET /api/auth/providers
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server green1 {{ chapter_hub_green.ip }}:{{ chapter_hub_port }} check inter 5s fall 3 rise 2

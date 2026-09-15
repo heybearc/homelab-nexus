@@ -1,0 +1,14 @@
+# HHV — {{ hhv_domain }}
+backend hhv-blue
+    balance roundrobin
+    option httpchk GET /health
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server blue1 {{ hhv_blue.ip }}:{{ hhv_port }} check inter 5s fall 3 rise 2
+
+backend hhv-green
+    balance roundrobin
+    option httpchk GET /health
+    http-check expect status 200
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server green1 {{ hhv_green.ip }}:{{ hhv_port }} check inter 5s fall 3 rise 2

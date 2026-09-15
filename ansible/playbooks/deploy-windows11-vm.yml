@@ -1,0 +1,79 @@
+---
+# Deploy Windows 11 workstation (justin-win11 @ 10.92.4.3, VLAN 924)
+#
+#   cd /Users/cory/Projects/homelab-nexus
+#   set -a && source .env && set +a
+#   cd ansible && ansible-playbook playbooks/deploy-windows11-vm.yml
+#
+# Creates the QEMU guest (UEFI + TPM + Win11/VirtIO ISOs) on TrueNAS NFS
+# (truenas-proxmox), registers Netbox, adds Technitium A record, and a vzdump
+# job. OS install is via Proxmox console — Windows has no cloud-init.
+
+- name: Deploy Windows 11 VM
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/windows11_deploy.yml
+  tasks:
+    - name: Require Netbox and Technitium credentials
+      ansible.builtin.assert:
+        that:
+          - netbox_token | length > 0
+          - technitium_api_token | length > 8
+        fail_msg: "Set NETBOX_TOKEN and TECHNITIUM_API_TOKEN in homelab-nexus/.env"
+
+    - name: Require TrueNAS NFS for new VMs (D-HOMELAB-012)
+      ansible.builtin.assert:
+        that:
+          - win11_storage == 'truenas-proxmox'
+        fail_msg: >-
+          New VMs must use TrueNAS datastore truenas-proxmox (not {{ win11_storage }}).
+          All deploys use truenas-proxmox (D-HOMELAB-014).
+
+    - name: Show deployment plan
+      ansible.builtin.debug:
+        msg:
+          - "Windows 11 VM{{ win11_vmid }} {{ win11_name }} @ {{ win11_ip }}/{{ win11_cidr }} gw {{ win11_gateway }} {{ win11_bridge }}"
+          - "{{ win11_cores }}c / {{ win11_memory }}MB / {{ win11_disk }}G on {{ win11_storage }} (q35 + OVMF + TPM 2.0)"
+          - "ISO: {{ win11_iso }} + {{ win11_virtio_iso }}"
+          - "Zone A: {{ win11_domain }} → {{ win11_dns_target_ip }}"
+          - "Guest DNS after OOBE: {{ win11_nameserver }} / {{ win11_nameserver_secondary }}"
+
+    - name: Create or rename QEMU VM
+      ansible.builtin.include_tasks: tasks/create-windows11-vm.yml
+
+    - name: Rename previous Netbox VM if needed
+      ansible.builtin.include_tasks: tasks/rename-windows11-netbox.yml
+
+    - name: Register in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ win11_name }}"
+        nb_ctid: "{{ win11_vmid }}"
+        nb_ip: "{{ win11_ip }}"
+        nb_function: "{{ win11_function }}"
+        nb_cores: "{{ win11_cores }}"
+        nb_memory: "{{ win11_memory }}"
+        nb_disk: "{{ win11_disk }}"
+        nb_netbox_comment: >-
+          Windows 11 23H2 workstation (Justin).
+          Proxmox VMID: {{ win11_vmid }} | {{ win11_domain }} |
+          {{ win11_ip }}/{{ win11_cidr }} VLAN 924 {{ win11_bridge }}
+        nb_ip_description: "QEMU VM{{ win11_vmid }} {{ win11_name }} VLAN 924"
+
+    - name: Configure Technitium DNS
+      ansible.builtin.include_tasks: tasks/configure-windows11-dns.yml
+
+    - name: Configure Proxmox backup
+      ansible.builtin.include_tasks: tasks/configure-windows11-backup.yml
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Console: https://10.92.0.5:8006 → VM {{ win11_vmid }} {{ win11_name }}"
+          - "Storage: {{ win11_storage }} (TrueNAS NFS)"
+          - "During setup load VirtIO SCSI from the second CD (virtio-win ISO)"
+          - "After OOBE set Ethernet to {{ win11_ip }}/{{ win11_cidr }} gw {{ win11_gateway }} DNS {{ win11_nameserver }}"
+          - "DNS: {{ win11_domain }} → {{ win11_dns_target_ip }}"
+          - "SSH after OpenSSH: ssh justin-win11  (Administrator@{{ win11_ip }})"
+          - "No NPM — this is a workstation, not a published HTTP service"

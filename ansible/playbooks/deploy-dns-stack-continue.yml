@@ -1,0 +1,57 @@
+---
+# Continue DNS deploy after CT145 exists (skip LXC create)
+- name: Netbox register Technitium primary
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ technitium_primary.name }}"
+        nb_ctid: "{{ technitium_primary.ctid }}"
+        nb_ip: "{{ technitium_primary.ip }}"
+        nb_function: network
+        nb_cores: "{{ technitium_primary.cores }}"
+        nb_memory: "{{ technitium_primary.memory }}"
+        nb_disk: "{{ technitium_primary.disk }}"
+        nb_dns_name: "{{ technitium_primary.hostname }}"
+        nb_ip_description: "Technitium DNS primary (CT145)"
+
+- name: Install Technitium on primary
+  hosts: proxmox_lxc
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/install-technitium-docker.yml
+    - ansible.builtin.include_tasks: tasks/configure-technitium-primary-zone.yml
+
+- name: Deploy DNS secondaries on TrueNAS
+  hosts: truenas_hosts
+  gather_facts: true
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-truenas-dns-aliases.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-technitium-secondary.yml
+    - ansible.builtin.include_tasks: tasks/deploy-truenas-adguard-secondary.yml
+
+- name: Post-deploy summary
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/dns_deploy.yml
+  tasks:
+    - ansible.builtin.include_tasks: tasks/configure-adguard-upstream.yml
+      vars:
+        adguard_host: "{{ adguard_primary.ip }}"
+        adguard_port: "{{ adguard_primary.web_port }}"
+        technitium_upstream: "{{ technitium_primary.ip }}"
+        technitium_upstream_fallback: "{{ technitium_secondary.ip }}"
+    - ansible.builtin.debug:
+        msg:
+          - "DNS stack deploy complete (no DHCP cutover)."
+          - "Technitium: http://{{ technitium_primary.ip }}:{{ technitium_primary.web_port }}"
+          - "Run: ./scripts/dns/migrate-dns-phase.sh 2"

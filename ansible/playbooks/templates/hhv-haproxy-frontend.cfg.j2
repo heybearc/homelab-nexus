@@ -1,0 +1,8 @@
+    acl is_hhv hdr(host) -i {{ hhv_domain }}
+    acl is_hhv hdr(host) -i www.{{ hhv_domain }}
+    acl is_hhv_blue hdr(host) -i blue-{{ hhv_domain }}
+    acl is_hhv_green hdr(host) -i green-{{ hhv_domain }}
+
+    use_backend hhv-blue if is_hhv
+    use_backend hhv-blue if is_hhv_blue
+    use_backend hhv-green if is_hhv_green

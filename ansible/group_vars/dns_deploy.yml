@@ -1,0 +1,62 @@
+---
+# DNS redundancy stack — Technitium + dual AdGuard
+# See documentation/DNS-REDUNDANCY-MIGRATION.md
+
+dns_zone: cloudigan.net
+
+# Proxmox primary
+technitium_primary:
+  ctid: 145
+  name: technitium-primary
+  ip: 10.92.3.10
+  hostname: technitium.cloudigan.net
+  memory: 1024
+  cores: 1
+  disk: 8
+  storage: truenas-proxmox
+  web_port: 5380
+
+adguard_primary:
+  ctid: 140
+  ip: 10.92.3.11
+  hostname: adguard.cloudigan.net
+  web_port: 3000
+
+# TrueNAS secondary (Docker on vlan923 aliases)
+truenas_host: truenas
+truenas_vlan_interface: vlan923
+technitium_secondary:
+  ip: 10.92.3.203
+  hostname: technitium-standby.cloudigan.net
+  web_port: 5380
+  docker_name: technitium-standby
+
+adguard_secondary:
+  ip: 10.92.3.204
+  hostname: adguard-standby.cloudigan.net
+  web_port: 3000
+  docker_name: adguard-standby
+
+# Upstream resolvers (public)
+dns_public_upstreams:
+  - 1.1.1.1
+  - 9.9.9.9
+
+# Migration / rollback
+dns_migration_state_dir: /opt/dns-migration
+dc01_host: 10.92.0.10
+dc01_user: cory@cloudigan.com
+
+# Paths
+ansible_playbooks_root: "{{ playbook_dir }}/../../../ansible-playbooks"
+homelab_ssh_config: "{{ lookup('env', 'HOME') }}/.ssh/config"
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+
+# Technitium admin password lives in auth.config (set in UI). Not sourced from .env.
+adguard_password: "{{ lookup('env', 'ADGUARD_PASSWORD') | default('', true) }}"
+
+# TSIG for zone transfer (generated on first deploy if empty)
+dns_tsig_key_name: cloudigan-xfr
+dns_tsig_secret: "{{ lookup('env', 'DNS_TSIG_SECRET') | default('', true) }}"

@@ -1,0 +1,71 @@
+---
+- name: Render Jellyfin apt source
+  ansible.builtin.template:
+    src: ../templates/jellyfin.sources.j2
+    dest: /tmp/jellyfin.sources
+    mode: "0644"
+  delegate_to: localhost
+
+- name: Push Jellyfin apt source into LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    scp -F {{ homelab_ssh_config }} /tmp/jellyfin.sources prox:/tmp/jellyfin.sources
+    ssh prox "pct push {{ jellyfin_ctid }} /tmp/jellyfin.sources /etc/apt/sources.list.d/jellyfin.sources"
+  delegate_to: localhost
+  changed_when: true
+
+- name: Install Jellyfin apt signing key
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - jellyfin
+      - bash
+      - -lc
+      - >-
+        export DEBIAN_FRONTEND=noninteractive;
+        apt-get update -qq;
+        apt-get install -y -qq curl ca-certificates gnupg;
+        mkdir -p /etc/apt/keyrings;
+        curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key -o /tmp/jellyfin_team.gpg.key;
+        gpg --batch --yes --dearmor -o /etc/apt/keyrings/jellyfin.gpg /tmp/jellyfin_team.gpg.key;
+        chmod 644 /etc/apt/keyrings/jellyfin.gpg;
+        test -s /etc/apt/keyrings/jellyfin.gpg
+  delegate_to: localhost
+  changed_when: true
+
+- name: Install Jellyfin packages
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - jellyfin
+      - bash
+      - -lc
+      - >-
+        export DEBIAN_FRONTEND=noninteractive;
+        apt-get update -qq;
+        apt-get install -y -qq jellyfin;
+        systemctl enable --now jellyfin;
+        systemctl is-active jellyfin
+  delegate_to: localhost
+  changed_when: true
+
+- name: Wait for Jellyfin HTTP
+  ansible.builtin.uri:
+    url: "http://{{ jellyfin_ip }}:{{ jellyfin_port }}/health"
+    status_code: [200]
+  register: jellyfin_health
+  until: jellyfin_health.status == 200
+  retries: 24
+  delay: 5
+  delegate_to: localhost
+
+- name: Install monitoring agents
+  ansible.builtin.shell: |
+    PROXMOX_HOST=10.92.0.5 LOKI_URL={{ jellyfin_loki_url }} \
+      bash {{ provisioning_scripts }}/install-monitoring.sh {{ jellyfin_ctid }} {{ jellyfin_name }}
+  delegate_to: localhost
+  changed_when: true

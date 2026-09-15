@@ -17,7 +17,7 @@ echo "Installing monitoring agents on CT$CTID..."
 # Install node_exporter
 ssh root@$PROXMOX_HOST "pct exec $CTID -- bash -c '
     apt-get update -qq
-    apt-get install -y -qq wget tar > /dev/null 2>&1
+    apt-get install -y -qq wget tar unzip > /dev/null 2>&1
     
     # Download and install node_exporter
     cd /tmp
@@ -45,15 +45,22 @@ EOF
     systemctl enable node_exporter
     systemctl start node_exporter
     
+    # Allow Prometheus (CT150) to scrape node_exporter when UFW is enabled
+    if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q active; then
+        ufw allow from 10.92.3.0/24 to any port 9100 comment node_exporter >/dev/null 2>&1 || true
+    fi
+    
     echo \"✓ node_exporter installed and running on port 9100\"
 '"
 
 # Install promtail
 ssh root@$PROXMOX_HOST "pct exec $CTID -- bash -c '
+    set -euo pipefail
+    apt-get install -y -qq unzip >/dev/null 2>&1 || true
     cd /tmp
     wget -q https://github.com/grafana/loki/releases/download/v2.9.3/promtail-linux-amd64.zip
-    unzip -q promtail-linux-amd64.zip
-    mv promtail-linux-amd64 /usr/local/bin/promtail
+    unzip -qo promtail-linux-amd64.zip
+    mv -f promtail-linux-amd64 /usr/local/bin/promtail
     chmod +x /usr/local/bin/promtail
     rm promtail-linux-amd64.zip
     

@@ -1,0 +1,77 @@
+---
+# HAProxy: ACLs + routing in frontend; backends after bni-toolkit-backend
+- name: Render HAProxy fragments
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: ../templates/chapter-hub-haproxy-frontend.cfg.j2, dest: /tmp/chapter-hub-haproxy-frontend.cfg }
+    - { src: ../templates/chapter-hub-haproxy-backend.cfg.j2, dest: /tmp/chapter-hub-haproxy-backend.cfg }
+
+- name: Check if chapter-hub backends already exist
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} haproxy "grep -q 'backend chapter-hub-blue' /etc/haproxy/haproxy.cfg"
+  register: haproxy_ch_exists
+  changed_when: false
+  failed_when: false
+
+- name: Install chapter-hub HAProxy blocks
+  when: haproxy_ch_exists.rc != 0
+  block:
+    - name: Copy fragments to HAProxy container
+      shell: |
+        scp -F {{ homelab_ssh_config }} /tmp/chapter-hub-haproxy-frontend.cfg prox:/tmp/ch-frontend.cfg
+        scp -F {{ homelab_ssh_config }} /tmp/chapter-hub-haproxy-backend.cfg prox:/tmp/ch-backend.cfg
+        ssh -F {{ homelab_ssh_config }} prox "pct push 136 /tmp/ch-frontend.cfg /tmp/ch-frontend.cfg && pct push 136 /tmp/ch-backend.cfg /tmp/ch-backend.cfg"
+
+    - name: Insert ACLs and routing in frontend
+      shell: |
+        ssh -F {{ homelab_ssh_config }} prox "pct exec 136 -- python3 - <<'PY'
+        from pathlib import Path
+        cfg = Path('/etc/haproxy/haproxy.cfg')
+        text = cfg.read_text()
+        fe = Path('/tmp/ch-frontend.cfg').read_text().strip() + '\n'
+        acl_marker = 'acl is_bnitoolkit hdr(host) -i bnitoolkit.cloudigan.net'
+        route_marker = '    use_backend bni-toolkit-backend if is_bnitoolkit'
+        if 'is_chapter_hub' not in text:
+            acl_lines = '\n'.join(l for l in fe.splitlines() if 'acl is_chapter' in l) + '\n'
+            text = text.replace(acl_marker, acl_marker + '\n' + acl_lines, 1)
+        if 'use_backend chapter-hub-blue if is_chapter_hub' not in text:
+            route_lines = '\n'.join(l for l in fe.splitlines() if l.strip().startswith('use_backend chapter')) + '\n'
+            text = text.replace(route_marker, route_lines + route_marker + '\n', 1)
+        cfg.write_text(text)
+        print('frontend ok')
+        PY"
+
+    - name: Insert backends after bni-toolkit-backend
+      shell: |
+        ssh -F {{ homelab_ssh_config }} prox "pct exec 136 -- python3 - <<'PY'
+        from pathlib import Path
+        cfg = Path('/etc/haproxy/haproxy.cfg')
+        text = cfg.read_text()
+        be = Path('/tmp/ch-backend.cfg').read_text().strip() + '\n\n'
+        marker = 'backend bni-toolkit-backend'
+        if '\nbackend chapter-hub-blue\n' in text:
+            print('backends exist')
+            raise SystemExit(0)
+        idx = text.find(marker)
+        if idx < 0:
+            raise SystemExit('bni backend missing')
+        end = text.find('\n\n# Cloudigan API', idx)
+        if end < 0:
+            raise SystemExit('insert point not found')
+        cfg.write_text(text[:end] + '\n' + be + text[end:])
+        print('backends ok')
+        PY"
+
+    - name: Validate and reload HAProxy
+      shell: |
+        ssh -F {{ homelab_ssh_config }} prox "pct exec 136 -- bash -c 'haproxy -c -f /etc/haproxy/haproxy.cfg && systemctl reload haproxy'"
+
+- name: Initialize chapter-hub deployment state (BLUE LIVE)
+  shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec 136 -- bash -c '
+      echo \"{\\\"prod\\\":\\\"blue\\\",\\\"live\\\":\\\"blue\\\",\\\"standby\\\":\\\"green\\\",\\\"switchCount\\\":0}\" > /var/lib/haproxy/chapter-hub-deployment-state.json
+    '"
+  changed_when: true

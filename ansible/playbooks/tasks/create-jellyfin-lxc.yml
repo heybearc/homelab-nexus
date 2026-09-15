@@ -1,0 +1,169 @@
+---
+- name: Check if Jellyfin CT already exists
+  ansible.builtin.command: ssh prox "test -f /etc/pve/lxc/{{ jellyfin_ctid }}.conf"
+  delegate_to: localhost
+  register: jellyfin_ct_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create Jellyfin LXC on Proxmox
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - create
+      - "{{ jellyfin_ctid }}"
+      - "{{ jellyfin_template }}"
+      - --hostname
+      - "{{ jellyfin_name }}"
+      - --memory
+      - "{{ jellyfin_memory }}"
+      - --cores
+      - "{{ jellyfin_cores }}"
+      - --net0
+      - "name=eth0,bridge={{ jellyfin_bridge }},ip={{ jellyfin_ip }}/{{ jellyfin_cidr }},gw={{ jellyfin_gateway }}"
+      - --nameserver
+      - "{{ jellyfin_nameserver }}{% if jellyfin_nameserver_secondary is defined %} {{ jellyfin_nameserver_secondary }}{% endif %}"
+      - --searchdomain
+      - "{{ jellyfin_searchdomain }}"
+      - --storage
+      - "{{ jellyfin_storage }}"
+      - --rootfs
+      - "{{ jellyfin_storage }}:{{ jellyfin_disk }}"
+      - --unprivileged
+      - "1"
+      - --features
+      - nesting=1,fuse=1
+      - --onboot
+      - "1"
+      - --start
+      - "1"
+  delegate_to: localhost
+  register: jellyfin_pct_create
+  changed_when: jellyfin_pct_create.rc == 0
+  when: jellyfin_ct_exists.rc != 0
+
+- name: Bind TrueNAS media datastore into LXC (same as Plex)
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - set
+      - "{{ jellyfin_ctid }}"
+      - --mp0
+      - "{{ jellyfin_media_host_path }},mp={{ jellyfin_media_mp }}"
+  delegate_to: localhost
+  when: jellyfin_ct_exists.rc != 0
+
+- name: Reboot Jellyfin LXC to attach media mount
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - reboot
+      - "{{ jellyfin_ctid }}"
+  delegate_to: localhost
+  when: jellyfin_ct_exists.rc != 0
+
+- name: Wait via pct exec until LXC is up
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - exec
+      - "{{ jellyfin_ctid }}"
+      - --
+      - hostname
+  delegate_to: localhost
+  register: jellyfin_pct_exec_wait
+  until: jellyfin_pct_exec_wait.rc == 0
+  retries: 36
+  delay: 5
+  changed_when: false
+
+- name: Install OpenSSH server in LXC
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - exec
+      - "{{ jellyfin_ctid }}"
+      - --
+      - bash
+      - -c
+      - export DEBIAN_FRONTEND=noninteractive; apt-get update -qq; apt-get install -y -qq openssh-server; systemctl enable --now ssh
+  delegate_to: localhost
+  changed_when: true
+
+- name: Stage homelab_root pubkey locally
+  ansible.builtin.copy:
+    src: "{{ lookup('env', 'HOME') }}/.ssh/homelab_root.pub"
+    dest: /tmp/jellyfin-homelab_root.pub
+    mode: "0600"
+  delegate_to: localhost
+
+- name: Push authorized_keys into LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh prox "pct exec {{ jellyfin_ctid }} -- mkdir -p /root/.ssh && chmod 700 /root/.ssh"
+    scp -F {{ homelab_ssh_config }} /tmp/jellyfin-homelab_root.pub prox:/tmp/jellyfin-homelab_root.pub
+    ssh prox "pct push {{ jellyfin_ctid }} /tmp/jellyfin-homelab_root.pub /root/.ssh/authorized_keys"
+    ssh prox "pct exec {{ jellyfin_ctid }} -- chmod 600 /root/.ssh/authorized_keys"
+  delegate_to: localhost
+  changed_when: true
+
+- name: Drop stale known_hosts for reused IP
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -R
+      - "{{ jellyfin_ip }}"
+  delegate_to: localhost
+  changed_when: true
+  failed_when: false
+
+- name: Wait for Jellyfin SSH
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -o
+      - BatchMode=yes
+      - -o
+      - ConnectTimeout=5
+      - -o
+      - StrictHostKeyChecking=accept-new
+      - -i
+      - "{{ lookup('env', 'HOME') }}/.ssh/homelab_root"
+      - "root@{{ jellyfin_ip }}"
+      - hostname
+  delegate_to: localhost
+  register: jellyfin_ssh_wait
+  until: jellyfin_ssh_wait.rc == 0
+  retries: 24
+  delay: 5
+  changed_when: false
+
+- name: Confirm LXC IP, resolver, and media mount
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - prox
+      - pct
+      - exec
+      - "{{ jellyfin_ctid }}"
+      - --
+      - bash
+      - -c
+      - "hostname -I; grep nameserver /etc/resolv.conf; test -d {{ jellyfin_media_mp }} && echo media_mp_ok"
+  delegate_to: localhost
+  register: jellyfin_net_verify
+  changed_when: false
+  failed_when: >
+    jellyfin_ip not in jellyfin_net_verify.stdout
+    or '10.92.3.11' not in jellyfin_net_verify.stdout
+    or 'media_mp_ok' not in jellyfin_net_verify.stdout

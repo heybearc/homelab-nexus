@@ -1,0 +1,55 @@
+---
+# Windows 11 workstation (justin-win11) — VLAN 924 / vmbr0924
+# IP 10.92.4.3 was reserved in Netbox. New QEMU guests use TrueNAS NFS
+# (truenas-proxmox). All new guests use TrueNAS NFS (D-HOMELAB-014).
+#
+# Windows setup is console/ISO (no cloud-init). After OOBE, set the static
+# IP below, install VirtIO + guest agent, then OpenSSH for ssh justin-win11.
+
+win11_name: justin-win11
+win11_previous_names:
+  - joel-win11
+win11_vmid: 105
+win11_function: workstation
+win11_ip: "10.92.4.3"
+win11_cidr: 24
+win11_gateway: "10.92.4.1"
+win11_bridge: vmbr0924
+win11_memory: 16384
+win11_cores: 4
+win11_sockets: 1
+win11_disk: 128
+win11_storage: truenas-proxmox
+win11_cpu: host
+win11_machine: q35
+win11_ostype: win11
+win11_onboot: 1
+win11_autostart: true
+
+win11_iso: local:iso/Win11_23H2_English_x64v2.iso
+win11_virtio_iso: local:iso/virtio-win-0.1.271.iso
+
+win11_nameserver: "10.92.3.10"
+win11_nameserver_secondary: "10.92.3.203"
+win11_searchdomain: cloudigan.net
+win11_domain: justin-win11.cloudigan.net
+win11_dns_zone: cloudigan.net
+win11_dns_target_ip: "10.92.4.3"
+
+win11_backup_storage: truenas-backups
+win11_backup_schedule: daily
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+technitium_url: "{{ lookup('env', 'TECHNITIUM_URL') | default('http://10.92.3.10:5380', true) }}"
+technitium_api_token: >-
+  {{
+    lookup('env', 'TECHNITIUM_API_TOKEN')
+    | default(lookup('file', lookup('env', 'HOME') + '/.cache/technitium-token', errors='ignore'), true)
+    | default('', true)
+    | trim
+  }}
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+provisioning_scripts: "{{ playbook_dir }}/../../scripts/provisioning"

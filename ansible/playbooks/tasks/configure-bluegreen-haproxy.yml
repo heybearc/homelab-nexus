@@ -1,0 +1,91 @@
+---
+# Generic HAProxy ACL + backends + deployment-state for blue-green apps
+- name: Render HAProxy fragments
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: ../templates/bluegreen-haproxy-frontend.cfg.j2, dest: "/tmp/bg-{{ bg_app_id }}-frontend.cfg" }
+    - { src: ../templates/bluegreen-haproxy-backend.cfg.j2, dest: "/tmp/bg-{{ bg_app_id }}-backend.cfg" }
+
+- name: Check if backends already exist
+  ansible.builtin.shell: |
+    ssh -F {{ homelab_ssh_config }} haproxy "grep -q 'backend {{ bg_backend_prefix }}-blue' /etc/haproxy/haproxy.cfg"
+  register: haproxy_bg_exists
+  changed_when: false
+  failed_when: false
+
+- name: Install HAProxy blocks for {{ bg_app_id }}
+  when: haproxy_bg_exists.rc != 0
+  block:
+    - name: Copy fragments to HAProxy container
+      shell: |
+        scp -F {{ homelab_ssh_config }} /tmp/bg-{{ bg_app_id }}-frontend.cfg prox:/tmp/bg-fe-{{ bg_app_id }}.cfg
+        scp -F {{ homelab_ssh_config }} /tmp/bg-{{ bg_app_id }}-backend.cfg prox:/tmp/bg-be-{{ bg_app_id }}.cfg
+        ssh -F {{ homelab_ssh_config }} prox "pct push {{ bg_haproxy_ctid }} /tmp/bg-fe-{{ bg_app_id }}.cfg /tmp/bg-fe.cfg && pct push {{ bg_haproxy_ctid }} /tmp/bg-be-{{ bg_app_id }}.cfg /tmp/bg-be.cfg"
+
+    - name: Insert ACLs, routes, and backends via Python
+      shell: |
+        ssh -F {{ homelab_ssh_config }} prox "pct exec {{ bg_haproxy_ctid }} -- python3 - <<'PY'
+        from pathlib import Path
+        cfg = Path('/etc/haproxy/haproxy.cfg')
+        text = cfg.read_text()
+        fe = Path('/tmp/bg-fe.cfg').read_text().strip() + '\n'
+        be = Path('/tmp/bg-be.cfg').read_text().strip() + '\n\n'
+        acl = '{{ bg_acl }}'
+        backend = '{{ bg_backend_prefix }}-blue'
+        if acl not in text:
+            acl_lines = [l for l in fe.splitlines() if l.strip().startswith('acl ')]
+            route_lines = [l for l in fe.splitlines() if l.strip().startswith('use_backend ')]
+            # Insert ACLs after last existing acl line in frontend
+            lines = text.splitlines(keepends=True)
+            last_acl = None
+            last_route = None
+            in_fe = False
+            for i, line in enumerate(lines):
+                if line.startswith('frontend '):
+                    in_fe = True
+                elif in_fe and line.startswith('backend '):
+                    in_fe = False
+                if in_fe and line.lstrip().startswith('acl '):
+                    last_acl = i
+                if in_fe and line.lstrip().startswith('use_backend '):
+                    last_route = i
+            if last_acl is None:
+                raise SystemExit('no acl lines found in frontend')
+            insert_acl = ''.join(l + '\n' for l in acl_lines)
+            lines.insert(last_acl + 1, insert_acl)
+            # recompute route insert after acl insert shifted indices
+            text2 = ''.join(lines)
+            lines = text2.splitlines(keepends=True)
+            last_route = None
+            in_fe = False
+            for i, line in enumerate(lines):
+                if line.startswith('frontend '):
+                    in_fe = True
+                elif in_fe and line.startswith('backend '):
+                    in_fe = False
+                if in_fe and line.lstrip().startswith('use_backend '):
+                    last_route = i
+            if last_route is None:
+                raise SystemExit('no use_backend lines found')
+            insert_route = ''.join(l + '\n' for l in route_lines)
+            lines.insert(last_route + 1, insert_route)
+            text = ''.join(lines)
+        if '\nbackend ' + backend + '\n' not in text and 'backend ' + backend + '\n' not in text:
+            text = text.rstrip() + '\n\n' + be
+        cfg.write_text(text)
+        print('haproxy fragments installed')
+        PY"
+
+    - name: Validate and reload HAProxy
+      shell: |
+        ssh -F {{ homelab_ssh_config }} prox "pct exec {{ bg_haproxy_ctid }} -- bash -c 'haproxy -c -f /etc/haproxy/haproxy.cfg && systemctl reload haproxy'"
+
+- name: Initialize deployment state (BLUE LIVE)
+  shell: |
+    ssh -F {{ homelab_ssh_config }} prox "pct exec {{ bg_haproxy_ctid }} -- bash -c '
+      echo \"{\\\"prod\\\":\\\"blue\\\",\\\"live\\\":\\\"blue\\\",\\\"standby\\\":\\\"green\\\",\\\"switchCount\\\":0}\" > /var/lib/haproxy/{{ bg_state_file }}
+    '"
+  changed_when: true

@@ -1,0 +1,21 @@
+---
+# Persist secondary IPs on TrueNAS vlan923 via midclt (no sudo).
+- name: Apply vlan923 DNS standby aliases via TrueNAS API
+  ansible.builtin.shell: |
+    midclt call interface.update vlan923 '{
+      "aliases": [
+        {"type": "INET", "address": "10.92.3.200", "netmask": 24},
+        {"type": "INET", "address": "{{ technitium_secondary.ip }}", "netmask": 24},
+        {"type": "INET", "address": "{{ adguard_secondary.ip }}", "netmask": 24}
+      ]
+    }'
+    midclt call interface.commit
+    midclt call interface.checkin
+  register: alias_apply
+  changed_when: true
+
+- name: Verify secondary IPs on vlan923
+  ansible.builtin.command: ip -4 addr show dev {{ truenas_vlan_interface }}
+  register: vlan_addrs_final
+  changed_when: false
+  failed_when: technitium_secondary.ip not in vlan_addrs_final.stdout or adguard_secondary.ip not in vlan_addrs_final.stdout

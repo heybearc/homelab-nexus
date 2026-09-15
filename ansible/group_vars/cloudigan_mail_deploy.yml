@@ -1,0 +1,53 @@
+---
+# Cloudigan Mail Gateway blue/green (homelab-nexus)
+# Secrets in homelab-nexus/.env — see documentation/CLOUDIGAN-MAIL-DEPLOYMENT.md
+
+cloudigan_mail_function: utility
+cloudigan_mail_memory: 2048
+cloudigan_mail_cores: 2
+cloudigan_mail_disk: 16
+cloudigan_mail_port: 3020
+cloudigan_mail_app_path: /opt/cloudigan-mail
+cloudigan_mail_domain: mail.cloudigan.net
+cloudigan_mail_public_url: "https://{{ cloudigan_mail_domain }}"
+cloudigan_mail_haproxy_vip: "10.92.3.33"
+cloudigan_mail_dns_zone: cloudigan.net
+
+cloudigan_mail_blue:
+  name: cloudigan-mail-blue
+  ctid: 196
+  ip: 10.92.3.184
+  pm2_name: cloudigan-mail-blue
+
+cloudigan_mail_green:
+  name: cloudigan-mail-green
+  ctid: 197
+  ip: 10.92.3.185
+  pm2_name: cloudigan-mail-green
+
+# M365 (copy from cloudigan-api production .env — do not commit values)
+m365_client_id: "{{ lookup('env', 'M365_CLIENT_ID') | default('', true) }}"
+m365_tenant_id: "{{ lookup('env', 'M365_TENANT_ID') | default('', true) }}"
+m365_client_secret: "{{ lookup('env', 'M365_CLIENT_SECRET') | default('', true) }}"
+m365_from_email: "{{ lookup('env', 'M365_FROM_EMAIL') | default('noreply@cloudigan.com', true) }}"
+
+# Pre-generated keys in .env, or leave empty to auto-generate at deploy time
+cloudigan_mail_api_keys: "{{ lookup('env', 'CLOUDIGAN_MAIL_API_KEYS') | default('', true) }}"
+
+cloudigan_mail_src_local: "{{ playbook_dir }}/../../cloudigan-mail"
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
+homelab_ssh_pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/homelab_root.pub') }}"
+
+# Inbound 3020 from these sources (ufw optional)
+cloudigan_mail_allowed_sources:
+  - 10.92.3.96   # chapter-hub-blue
+  - 10.92.3.97   # chapter-hub-green
+  - 10.92.3.181  # cloudigan-api-blue
+  - 10.92.3.182  # cloudigan-api-green
+  - 10.92.3.79   # n8n
+  - 10.92.3.26   # haproxy
+  - 10.92.3.33   # haproxy VIP / NPM

@@ -1,0 +1,8 @@
+    acl is_chapter_hub hdr(host) -i {{ chapter_hub_domain }}
+    acl is_chapter_hub hdr(host) -i www.{{ chapter_hub_domain }}
+    acl is_chapter_hub_blue hdr(host) -i blue-{{ chapter_hub_domain }}
+    acl is_chapter_hub_green hdr(host) -i green-{{ chapter_hub_domain }}
+
+    use_backend chapter-hub-blue if is_chapter_hub
+    use_backend chapter-hub-blue if is_chapter_hub_blue
+    use_backend chapter-hub-green if is_chapter_hub_green

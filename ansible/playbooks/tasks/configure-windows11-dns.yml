@@ -1,0 +1,81 @@
+---
+- name: Require Technitium API token
+  ansible.builtin.assert:
+    that:
+      - technitium_api_token | length > 8
+    fail_msg: >-
+      Set TECHNITIUM_API_TOKEN in .env (Technitium UI → Administration → API Tokens),
+      then re-run: ansible-playbook playbooks/deploy-windows11-vm.yml --start-at-task 'Configure Technitium DNS'.
+
+- name: Add {{ win11_domain }} A record → {{ win11_dns_target_ip }}
+  ansible.builtin.uri:
+    url: "{{ technitium_url }}/api/zones/records/add"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      domain: "{{ win11_domain }}"
+      type: A
+      ipAddress: "{{ win11_dns_target_ip }}"
+      ttl: 300
+      overwrite: "true"
+      ptr: "false"
+    return_content: true
+    status_code: [200]
+  register: win11_dns_add
+  no_log: true
+  delegate_to: localhost
+
+- name: Check Technitium add status
+  ansible.builtin.fail:
+    msg: "Technitium record add failed: {{ win11_dns_add.content }}"
+  when: >
+    win11_dns_add.json.status | default('') not in ['ok', 'success']
+    and ('already exists' not in (win11_dns_add.json.errorMessage | default('') | lower))
+    and ('exists' not in (win11_dns_add.content | default('') | lower))
+  delegate_to: localhost
+
+- name: Delete previous Technitium A records
+  ansible.builtin.uri:
+    url: "{{ technitium_url }}/api/zones/records/delete"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      domain: "{{ item }}.{{ win11_dns_zone }}"
+      type: A
+      ipAddress: "{{ win11_dns_target_ip }}"
+    return_content: true
+    status_code: [200]
+  loop: "{{ win11_previous_names | default([]) }}"
+  when:
+    - item | length > 0
+    - item != win11_name
+    - (item + '.' + win11_dns_zone) != win11_domain
+  register: win11_dns_del
+  failed_when: false
+  no_log: true
+  delegate_to: localhost
+
+- name: Verify Technitium resolves {{ win11_domain }}
+  ansible.builtin.command:
+    argv:
+      - dig
+      - +short
+      - "{{ win11_domain }}"
+      - "@10.92.3.10"
+  register: win11_dig
+  changed_when: false
+  failed_when: win11_dns_target_ip not in (win11_dig.stdout | default(''))
+  delegate_to: localhost
+
+- name: Confirm previous names no longer resolve to this IP
+  ansible.builtin.shell: >
+    ! dig +short {{ item }}.{{ win11_dns_zone }} @10.92.3.10
+    | grep -qx {{ win11_dns_target_ip }}
+  loop: "{{ win11_previous_names | default([]) }}"
+  changed_when: false
+  when:
+    - item | length > 0
+    - item != win11_name
+  delegate_to: localhost
