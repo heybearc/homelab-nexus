@@ -1,14 +1,14 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-09-13 (end-day)
+**Last updated:** 2026-09-22 (mid-day)
 
 ---
 
 ## Current Task
-**3-node Proxmox cluster** — IN PROGRESS (hardware + phased join; production still on prox1)
+**10G storage fabric** — SX3016F adopted; prox2 on vlan922; TrueNAS LAG move next
 
 ### What I'm doing right now
-Cluster plan still locked (hybrid NFS + local). This week was ops recovery: Omada CT142, Ninja/Kaseya on geo-sapnfs-p001, and SSH access on four client Linux VMs. Quote Builder infra remains handed off to the app repo.
+Cluster is PVE 9.2.20, 3/3. Guests drained off prox2 onto prox1 (HA pairs still split vs prox3). X520 in prox2; SX3016F `10.92.0.4` uplink on 3428 port 25. prox2 `10.92.2.6` on `enp4s0f0.922` pings and NFS-mounts TrueNAS `10.92.2.200`. Cluster `storage.cfg` still `10.92.3.200`.
 
 ### Recent completions
 - ✅ **Omada CT142 recovered** — wedged at 2 GB; reboot + RAM to **8 GB** (D-HOMELAB-015); UI 200 at `omada.cloudigan.net` (2026-09-08)
@@ -18,12 +18,10 @@ Cluster plan still locked (hybrid NFS + local). This week was ops recovery: Omad
 - ✅ **Quote Builder blue-green** — CT200/201, `deploy-bluegreen-app.yml`, HAProxy, NPM, MCP handoff (2026-07-28 → 2026-08)
 
 ### Next steps
-1. **Cluster Phase 1:** version-check PVE on prox/prox2/prox3; rename `prox` → `prox1`; `pvecm create` / join (1G OK)
-2. **Buy / receive:** Omada **SX3016F** + **2× Intel X520-DA2**, or keep Phase 1 on 1G
-3. Finish **joel-win11** VM105 OS install (VirtIO SCSI + static `10.92.4.3/24`)
-4. Remaining **NO_ACCESS** VMs: ak1-ifw03-p001, GEO-ETL-D001 (no route); ak1-rtr03-p001, DGG-UB-P002, GEO-KALI-P001 (need console/owner passwords)
-5. Optional: focused git commits for ansible BG template + DNS/monitoring (still uncommitted bulk)
-6. Pending: Omada DHCP cutover to Technitium (D-HOMELAB-013)
+1. **SX3016F LACP** for TrueNAS (spare DAC first, then move 3428 port 26). Trunk: PVID 920, tag 922–925.
+2. **vlan922** on prox1 `10.92.2.5` and prox3 `10.92.2.7`, then remount NFS to `10.92.2.200`.
+3. Move guests back to prox2 (pairs stay split). Do not adopt the Omada gateway.
+4. Pending: Omada DHCP cutover to Technitium (D-HOMELAB-013)
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -62,18 +60,11 @@ Cluster plan still locked (hybrid NFS + local). This week was ops recovery: Omad
 ## Exact Next Command
 
 ```text
-# Cluster Phase 1 (1G OK) — version align then rename:
-ssh root@10.92.0.5 'pveversion -v | head -1'
-ssh root@10.92.0.6 'pveversion -v | head -1'
-ssh root@10.92.0.7 'pveversion -v | head -1'
-# Then rename prox→prox1 and pvecm create/join
-
-# If Omada UI dies again:
-ssh prox 'pct config 142 | grep memory; pct status 142'
-# Expect memory: 8192
+# prox2 storage path (already up):
+# 10.92.2.6 on enp4s0f0.922 → TrueNAS 10.92.2.200
 ```
 
-**Tomorrow first action:** Resume **3-node cluster Phase 1** (version check → prox→prox1), or confirm SX3016F/X520 order status. Quote Builder product work lives in `~/Projects/cloudigan-quote-builder`.
+**Tomorrow first action:** LACP TrueNAS onto SX3016F, then vlan922 IPs on prox1/prox3 and NFS remount to `10.92.2.200`.
 
 ---
 
@@ -81,11 +72,12 @@ ssh prox 'pct config 142 | grep memory; pct status 142'
 
 | Service | Primary | Notes |
 |---------|---------|--------|
-| prox / prox1 | `10.92.0.5` | Rename before cluster |
-| prox2 | `10.92.0.6` | iDRAC `10.92.0.16` |
-| prox3 | `10.92.0.7` | iDRAC `10.92.0.17` |
-| TrueNAS | `10.92.0.3` / NFS `10.92.3.200` | `truenas-proxmox`, `truenas-backups` |
-| Switch | SG3428XMP `10.92.0.2` | 4× SFP+ full |
+| prox1 | `10.92.0.5` | Lenovo P920, no BMC; guests parked here |
+| prox2 | `10.92.0.6` | iDRAC `10.92.0.16`; tag `78F8XV1`; X520; `10.92.2.6` |
+| prox3 | `10.92.0.7` | iDRAC `10.92.0.17`; tag `8W72DZ1` |
+| TrueNAS | `10.92.0.3` / NFS `10.92.3.200` + `10.92.2.200` | still on 3428 port 26 |
+| Switch | SG3428XMP `10.92.0.2` | uplink port 25 → SX3016F |
+| SX3016F | `10.92.0.4` | jumbo 9216; ports 7/8 = prox2 |
 | Omada | CT142 `10.92.0.34` | **8 GB** RAM; `omada.cloudigan.net` |
 | Scrypted | CT180 `10.92.3.15` | Driveway `.184`, Garage `.189`, Front Porch `.190` |
 | Quote Builder | CT200/201 `.100`/`.101` | LIVE=blue; `quotes.cloudigan.net` |
