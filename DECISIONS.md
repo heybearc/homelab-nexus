@@ -175,7 +175,13 @@
 - Apps use keepalived **RW VIP `10.92.3.23`** (`postgres.cloudigan.net` / `postgresql.cloudigan.net`, VRID 52). Node IPs `.21`/`.31` are for replication and admin only.  
 - Rebuild CT151 on **Debian 12** from shared NFS templates so libc matches the primary.  
 - `truenas-proxmox` content includes **`vztmpl,iso`**; all nodes use `truenas-proxmox:vztmpl/…`.  
-**Consequences:** Failover = watchdog promote on CT150 + VIP follow. Replication `primary_conninfo` must stay on `.21`/`.31`, never the VIP. 10G fabric / corosync link1 / PVE HA for NFS singletons still wait on SX3016F + X520 (D-HOMELAB-012).
+**Consequences:** Failover = watchdog promote on CT150 + VIP follow. Replication `primary_conninfo` must stay on `.21`/`.31`, never the VIP. 10G fabric / corosync link1 / PVE HA for NFS singletons still wait on SX3016F + X520 (D-HOMELAB-012). As of 2026-09-25 the fabric is up, but CT131 is still on prox1 so a stop does not get used as a casual migrate.
+
+## D-HOMELAB-017: Host 10G ports stay unbonded; TrueNAS stays LACP
+**Date:** 2026-09-25  
+**Context:** TrueNAS bond0 moved onto the SX3016F. The open choice was whether prox1, prox2, and prox3 should LACP their two 10G DACs the same way.  
+**Decision:** Keep each Proxmox host's 10G ports **separate**. One DAC is storage VLAN 922 only. The other is the guest trunk (native VLAN 920, tagged 922–925). TrueNAS stays **Active LACP** (LAG `truenas`, SX3016F ports 3 and 4). Do not adopt the Omada gateway.  
+**Consequences:** One DAC failure drops that host's storage path or its guest path, not both. prox3 is the reference: `enp4s0f0` → `vmbr0922` `10.92.2.7/24`, `enp4s0f1` → `vmbr0923` `10.92.3.207/24` plus `vmbr0924` and `vmbr0925`. prox2 storage is `10.92.2.6`; its guest bridges are still on 1G `eno1`. prox1 has no `10.92.2.5` yet. Cluster NFS in `storage.cfg` stays on `10.92.3.200` until that address exists and the remount is done.
 
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17

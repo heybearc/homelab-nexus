@@ -209,3 +209,66 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - Omada UI: https://omada.cloudigan.net (CT142 10.92.0.34:8043)
 - `ssh prox 'pct status 142; pct config 142 | grep memory'`
 ---
+
+## 2026-09-22
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-09-22
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- 
+
+### Discoveries / Notes
+- prox1 was up; Tailscale accept-routes blackholed LAN. Nodes advertise 10.92.0.0/16 but `--accept-routes=false` plus ip rule pref 5190.
+- prox2 (R720xd `78F8XV1`) drained to prox1, X520 installed, cluster 3/3. Guests still on prox1.
+- SX3016F adopted `10.92.0.4`, jumbo 9216. Uplink 3428:25. prox2 ports 7/8 trunked. Do not adopt Omada gateway.
+- prox2 `10.92.2.6/24` on `enp4s0f0.922` pings and NFS-mounts TrueNAS `10.92.2.200`. storage.cfg still `.3.200`.
+- Next: LACP TrueNAS onto SX3016F (spare DAC first, then move 3428 port 26). Then `.2.5`/`.2.7` and remount.
+
+### Decisions to Promote
+- 
+
+### Blockers / Risks
+- 
+
+### Links / Commands
+- 
+
+## 2026-09-25
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-09-25
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Finish the SX3016F cutover and balance guests across prox1, prox2, and prox3
+
+### Discoveries / Notes
+- TrueNAS LAG `truenas` is on SX3016F ports 3 and 4 (native 920, tagged 922–925). Management `10.92.0.3` stayed on the 1G NIC.
+- prox3 X520: `enp4s0f0` storage `10.92.2.7`, `enp4s0f1` guest trunk `10.92.3.207` plus 924/925.
+- Guests balanced. Pairs stay split. CT131 left on prox1 so the replica would not promote. GPU CTs stayed on prox1.
+- Bind-mount CTs migrate only after `mp0` is removed and restored. `/mnt/pve/theoshift-uploads` and `tip-uploads` exist on prox3.
+- Jellyfin 10.11.11 needs Intro Skipper `10.11/v1.10.11.24`, not the 12.0 build. Plugin loaded. Analysis is still a dashboard task.
+
+### Decisions to Promote
+- D-HOMELAB-017 — host 10G ports stay unbonded; TrueNAS stays LACP
+
+### Blockers / Risks
+- prox1 has no `10.92.2.5`. Cluster NFS is still `10.92.3.200`.
+- prox2 guest VLANs are still on 1G `eno1`.
+- Stopping CT131 can promote CT151.
+
+### Links / Commands
+- Jellyfin plugins: `https://jellyfin.cloudigan.net/web/#/dashboard/plugins`
+- Scheduled tasks: `https://jellyfin.cloudigan.net/web/#/dashboard/scheduledtasks`
