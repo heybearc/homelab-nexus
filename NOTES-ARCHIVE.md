@@ -272,3 +272,33 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - Jellyfin plugins: `https://jellyfin.cloudigan.net/web/#/dashboard/plugins`
 - Scheduled tasks: `https://jellyfin.cloudigan.net/web/#/dashboard/scheduledtasks`
+
+## 2026-10-04
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-09-30
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Move cluster NFS from `10.92.3.200` onto vlan 922
+
+### Discoveries / Notes
+- prox1 `vmbr0922` now has `10.92.2.5/24`. Jumbo ping to `10.92.2.200` works.
+- NFSv4 reuses an existing session, so each node had to drop every NFS mount before the new server IP took effect. Guests were moved off, then back.
+- `storage.cfg` `server` is fixed in the API; edited the file directly to `10.92.2.200`.
+- A vzdump of CT132 had been rsyncing since 09:27 and was not growing. Killed it and removed the partial dump so theoshift-green could move.
+- prox2 guest bridges `vmbr0923/924/925` moved from `eno1` to `enp4s0f1` (SX3016F `1/0/7`, port description `prox2-f0`, PVID 920). VLAN 923–925 answered ARP on that port before the move. CT139 `10.92.3.32` and gateways `10.92.3.1`, `10.92.4.1`, `10.92.5.1` answered after. Management stayed on `eno1`. 
+
+### Decisions to Promote
+- 
+
+### Blockers / Risks
+- 
+
+### Links / Commands
+- 

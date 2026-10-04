@@ -79,3 +79,6 @@ personal-settings/
 # Dangling Cloudy-Work command links (targets not on current MC)
 .cursor/commands/test-release-steps.md
 .cursor/commands/workflow-cleanup.md
+
+# MCP global only (~/.cursor/mcp.json) — D-053
+.cursor/mcp.json
