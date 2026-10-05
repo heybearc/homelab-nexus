@@ -11,7 +11,7 @@
     mode: "0644"
     content: |
       services:
-        adguard-standby:
+        adguard-2:
           image: adguard/adguardhome:latest
           container_name: {{ adguard_secondary.docker_name }}
           restart: unless-stopped
@@ -28,8 +28,8 @@
   ansible.builtin.shell: |
     midclt call cronjob.create '{
       "user": "root",
-      "command": "/usr/bin/docker rm -f adguard-standby 2>/dev/null; /usr/bin/docker run -d --name adguard-standby --restart unless-stopped -p {{ adguard_secondary.ip }}:53:53/udp -p {{ adguard_secondary.ip }}:53:53/tcp -p {{ adguard_secondary.ip }}:853:853/tcp -p {{ adguard_secondary.ip }}:{{ adguard_secondary.web_port }}:3000/tcp -v /mnt/media-pool/vms/dns-stack/adguard-standby/work:/opt/adguardhome/work -v /mnt/media-pool/vms/dns-stack/adguard-standby/conf:/opt/adguardhome/conf adguard/adguardhome:latest",
-      "description": "adguard-standby",
+      "command": "/usr/bin/docker rm -f {{ adguard_secondary.docker_name }} 2>/dev/null; /usr/bin/docker run -d --name {{ adguard_secondary.docker_name }} --restart unless-stopped -p {{ adguard_secondary.ip }}:53:53/udp -p {{ adguard_secondary.ip }}:53:53/tcp -p {{ adguard_secondary.ip }}:853:853/tcp -p {{ adguard_secondary.ip }}:{{ adguard_secondary.web_port }}:3000/tcp -v /mnt/media-pool/vms/dns-stack/adguard-standby/work:/opt/adguardhome/work -v /mnt/media-pool/vms/dns-stack/adguard-standby/conf:/opt/adguardhome/conf adguard/adguardhome:latest",
+      "description": "{{ adguard_secondary.docker_name }}",
       "enabled": false,
       "stdout": false,
       "stderr": false,

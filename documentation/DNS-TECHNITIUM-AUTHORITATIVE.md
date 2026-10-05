@@ -1,8 +1,8 @@
-# DNS architecture — Technitium authoritative (AdGuard optional filter)
+# DNS architecture — AdGuard filters clients, Technitium holds zones
 
-**Updated:** 2026-08-20  
-**Decision:** D-HOMELAB-013  
-**Goal:** Clients resolve via **Technitium** so an AdGuard restart cannot take out internet/DNS.
+**Updated:** 2026-10-04  
+**Decision:** D-HOMELAB-018 (zone authority remains D-HOMELAB-013)  
+**Goal:** Every DHCP client is filtered by AdGuard. Technitium stays the zone authority behind AdGuard.
 
 ---
 
@@ -10,18 +10,17 @@
 
 ```
 DHCP option 6 (clients):
-  #1  10.92.3.10   technitium-primary   (CT145) — authoritative + recursive
-  #2  10.92.3.203  technitium-standby   (TrueNAS) — AXFR secondary + same forwarders
+  #1  10.92.3.11   adguard-primary   — filter for every client
+  #2  10.92.3.204  adguard-standby   — same filter, so one AdGuard can restart
+
+AdGuard upstream:
+  10.92.3.10 / 10.92.3.203  Technitium (authoritative + recursive)
+  Clients do not query Technitium directly.
 
 Technitium:
   Primary zones: cloudigan.net + product zones (theoshift.com, …)
   Conditional forwarders: cloudigan.com + _msdcs.cloudigan.com → 10.92.0.10 (dc-01 AD)
   Public recursion: forwarders 1.1.1.1, 9.9.9.9
-
-AdGuard (10.92.3.11 / 10.92.3.204):
-  OPTIONAL filter only — not in DHCP critical path
-  Upstream must be Technitium (10.92.3.10, 10.92.3.203) if used
-  Devices that want blocking: set DNS manually to AdGuard
 
 dc-01:
   Remains AD + cloudigan.com until Entra migration
@@ -32,9 +31,9 @@ dc-01:
 
 | Before | After |
 |--------|--------|
-| DHCP → AdGuard only | DHCP → Technitium primary + standby |
-| AdGuard down ⇒ no DNS | AdGuard down ⇒ clients unaffected |
-| Dual SoT (DC + Tech drift) | Technitium SoT for `cloudigan.net` |
+| DHCP → one AdGuard | DHCP → both AdGuard servers |
+| That AdGuard down ⇒ no DNS | One AdGuard down ⇒ the other still filters |
+| Dual SoT (DC + Tech drift) | Technitium SoT for `cloudigan.net`, behind AdGuard |
 
 ---
 
@@ -42,24 +41,23 @@ dc-01:
 
 In **Omada** → LAN DHCP (or the pool that serves Wi‑Fi / `10.92.0.0/23`):
 
-| Field | New value |
-|-------|-----------|
-| Primary DNS | `10.92.3.10` |
-| Secondary DNS | `10.92.3.203` |
+| Field | Value |
+|-------|--------|
+| Primary DNS | `10.92.3.11` (AdGuard) |
+| Secondary DNS | `10.92.3.204` (AdGuard standby) |
 | Domain name (optional) | `cloudigan.net` (prefer over `cloudigan.com` for lab) |
 
-Then renew DHCP on clients (or wait for lease refresh).
+AdGuard upstream on both nodes: `10.92.3.10` and `10.92.3.203`.
 
-**Rollback:** Primary `10.92.3.11`, Secondary `10.92.3.204` (old AdGuard pair).
+Then renew DHCP on clients (or wait for lease refresh).
 
 Verify after cutover:
 
 ```bash
-ipconfig getpacket en0 | grep domain_name_server   # expect 10.92.3.10, 10.92.3.203
-dig +short google.com @10.92.3.10
-dig +short jellyfin.cloudigan.net @10.92.3.10
-dig +short dc-01.cloudigan.com @10.92.3.10
-dig +short SRV _ldap._tcp.cloudigan.com @10.92.3.10
+ipconfig getpacket en0 | grep domain_name_server   # expect 10.92.3.11, 10.92.3.204
+dig +short google.com @10.92.3.11
+dig +short jellyfin.cloudigan.net @10.92.3.11
+dig +short dc-01.cloudigan.com @10.92.3.11
 ```
 
 ---
@@ -76,7 +74,7 @@ dig +short SRV _ldap._tcp.cloudigan.com @10.92.3.10
 
 ### Still manual / follow-up
 
-- [ ] **Omada DHCP** cutover (table above)
+- [ ] **Omada DHCP** DNS = both AdGuard servers (table above). Do not point clients at Technitium.
 - [ ] AdGuard **standby** upstream verify (API password unknown) — set upstream to `10.92.3.10` + `10.92.3.203` in UI
 - [ ] Optional: migrate reverse zones from dc-01 → Technitium
 - [ ] Entra-join Windows → later remove dc-01 (separate project)

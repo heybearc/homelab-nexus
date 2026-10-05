@@ -33,9 +33,9 @@ technitium_secondary:
 
 adguard_secondary:
   ip: 10.92.3.204
-  hostname: adguard-standby.cloudigan.net
+  hostname: adguard-2.cloudigan.net
   web_port: 3000
-  docker_name: adguard-standby
+  docker_name: adguard-2
 
 # Upstream resolvers (public)
 dns_public_upstreams:

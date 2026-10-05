@@ -153,7 +153,7 @@
 - Technitium owns `cloudigan.net` + product zones; lab automation writes Technitium API only (`dns-add-record.sh`).  
 - Conditional forwarders on Technitium: `cloudigan.com` + `_msdcs.cloudigan.com` → `10.92.0.10` while AD remains.  
 - Public recursion via Technitium forwarders `1.1.1.1` / `9.9.9.9`.  
-**Consequences:** Omada DHCP must be cut over (see `documentation/DNS-TECHNITIUM-AUTHORITATIVE.md`). AdGuard outages no longer break resolution. dc-01 stays until Entra migration. Supersedes client-path portion of D-HOMELAB-009 (AdGuard-as-DHCP-DNS).
+**Consequences:** Omada DHCP must be cut over (see `documentation/DNS-TECHNITIUM-AUTHORITATIVE.md`). AdGuard outages no longer break resolution. dc-01 stays until Entra migration. Supersedes client-path portion of D-HOMELAB-009 (AdGuard-as-DHCP-DNS). Client path superseded again by D-HOMELAB-018: AdGuard stays the DHCP resolver for every client.
 
 ## D-HOMELAB-014: All new Proxmox guests on TrueNAS NFS
 **Date:** 2026-09-02  
@@ -182,6 +182,12 @@
 **Context:** TrueNAS bond0 moved onto the SX3016F. The open choice was whether prox1, prox2, and prox3 should LACP their two 10G DACs the same way.  
 **Decision:** Keep each Proxmox host's 10G ports **separate**. One DAC is storage VLAN 922 only. The other is the guest trunk (native VLAN 920, tagged 922–925). TrueNAS stays **Active LACP** (LAG `truenas`, SX3016F ports 3 and 4). Do not adopt the Omada gateway.  
 **Consequences:** One DAC failure drops that host's storage path or its guest path, not both. prox3 is the reference: `enp4s0f0` → `vmbr0922` `10.92.2.7/24`, `enp4s0f1` → `vmbr0923` `10.92.3.207/24` plus `vmbr0924` and `vmbr0925`. prox2 matches that split as of 2026-09-30: `enp4s0f0` → `vmbr0922` `10.92.2.6/24`, `enp4s0f1` → `vmbr0923` `10.92.3.206/24` plus `vmbr0924` and `vmbr0925`. prox1 storage is `10.92.2.5` on `ens3f0.922`; its guest VLAN 923 is still on `ens3f0` beside storage. Cluster NFS in `storage.cfg` is `10.92.2.200`.
+
+## D-HOMELAB-018: AdGuard filters every DHCP client
+**Date:** 2026-10-04
+**Context:** D-HOMELAB-013 moved client DNS to Technitium so an AdGuard restart could not black-hole resolution. That also takes AdGuard off the path, so clients get no network-wide ad and DNS filtering. The outage happened because DHCP listed only one AdGuard.
+**Decision:** Omada keeps DHCP. DHCP DNS is AdGuard `10.92.3.11` and `10.92.3.204`, so every client is filtered and one AdGuard can restart. AdGuard upstream is Technitium `10.92.3.10` and `10.92.3.203`. Technitium stays the zone authority. Clients do not query Technitium directly. Do not adopt the Omada gateway.
+**Consequences:** Supersedes the client-path bullets of D-HOMELAB-013. Zone ownership, forwarders, and `dns-add-record.sh` stay as in D-HOMELAB-013. Both AdGuard servers down still means no client DNS.
 
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
