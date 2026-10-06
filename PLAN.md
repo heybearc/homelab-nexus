@@ -42,7 +42,7 @@
 - [ ] **Cloudigan Mail Gateway** — NPM + GitHub push
 - [ ] **Cloudigan Vault MSP**
 - [ ] **TIP Generator Phase 1**
-- [ ] **Personal Ops Center**
+- [x] **Personal Ops Center** — live as Ops Hub, CT202, https://ops.cloudigan.net (D-065, 2026-10-06). Planner follow-up stays in the ops-hub repo.
 - [ ] **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
 ---
