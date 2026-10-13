@@ -64,4 +64,4 @@ Tokens are stored in `ops-sync/data/microsoft-accounts.json` (not in git).
 
 ## Thrive locked-down tenants
 
-If Thrive blocks third-party apps entirely, OAuth will fail at consent. Fallback: Mac calendar bridge (not yet implemented) or subscribe Ops Hub ICS into Thrive Outlook (work calendar stays native in Outlook only).
+If Thrive blocks third-party apps entirely, OAuth will fail at consent. Use the Mac calendar bridge: Calendar.app already has the Thrive account, and `scripts/install-apple-calendar-bridge.sh` in the ops-hub repo pushes that calendar to Ops Hub every 15 minutes (`lifeArea: thrive`). Subscribe Ops Hub ICS into Thrive Outlook only if you want the merged calendar inside Outlook; the work calendar itself stays native.
