@@ -189,6 +189,12 @@
 **Decision:** Omada keeps DHCP. DHCP DNS is AdGuard `10.92.3.11` and `10.92.3.204`, so every client is filtered and one AdGuard can restart. AdGuard upstream is Technitium `10.92.3.10` and `10.92.3.203`. Technitium stays the zone authority. Clients do not query Technitium directly. Do not adopt the Omada gateway.
 **Consequences:** Supersedes the client-path bullets of D-HOMELAB-013. Zone ownership, forwarders, and `dns-add-record.sh` stay as in D-HOMELAB-013. Both AdGuard servers down still means no client DNS.
 
+## D-HOMELAB-019: Patch cadence promotes Postgres instead of rebooting the primary
+**Date:** 2026-10-12  
+**Context:** A reboot of the writable primary drops RW VIP `10.92.3.23` while the replica is still in recovery. CT131 is on prox1.  
+**Decision:** One ring per window. Saturday 02:00 is the only environment-down slot, and it runs the Postgres role switch when the current primary has packages: read-only, stop, promote the replica, wait for the VIP, rebuild the old primary from the new primary's node IP, then patch it. prox2 is Wednesday 21:00. prox3 is Thursday 21:00. Empty targets are logged and left running. TrueNAS is not applied by this cron.  
+**Consequences:** Same rule as Cloudy-Work D-067. Do not restart the current primary outside that procedure. `touch /etc/patch-cadence/HOLD` on prox1 pauses apply mode.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

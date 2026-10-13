@@ -343,3 +343,34 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 
 ### Decisions to Promote
 - Standby AdGuard container name is `adguard-2`. IP stays `10.92.3.204`.
+
+## 2026-10-13
+
+_Rolled from NOTES-TODAY.md_
+
+---
+date: 2026-10-12
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Arm the patch cadence, including the Postgres role switch.
+
+### Discoveries / Notes
+- Last weekend did not patch prox2, prox3, or CT131 because those windows were never installed. Cron only had Monday check and Sunday standby patch.
+- Saturday now promotes the streaming replica, moves VIP 10.92.3.23, and rebuilds the old primary as the replica. An in-place reboot of the primary is refused.
+- prox1 enterprise apt repo returns 401. The host still has about 60 pending packages. NVIDIA packages on prox1 are held.
+- TrueNAS cron jobs 25–28 were deleting Technitium auth.config each morning. They are disabled.
+- OpenResty on NPM stays held. Its Debian repo key is still SHA-1.
+
+### Decisions to Promote
+- D-067 is in Cloudy-Work. Local record is D-HOMELAB-019.
+
+### Blockers / Risks
+- Wednesday 21:00 will drain and reboot prox2. Thursday does prox3, VIP to CT139 first. Saturday 02:00 runs the Postgres switch. Touch /etc/patch-cadence/HOLD on prox1 to stop apply mode.
+
+### Links / Commands
+- documentation/PATCH-RINGS.md
+- scripts/ops/patch-cadence.sh

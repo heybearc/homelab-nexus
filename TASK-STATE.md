@@ -1,42 +1,40 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-13
 
 ---
 
 ## Current Task
-**Omada adoption** — SX3016F is already managed by CT142. Next is moving the access points with Site Migration.
+**Patch cadence** — armed on prox1 and in n8n. The next apply window is Tuesday 21:00, ring 3 (media).
 
 ### What I'm doing right now
-DHCP clients already use AdGuard. The SX3016F is managed by our controller. Access points are on the other controller. The SG3428XMP has never shown up for adoption. The ER7206 is still standalone and is last.
+The script, cron, and n8n workflow are installed and pushed. Saturday promotes the Postgres replica instead of rebooting the primary in place. Omada access-point migration is still the open adoption task and was not done today.
 
 ### Recent completions
-- ✅ **prox2 guest trunk** — `vmbr0923` `10.92.3.206`, `vmbr0924`, and `vmbr0925` moved from `eno1` to `enp4s0f1` on SX3016F port 7 (PVID 920). Gateway pings and CT139 `10.92.3.32` answered (2026-09-30)
-- ✅ **Cluster NFS on vlan 922** — `storage.cfg` server is `10.92.2.200`. prox1 `10.92.2.5`, prox2 `10.92.2.6`, prox3 `10.92.2.7`. Guests returned to their original nodes. Postgres primary stayed primary (2026-09-30)
-- ✅ **Guest balance** — running counts 18 / 17 / 19 (prox1 / prox2 / prox3). GPU, media, and Postgres primary stay on prox1. Blues and HAProxy standby stay on prox2. Greens, live HAProxy, replica, and monitoring are on prox3 (2026-09-25)
-- ✅ **SX3016F cutover** — TrueNAS LAG `truenas` (ports 3/4, native 920, tagged 922–925). prox1 10G cables moved. prox3 X520 installed and configured (2026-09-25)
+- ✅ **Patch cadence** — cron on prox1 and n8n workflow Homelab patch ring. Empty targets log and skip. HOLD file pauses apply mode (2026-10-12)
+- ✅ **Postgres role switch** — D-067 / D-HOMELAB-019. VIP `10.92.3.23` follows a promote. The old primary is rebuilt as the replica (2026-10-12)
+- ✅ **Edge patch** — DNS standbys, Technitium CT145, AdGuard CT140, NPM CT121. OpenResty held for the SHA-1 repo key (2026-10-06)
+- ✅ **Single containers and blue-green** — media, business, identity, automation, lab, cameras, monitoring, Vaultwarden, Jellyfin 12.2. HAProxy failover tested (2026-10-06)
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration. Forget them on the old controller only after they show Connected here.
-2. Point the SG3428XMP inform URL at `10.92.0.34` so it can appear as Pending. Capture VLANs and ports before Adopt.
-3. Capture the ER7206, pre-build that config, adopt last.
-4. Work the gap list in PLAN.md, then the staged update train.
-5. Optional: move Postgres primary CT131 to prox2 only in a window where a replica promote is acceptable. It stayed on prox1 on purpose.
+1. Before Tuesday 21:00, confirm `/etc/patch-cadence/HOLD` is absent on prox1 so the media ring can run. Read `/var/log/patch-cadence/` after it finishes.
+2. Leave Wednesday 21:00 (prox2) and Thursday 21:00 (prox3, VIP to CT139 first) on the cron unless a hold is required.
+3. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
+4. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
 - **Cloudigan Mail Gateway** — NPM + GitHub push
 - **Cloudigan Vault MSP**
 - **TIP Generator Phase 1**
-- **Personal Ops Center** — backlog
 - **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
 ---
 
 ## Known Issues
 
-- **Postgres primary is on prox1, not prox2** — D-HOMELAB-016 still wants CT131 on prox2 with CT151 on prox3. Stopping the primary can promote the replica. Do not restart CT131 casually.
+- **Postgres primary is on prox1** — VIP `10.92.3.23` is on CT131. Saturday's cron promotes the replica when the primary has packages. Do not restart that primary outside the procedure.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
@@ -47,7 +45,7 @@ DHCP clients already use AdGuard. The SX3016F is managed by our controller. Acce
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation
 - **prox `hdd-pool` DEGRADED** (verify current status)
 - **NPM cert #30** — not attached to a live host. `adguard-2.cloudigan.net` cert is valid through 2027-01-02 (D-HOMELAB-007)
-- **Package updates** — 48 of 50 running containers have pending packages. Not installed. Postgres, live HAProxy, NPM, AdGuard, Technitium, and Jellyfin 10.11.11 → 12.1 need a window
+- **Host packages** — prox1 about 60 (enterprise repo 401), prox2 42, prox3 42. PVE 9.2.20. NVIDIA on prox1 is held. TrueNAS 25.04.2.6 has no update. NPM OpenResty is held
 - **AP controller** — `10.92.0.10` UI ports were closed on 2026-10-04. Access points are still on that controller
 - **Intro Skipper** — installed; analysis completion not confirmed
 
@@ -55,7 +53,7 @@ DHCP clients already use AdGuard. The SX3016F is managed by our controller. Acce
 
 ## Uncommitted work
 
-- None. End-day commit covers the vlan 922 NFS cutover, the prox2 guest trunk, and the helper scripts.
+- None after this end-day commit.
 - Do not force-push.
 
 ---
@@ -63,11 +61,10 @@ DHCP clients already use AdGuard. The SX3016F is managed by our controller. Acce
 ## Exact Next Command
 
 ```text
-# On the AP controller: Global View → Settings → Migration → Site Migration.
-# Export that site. Import it on CT142 as a new site. Migrate only the access points.
+ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1 /var/log/patch-cadence | tail'
 ```
 
-**Tomorrow first action:** Export the access-point site from the other controller. Do not migrate devices until that import succeeds on CT142.
+**Tomorrow first action:** Confirm the hold file is absent before Tuesday 21:00. After the media ring, read that log. Omada site migration stays the next manual adoption step.
 
 ---
 

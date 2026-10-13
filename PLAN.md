@@ -1,8 +1,8 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-10-05
-**Current phase:** Omada adoption
-**Status:** SX3016F is managed by CT142. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
+**Last updated:** 2026-10-13
+**Current phase:** Patch cadence is armed. Omada adoption is still open.
+**Status:** Cron and n8n run the rings. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
 
 ---
 
@@ -13,8 +13,8 @@
 - [ ] Get the SG3428XMP to show Pending. Capture its standalone config before any Adopt click.
 - [ ] Capture the ER7206 and adopt it last, after the controller site matches.
 - [ ] Close the security, efficiency, and functionality gaps listed below.
-- [ ] Run the staged update train (stable versions, one target at a time, snapshot first). Inventory is done (2026-10-04): 48 of 50 running containers have pending packages. Do not install without a window.
-- [ ] Optional: move Postgres primary CT131 to prox2 only when a replica promote is acceptable.
+- [x] Patch cadence installed (2026-10-12). Cron on prox1 and n8n. Saturday promotes Postgres. See D-HOMELAB-019.
+- [ ] Watch the first live windows: Tuesday 21:00 media, Wednesday prox2, Thursday prox3, Saturday Postgres.
 
 ### Completed This Phase
 - ✅ Cluster NFS on vlan 922, server `10.92.2.200` (2026-09-30)
@@ -22,6 +22,7 @@
 - ✅ SX3016F cutover and guest balance (2026-09-25)
 - ✅ SX3016F adopted and managed from the Omada controller (2026-10-04)
 - ✅ DHCP clients already use AdGuard (D-HOMELAB-018) (2026-10-04)
+- ✅ Patch cadence and Postgres role switch (D-HOMELAB-019, D-067) (2026-10-12)
 
 ---
 
@@ -34,7 +35,7 @@
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
 
 ### Medium Priority
-- [ ] **Postgres primary placement** — D-HOMELAB-016 wants CT131 on prox2. It stays on prox1 until a promote window.
+- [ ] **Postgres primary placement** — CT131 stays on prox1. Saturday's procedure promotes in place of a move to prox2. Do not restart the current primary outside that window.
 - [ ] **prox1 guest VLAN layout** — storage `10.92.2.5` is up, but guest VLAN 923 still shares `ens3f0` with storage.
 
 ### Low Priority
@@ -57,13 +58,13 @@ Functionality: access points still live on the other controller; SG3428XMP never
 
 ## Update train
 
-Inventory versions first. Target current stable releases (30+ days old, no pre-release). Snapshot or STANDBY deploy before each change. Order: blue-green apps on STANDBY, then one LXC at a time, then one Proxmox node at a time, then TrueNAS, then the Omada controller. Skip a casual restart of CT131.
+The cadence in `documentation/PATCH-RINGS.md` is the update train. Sunday patches blue-green standbys only. Saturday promotes Postgres when the primary has packages. TrueNAS is not applied by the cron. Skip a casual restart of the current primary.
 
 ---
 
 ## Known Issues
 
-- **Postgres primary is on prox1** — stopping CT131 can promote the replica.
+- **Postgres primary is on prox1** — Saturday promotes the replica when CT131 has packages. Do not restart it outside that procedure.
 - **Five client VMs still have no SSH**
 - **joel-win11** — OS not installed
 - **Scrypted** — Baichuan disconnects under multi-stream load
