@@ -1,0 +1,9 @@
+# ntfy on CT202. Login syncs subscriptions across devices.
+# auth-default-access read-write keeps anonymous publish working for
+# patch-cadence.sh and the n8n briefing. Tokens are not required until
+# this is changed to deny-all.
+base-url: "https://push.cloudigan.net"
+behind-proxy: true
+auth-file: "/etc/ntfy/user.db"
+auth-default-access: "read-write"
+enable-login: true

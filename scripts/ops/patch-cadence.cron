@@ -1,0 +1,11 @@
+# Homelab patch cadence. The script no-ops a target that has nothing pending.
+# HOLD: touch /etc/patch-cadence/HOLD
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+10 7 * * 1 root /usr/local/sbin/patch-cadence.sh check
+0 21 * * 2 root /usr/local/sbin/patch-cadence.sh ring3
+0 21 * * 3 root /usr/local/sbin/patch-cadence.sh host prox2
+0 21 * * 4 root /usr/local/sbin/patch-cadence.sh host prox3
+0 21 * * 5 root /usr/local/sbin/patch-cadence.sh ring2
+0 2 * * 6 root /usr/local/sbin/patch-cadence.sh saturday
+10 2 * * 0 root /usr/local/sbin/patch-cadence.sh patch-standby

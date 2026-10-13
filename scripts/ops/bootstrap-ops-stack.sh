@@ -84,6 +84,7 @@ if [[ -f "$ROOT/.env" ]]; then
 fi
 
 echo "Starting ntfy…"
+scp -F "$SSH_CONFIG" "$ROOT/scripts/ops/ntfy-server.yml" "root@${IP}:/opt/ntfy/server.yml"
 ssh -F "$SSH_CONFIG" "root@${IP}" bash -s <<'REMOTE'
 cat > /opt/ntfy/docker-compose.yml <<'YAML'
 services:
@@ -97,6 +98,7 @@ services:
     volumes:
       - ntfy-cache:/var/cache/ntfy
       - ntfy-data:/etc/ntfy
+      - /opt/ntfy/server.yml:/etc/ntfy/server.yml:ro
     ports:
       - "8080:80"
 volumes:
