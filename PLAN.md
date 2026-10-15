@@ -1,8 +1,8 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-10-13
-**Current phase:** Patch cadence is armed. Omada adoption is still open.
-**Status:** Cron and n8n run the rings. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
+**Last updated:** 2026-10-15
+**Current phase:** Patch cadence first live week. Omada adoption is still open.
+**Status:** Cron and n8n run the rings. Tuesday ring3 and Wednesday prox2 are past on the calendar and unread (prox1 unreachable 2026-10-15 morning). Tonight is prox3. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
 
 ---
 
@@ -14,7 +14,7 @@
 - [ ] Capture the ER7206 and adopt it last, after the controller site matches.
 - [ ] Close the security, efficiency, and functionality gaps listed below.
 - [x] Patch cadence installed (2026-10-12). Cron on prox1 and n8n. Saturday promotes Postgres. See D-HOMELAB-019.
-- [ ] Watch the first live windows: Tuesday 21:00 media, Wednesday prox2, Thursday prox3, Saturday Postgres.
+- [ ] Watch the first live windows. Tuesday ring3 and Wednesday prox2 are unread. Thursday 21:00 is prox3 (VIP to CT139 first). Friday is ring2. Saturday promotes Postgres when the primary has packages.
 
 ### Completed This Phase
 - ✅ Cluster NFS on vlan 922, server `10.92.2.200` (2026-09-30)

@@ -1,14 +1,14 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-15
 
 ---
 
 ## Current Task
-**Patch cadence** — armed on prox1 and in n8n. The next apply window is Tuesday 21:00, ring 3 (media).
+**Patch cadence** — first live week. Tonight Thursday 21:00 is prox3. The VIP moves to CT139 first and returns to CT136 after the node is back.
 
 ### What I'm doing right now
-The script, cron, and n8n workflow are installed and pushed. Saturday promotes the Postgres replica instead of rebooting the primary in place. Omada access-point migration is still the open adoption task and was not done today.
+No repo changes since the 2026-10-13 checkpoint. Tuesday ring3 and Wednesday prox2 have passed on the calendar. prox1 was unreachable this morning (`10.92.0.5`, no route), so those logs are unread. Omada access-point migration is still the open adoption task.
 
 ### Recent completions
 - ✅ **Patch cadence** — cron on prox1 and n8n workflow Homelab patch ring. Empty targets log and skip. HOLD file pauses apply mode (2026-10-12)
@@ -18,10 +18,11 @@ The script, cron, and n8n workflow are installed and pushed. Saturday promotes t
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Before Tuesday 21:00, confirm `/etc/patch-cadence/HOLD` is absent on prox1 so the media ring can run. Read `/var/log/patch-cadence/` after it finishes.
-2. Leave Wednesday 21:00 (prox2) and Thursday 21:00 (prox3, VIP to CT139 first) on the cron unless a hold is required.
-3. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
-4. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
+1. When prox1 is reachable, confirm `/etc/patch-cadence/HOLD` is absent and read `/var/log/patch-cadence/` for Tuesday `ring3` and Wednesday `host prox2` before 21:00.
+2. If those logs are clean, leave Thursday 21:00 (`host prox3`) on the cron. The VIP goes to CT139 first and comes back to CT136 after the node returns. Set HOLD only if a log shows a failure.
+3. Leave Friday 21:00 (`ring2`: HAProxy, Postgres replica CT151, Vaultwarden backup CT172) and Saturday 02:00 (Postgres promote when the primary has packages) on the cron unless a hold is required.
+4. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
+5. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -61,10 +62,10 @@ The script, cron, and n8n workflow are installed and pushed. Saturday promotes t
 ## Exact Next Command
 
 ```text
-ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1 /var/log/patch-cadence | tail'
+ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1t /var/log/patch-cadence | head -20'
 ```
 
-**Tomorrow first action:** Confirm the hold file is absent before Tuesday 21:00. After the media ring, read that log. Omada site migration stays the next manual adoption step.
+**Tomorrow first action:** Read the Tuesday ring3 and Wednesday prox2 logs once prox1 answers. If they are clean and HOLD is absent, leave Thursday 21:00 prox3 armed. Omada site migration stays the next manual adoption step.
 
 ---
 
