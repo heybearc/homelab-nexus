@@ -449,7 +449,9 @@ pg_start() {
 
 pg_repl_pass() {
   local node="$1" id="$2"
-  run_node "$node" "pct exec $id -- python3 -c 'import pathlib,re; p=pathlib.Path(\"/var/lib/postgresql/17/main/postgresql.auto.conf\"); t=p.read_text() if p.exists() else \"\"; m=re.search(r\"password=(\\S+)\", t); print(m.group(1) if m else \"\", end=\"\")'"
+  run_node "$node" "pct exec $id -- python3 -c 'import pathlib,re; p=pathlib.Path(\"/var/lib/postgresql/17/main/postgresql.auto.conf\"); t=p.read_text() if p.exists() else \"\"; m=re.search(r\"password=(\\S+)\", t); s=m.group(1) if m else \"\";
+if len(s)>=2 and s[0]==s[-1] and s[0] in chr(34)+chr(39): s=s[1:-1]
+print(s, end=\"\")'"
 }
 
 pg_drop_slot() {
@@ -488,7 +490,7 @@ pw = pathlib.Path(\"/root/repl.pass\").read_text().strip()
 p = pathlib.Path(\"/var/lib/postgresql/17/main/postgresql.auto.conf\")
 t = p.read_text() if p.exists() else \"\"
 if pw and \"password=\" not in t and \"host=\" in t:
-    p.write_text(t.replace(\"host=\", \"password=%s host=\" % pw, 1))
+    p.write_text(t.replace(\"host=\", \"password=%s host=\" % pw.replace(chr(39), chr(39)*2), 1))
 PY
 rm -f /root/repl.pass'"; then
     run_node "$PG_R_NODE" "pct exec $PG_R_ID -- rm -f /root/repl.pass" || true
@@ -553,7 +555,9 @@ pg_switch() {
     unset PG_REPL_PASS
     return 1
   fi
-  pg_sql "$PG_R_NODE" "$PG_R_ID" "ALTER SYSTEM RESET primary_conninfo; ALTER SYSTEM RESET primary_slot_name; SELECT pg_reload_conf();" >/dev/null || true
+  pg_sql "$PG_R_NODE" "$PG_R_ID" "ALTER SYSTEM RESET primary_conninfo;" >/dev/null || true
+  pg_sql "$PG_R_NODE" "$PG_R_ID" "ALTER SYSTEM RESET primary_slot_name;" >/dev/null || true
+  pg_sql "$PG_R_NODE" "$PG_R_ID" "SELECT pg_reload_conf();" >/dev/null || true
   local moved=0
   for i in $(seq 1 20); do
     if pg_has_vip "$PG_R_NODE" "$PG_R_ID"; then
