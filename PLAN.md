@@ -1,8 +1,8 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-10-15
-**Current phase:** Patch cadence first live week. Omada adoption is still open.
-**Status:** Cron and n8n run the rings. Tuesday ring3 and Wednesday prox2 are past on the calendar and unread (prox1 unreachable 2026-10-15 morning). Tonight is prox3. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
+**Last updated:** 2026-10-24
+**Current phase:** Patch cadence after the first role switch. Omada adoption is still open.
+**Status:** Cron and n8n run the rings. Saturday 2026-10-17 promoted CT151 and the CT131 rebuild was repaired the same morning (`91b1596`). Logs after that, including Saturday 2026-10-24, are unread. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
 
 ---
 
@@ -14,7 +14,8 @@
 - [ ] Capture the ER7206 and adopt it last, after the controller site matches.
 - [ ] Close the security, efficiency, and functionality gaps listed below.
 - [x] Patch cadence installed (2026-10-12). Cron on prox1 and n8n. Saturday promotes Postgres. See D-HOMELAB-019.
-- [ ] Watch the first live windows. Tuesday ring3 and Wednesday prox2 are unread. Thursday 21:00 is prox3 (VIP to CT139 first). Friday is ring2. Saturday promotes Postgres when the primary has packages.
+- [x] First Saturday promote ran 2026-10-17. Rebuild failed on quoted replicator password, then CT131 was restored streaming. Script fix is `91b1596`.
+- [ ] Read patch logs after 2026-10-17, including Saturday 2026-10-24, and confirm CT151 primary / CT131 streaming.
 
 ### Completed This Phase
 - ✅ Cluster NFS on vlan 922, server `10.92.2.200` (2026-09-30)
@@ -35,7 +36,7 @@
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
 
 ### Medium Priority
-- [ ] **Postgres primary placement** — CT131 stays on prox1. Saturday's procedure promotes in place of a move to prox2. Do not restart the current primary outside that window.
+- [ ] **Postgres primary placement** — as of 2026-10-17 the primary is CT151 on prox3 and CT131 is the replica. Saturday's procedure can promote again. Do not restart the current primary outside that window. Confirm roles before acting.
 - [ ] **prox1 guest VLAN layout** — storage `10.92.2.5` is up, but guest VLAN 923 still shares `ens3f0` with storage.
 
 ### Low Priority
@@ -52,7 +53,7 @@
 
 Security: gateway password in git; expired NPM cert #30; five client VMs with no working SSH. SG3428XMP and ER7206 are still outside the controller.
 
-Efficiency: prox1 guest VLAN 923 still shares `ens3f0` with storage; Postgres primary still on prox1; `hdd-pool` degraded; TrueNAS media-pool is interim.
+Efficiency: prox1 guest VLAN 923 still shares `ens3f0` with storage; Postgres primary is CT151 on prox3 as of 2026-10-17; `hdd-pool` degraded; TrueNAS media-pool is interim.
 
 Functionality: access points still live on the other controller; SG3428XMP never appears for adoption; Intro Skipper analysis not confirmed; joel-win11 has no OS; Scrypted disconnects under load. Keep empty `vmbr0925`. SX3016F stays on the controller.
 
@@ -64,7 +65,7 @@ The cadence in `documentation/PATCH-RINGS.md` is the update train. Sunday patche
 
 ## Known Issues
 
-- **Postgres primary is on prox1** — Saturday promotes the replica when CT131 has packages. Do not restart it outside that procedure.
+- **Postgres primary was CT151 on prox3** as of 2026-10-17, with CT131 streaming. A later Saturday promote may have moved it. Do not restart the current primary outside that procedure.
 - **Five client VMs still have no SSH**
 - **joel-win11** — OS not installed
 - **Scrypted** — Baichuan disconnects under multi-stream load

@@ -1,16 +1,17 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-10-15
+**Last updated:** 2026-10-24
 
 ---
 
 ## Current Task
-**Patch cadence** — first live week. Tonight Thursday 21:00 is prox3. The VIP moves to CT139 first and returns to CT136 after the node is back.
+**Patch cadence** — first role switch repaired. Primary is CT151 on prox3. CT131 is the replica. Windows after 2026-10-17 are unread, including Saturday 2026-10-24 02:00.
 
 ### What I'm doing right now
-No repo changes since the 2026-10-13 checkpoint. Tuesday ring3 and Wednesday prox2 have passed on the calendar. prox1 was unreachable this morning (`10.92.0.5`, no route), so those logs are unread. Omada access-point migration is still the open adoption task.
+No new work this session. Context caught up to the 2026-10-17 repair (`91b1596`). Omada access-point migration is still the open adoption task.
 
 ### Recent completions
+- ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
 - ✅ **Patch cadence** — cron on prox1 and n8n workflow Homelab patch ring. Empty targets log and skip. HOLD file pauses apply mode (2026-10-12)
 - ✅ **Postgres role switch** — D-067 / D-HOMELAB-019. VIP `10.92.3.23` follows a promote. The old primary is rebuilt as the replica (2026-10-12)
 - ✅ **Edge patch** — DNS standbys, Technitium CT145, AdGuard CT140, NPM CT121. OpenResty held for the SHA-1 repo key (2026-10-06)
@@ -18,11 +19,10 @@ No repo changes since the 2026-10-13 checkpoint. Tuesday ring3 and Wednesday pro
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. When prox1 is reachable, confirm `/etc/patch-cadence/HOLD` is absent and read `/var/log/patch-cadence/` for Tuesday `ring3` and Wednesday `host prox2` before 21:00.
-2. If those logs are clean, leave Thursday 21:00 (`host prox3`) on the cron. The VIP goes to CT139 first and comes back to CT136 after the node returns. Set HOLD only if a log shows a failure.
-3. Leave Friday 21:00 (`ring2`: HAProxy, Postgres replica CT151, Vaultwarden backup CT172) and Saturday 02:00 (Postgres promote when the primary has packages) on the cron unless a hold is required.
-4. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
-5. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
+1. Read `/var/log/patch-cadence/` since 2026-10-17, including `2026-10-24-saturday.log`. Confirm whether another promote ran.
+2. Confirm CT151 is still primary, VIP `10.92.3.23` is on it, and CT131 is streaming. Set HOLD only if a log shows a failure.
+3. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
+4. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -35,7 +35,7 @@ No repo changes since the 2026-10-13 checkpoint. Tuesday ring3 and Wednesday pro
 
 ## Known Issues
 
-- **Postgres primary is on prox1** — VIP `10.92.3.23` is on CT131. Saturday's cron promotes the replica when the primary has packages. Do not restart that primary outside the procedure.
+- **Postgres primary is CT151 on prox3** — VIP `10.92.3.23` was there on 2026-10-17. CT131 (`10.92.3.21`) was the streaming replica. Saturday's cron can promote again when the primary has packages. Do not restart the current primary outside the procedure. Recheck before assuming the roles are unchanged.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
@@ -65,7 +65,7 @@ No repo changes since the 2026-10-13 checkpoint. Tuesday ring3 and Wednesday pro
 ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1t /var/log/patch-cadence | head -20'
 ```
 
-**Tomorrow first action:** Read the Tuesday ring3 and Wednesday prox2 logs once prox1 answers. If they are clean and HOLD is absent, leave Thursday 21:00 prox3 armed. Omada site migration stays the next manual adoption step.
+**Next action:** Read the patch logs since 2026-10-17, including Saturday 2026-10-24, and confirm CT151 is still primary with CT131 streaming. Omada site migration stays the next manual adoption step.
 
 ---
 
