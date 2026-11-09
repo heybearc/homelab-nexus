@@ -189,6 +189,12 @@
 **Decision:** Omada keeps DHCP. DHCP DNS is AdGuard `10.92.3.11` and `10.92.3.204`, so every client is filtered and one AdGuard can restart. AdGuard upstream is Technitium `10.92.3.10` and `10.92.3.203`. Technitium stays the zone authority. Clients do not query Technitium directly. Do not adopt the Omada gateway.
 **Consequences:** Supersedes the client-path bullets of D-HOMELAB-013. Zone ownership, forwarders, and `dns-add-record.sh` stay as in D-HOMELAB-013. Both AdGuard servers down still means no client DNS.
 
+## D-HOMELAB-020: PBS replaces vzdump file copies for containers on NFS
+**Date:** 2026-10-30
+**Context:** Job `c9d7131d` froze CT132 mid-day. Snapshot mode fell back to suspend because the root disk is a raw file on NFS. The final rsync held that freeze.
+**Decision:** Do not add more vzdump-to-NFS jobs. Stand up Proxmox Backup Server with its datastore on a dedicated TrueNAS ZFS dataset. Move LXC root disks to zvols (TrueNAS Proxmox plugin, TrueNAS 25.10+) so a backup can snapshot. Keep the live blue-green container out of any job that can suspend. Postgres dumps and git stay the consistent copy of app data and code.
+**Consequences:** Recorded on the Phase 3 roadmap in `IMPLEMENTATION-PLAN.md`. Jobs `c9d7131d` and `edc48ab7` stay until that cutover. Another NFS export does not enable Proxmox snapshots.
+
 ## D-HOMELAB-019: Patch cadence promotes Postgres instead of rebooting the primary
 **Date:** 2026-10-12  
 **Context:** A reboot of the writable primary drops RW VIP `10.92.3.23` while the replica is still in recovery. CT131 is on prox1.  

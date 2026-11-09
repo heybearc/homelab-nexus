@@ -1,6 +1,6 @@
 # Implementation Plan - homelab-nexus
 
-**Last Updated:** 2026-05-22  
+**Last Updated:** 2026-10-31  
 **Current Phase:** Phase 2 - Infrastructure Automation & MSP Platform Deployment (Q2 2026)  
 **Repository:** Proxmox infrastructure automation and management  
 **Strategic Direction:** Building Proxmox Infrastructure Manager (PIM) + Cloudigan MSP Platform + TIP Generator
@@ -274,7 +274,7 @@ None currently.
 - [x] Container naming convention standard (✅ Complete - 8 containers renamed)
 - [x] Semaphore Ansible automation platform (✅ Complete - 7 playbooks, 29/30 hosts)
 - [ ] Infrastructure-as-code templates (Terraform/Ansible)
-- [ ] Backup automation for all containers
+- [ ] Backup automation for all containers — superseded by the PBS + zvol roadmap below. Do not add more vzdump-to-NFS jobs.
 - [ ] Disaster recovery runbooks
 - [ ] Complete Docker to LXC migration
 
@@ -284,6 +284,12 @@ None currently.
 - [ ] Resource usage optimization
 - [ ] Network performance tuning
 - [ ] Storage efficiency improvements
+- [ ] **PBS and snapshot-capable container disks** (2026-10-31) — Replace vzdump file copies on `truenas-backups` NFS. Those jobs freeze a running LXC when the root disk is a raw file on NFS.
+  - 2026-10-30: job `c9d7131d` (02:00, mode snapshot) hit CT132 theoshift-green, logged `mode failure - some volumes do not support snapshots`, and suspended the container. The first rsync moved 23.53 GB in about 24 hours. The final sync froze the live app mid-day. Traffic was switched to blue (CT134).
+  - Stand up Proxmox Backup Server. Datastore is a directory on its own TrueNAS ZFS dataset. That dataset holds backup chunks. A TrueNAS snapshot of it protects the backups, not the running container.
+  - Retire the overlapping vzdump jobs that include CT132 (`c9d7131d` at 02:00 and `edc48ab7` daily). Keep the live blue-green container out of any job that can suspend.
+  - Move LXC root disks to zvols so Proxmox can take a real ZFS snapshot. Use the TrueNAS Proxmox plugin (TrueNAS 25.10+; this cluster is on 25.04.2.6). Built-in ZFS-over-iSCSI does not store LXC root disks. Another NFS export does not enable snapshots.
+  - Keep Postgres dumps and git as the consistent copy of app data and code.
 - [ ] Advanced network segmentation
 - [ ] Security hardening
 

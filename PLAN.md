@@ -1,6 +1,6 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-10-24
+**Last updated:** 2026-11-09
 **Current phase:** Patch cadence after the first role switch. Omada adoption is still open.
 **Status:** Cron and n8n run the rings. Saturday 2026-10-17 promoted CT151 and the CT131 rebuild was repaired the same morning (`91b1596`). Logs after that, including Saturday 2026-10-24, are unread. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
 
@@ -34,6 +34,7 @@
 - [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
+- [ ] **PBS and snapshot-capable container disks** — D-HOMELAB-020. Details are in `IMPLEMENTATION-PLAN.md` Phase 3. Do not add more vzdump-to-NFS jobs.
 
 ### Medium Priority
 - [ ] **Postgres primary placement** — as of 2026-10-17 the primary is CT151 on prox3 and CT131 is the replica. Saturday's procedure can promote again. Do not restart the current primary outside that window. Confirm roles before acting.
