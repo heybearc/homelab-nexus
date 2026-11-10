@@ -4,7 +4,7 @@
 #   check                 Monday 07:10 — inventory only
 #   plan                  what the next windows would do, no changes
 #   patch-standby         Sunday 02:10 — apt the HAProxy standby, no traffic switch
-#   ring2                 Friday 21:00 — HAProxy, Postgres replica, Vaultwarden backup
+#   ring2                 Friday 21:00 — HAProxy, Postgres replica, Vaultwarden backup then primary
 #   ring3                 Tuesday 21:00 — one single-container group
 #   host prox2|prox3|prox1
 #   saturday              Saturday 02:00 — one environment-down target
@@ -13,7 +13,7 @@
 #   postgres-replica
 #   haproxy
 #   vaultwarden-backup
-#   vaultwarden-primary   not on the cron
+#   vaultwarden-primary   Friday, after the backup container
 #   truenas-check         log only
 #   truenas-apply         not on the cron; does not reboot TrueNAS from this script
 #
@@ -34,7 +34,6 @@ PAIRS=(
   "theoshift|is_theoshift|134|132|3001|/"
   "factorpoint|is_factorpoint|185|187|3001|/"
   "cloudigan-api|is_cloudigan_api|181|182|3000|/health"
-  "tip-generator|is_tip|190|191|8000|/health"
   "cloudigan-mail|is_cloudigan_mail|196|197|3020|/health"
   "hhv|is_hhv|198|199|3001|/"
   "chapter-hub|is_chapter_hub|193|194|3001|/"
@@ -47,10 +46,11 @@ RING3=(
   "business|111 141 153 152 189 184 186 202"
   "identity|170"
   "automation|188"
-  "edge|140 145 121"
-  "data|192 115 183 119"
+  "edge|140 145 121 142"
+  "data|192 115 183 119 110 150"
   "cameras|180"
   "gpu|122 128"
+  "retired|133 135 137 138 100 101"
 )
 
 MODE="${1:-check}"
@@ -82,7 +82,6 @@ ssh_gate() {
     "/usr/local/sbin/patch-cadence.sh promote theoshift"|\
     "/usr/local/sbin/patch-cadence.sh promote factorpoint"|\
     "/usr/local/sbin/patch-cadence.sh promote cloudigan-api"|\
-    "/usr/local/sbin/patch-cadence.sh promote tip-generator"|\
     "/usr/local/sbin/patch-cadence.sh promote cloudigan-mail"|\
     "/usr/local/sbin/patch-cadence.sh promote hhv"|\
     "/usr/local/sbin/patch-cadence.sh promote chapter-hub"|\
@@ -106,7 +105,8 @@ run_node() {
   if [[ "$(hostname -s)" == "$node" ]]; then
     bash -c "$*"
   else
-    ssh "${SSH_OPTS[@]}" "$node" "$@"
+    # -n so a container list on stdin is not eaten by ssh. truenas_ssh still accepts a pipe.
+    ssh -n "${SSH_OPTS[@]}" "$node" "$@"
   fi
 }
 
@@ -213,12 +213,18 @@ upgrade_ct() {
 }
 
 health_ct() {
-  local id="$1" port="$2" path="$3" node ip code
+  local id="$1" port="$2" path="$3" node ip code try
   node="$(ct_node "$id")"
   ip="$(ct_ip "$node" "$id")"
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://${ip}:${port}${path}" || true)"
-  log "HEALTH CT${id} http://${ip}:${port}${path} -> ${code:-000}"
-  [[ "$code" == "200" || "$code" == "302" || "$code" == "307" ]]
+  for try in 1 2 3 4 5; do
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://${ip}:${port}${path}" || true)"
+    log "HEALTH CT${id} http://${ip}:${port}${path} -> ${code:-000}"
+    if [[ "$code" == "200" || "$code" == "302" || "$code" == "307" ]]; then
+      return 0
+    fi
+    sleep 15
+  done
+  return 1
 }
 
 notify() {
@@ -283,11 +289,11 @@ mode_plan() {
   log "Tue 21:00 ring3 next=$(cat "$STATE_DIR/ring3.next" 2>/dev/null || echo media)"
   log "Wed 21:00 host prox2 pending=$(host_pending prox2)"
   log "Thu 21:00 host prox3 pending=$(host_pending prox3)"
-  log "Fri 21:00 ring2 haproxy CT136=$(pending_count "$(ct_node 136)" 136) CT139=$(pending_count "$(ct_node 139)" 139) replica=$(pending_count "$(ct_node 151)" 151) vaultwarden-backup=$(pending_count "$(ct_node 172)" 172)"
+  log "Fri 21:00 ring2 haproxy CT136=$(pending_count "$(ct_node 136)" 136) CT139=$(pending_count "$(ct_node 139)" 139) replica=$(pending_count "$(ct_node 151)" 151) vaultwarden-backup=$(pending_count "$(ct_node 172)" 172) vaultwarden-primary=$(pending_count "$(ct_node 171)" 171)"
   log "Sat 02:00 saturday postgres-primary=$(pending_count prox1 131) prox1=$(host_pending prox1)"
   mode_truenas_check
   log "Sun 02:10 patch-standby (no traffic switch)"
-  log "Not on the cron: promote, vaultwarden-primary, truenas-apply"
+  log "Not on the cron: promote, truenas-apply. TIP Generator CT190/CT191 are stopped and are not in the rotation."
   if [[ -f "$STATE_DIR/HOLD" ]]; then
     log "HOLD is set — apply modes will no-op"
   fi
@@ -670,14 +676,15 @@ mode_vaultwarden() {
   local node ip code
   node="$(ct_node "$id")"
   ip="$(ct_ip "$node" "$id")"
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${ip}/" || true)"
-  log "HEALTH CT${id} http://${ip}/ -> ${code:-000}"
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${ip}:8080/" || true)"
+  log "HEALTH CT${id} http://${ip}:8080/ -> ${code:-000}"
 }
 
 mode_ring2() {
   mode_haproxy || return 1
   mode_postgres_replica || return 1
-  mode_vaultwarden 172 backup
+  mode_vaultwarden 172 backup || return 1
+  mode_vaultwarden 171 primary || return 1
 }
 
 dns_lookup() {
@@ -755,6 +762,7 @@ mode_ring3() {
     if [[ "$name" == "$next" ]]; then
       if [[ "$name" == "edge" ]]; then
         mode_edge || log "ABORT edge group"
+        upgrade_ct 142 || log "ABORT CT142 left for the next cycle"
       else
         local id
         for id in $ids; do
@@ -796,8 +804,8 @@ migrate_away() {
     fi
     log "MIGRATE CT${id} ${node} -> ${dest}"
     if ! run_node "$node" "pct migrate $id $dest --online"; then
-      log "ABORT migrate CT${id} failed"
-      return 1
+      log "STAY CT${id} on ${node} — migrate failed, it reboots with the host"
+      continue
     fi
     echo "$id" >> "$file"
   done < <(run_node "$node" "pct list" | awk 'NR>1 && $2=="running" {print $1}')

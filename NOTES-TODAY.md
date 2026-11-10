@@ -1,26 +1,27 @@
 ---
-date: 2026-11-09
+date: 2026-11-10
 purpose: Scratchpad for today's discoveries (promote on /end-day)
 ---
 
 ## Today
 
 ### Focus
-- Checkpoint the Oct 30 backup freeze and the PBS roadmap. No new cluster work this session.
+- Close patch-cadence gaps. Remove TIP Generator from the rotation.
 
 ### Discoveries / Notes
-- 2026-10-30 job `c9d7131d` (02:00, mode snapshot) reached CT132 theoshift-green at 14:07 the day before. NFS raw root disks cannot snapshot, so vzdump logged `mode failure` and used suspend mode.
-- The first rsync moved 23.53 GB in about 24 hours. The final sync then froze the container. Ping and TCP connect still worked. Userspace did not. Traffic was switched to blue (CT134, `10.92.3.24`).
-- The stuck rsync was writing `/mnt/pve/truenas-backups/dump/vzdump-lxc-132-2026_10_29-14_07_06.tmp` and was in `rpc_wait_bit_killable`. This session did not stop that job or thaw the cgroup.
-- A second job, `edc48ab7` (daily), also includes CT132.
-- PBS is a separate backup server. A new NFS export does not make an LXC disk snapshotable. Zvols via the TrueNAS Proxmox plugin do, and that plugin needs TrueNAS 25.10. This cluster is on 25.04.2.6.
+- Saturday 2026-11-07 promoted CT131. CT151 is the replica. prox1 was not rebooted.
+- prox2 and prox3 host jobs aborted because `pct migrate --online` is unimplemented. One failed migrate used to cancel the node.
+- Sunday patched standbys only. Six apps were promoted 2026-11-09. FactorPoint green and TheoShift blue were patched in place today.
+- Missed rings ran today: edge, data, cameras, gpu, and a new retired group (LDC, QuantShift, bots 100/101). Omada CT142 got OS packages. Controller image unchanged.
+- Monday `check` stopped early because SSH ate the container list. `run_node` now uses `ssh -n`.
 
 ### Decisions to Promote
-- D-HOMELAB-020: stop adding vzdump-to-NFS jobs. PBS datastore on its own ZFS dataset. Live blue-green color stays out of any job that can suspend.
+- None. Host behavior is recorded in `documentation/PATCH-RINGS.md`.
 
 ### Blockers / Risks
-- CT132 may still be frozen if that vzdump is running.
-- Patch logs after 2026-10-17, including Saturday 2026-10-24 and later, are still unread.
+- Wednesday prox2 and Thursday prox3 will reboot every guest on that node. Live FactorPoint is on prox2.
+- TrueNAS is still 25.04.2.6 with no update. PBS still needs 25.10 for zvols.
 
 ### Links / Commands
-- Roadmap: `IMPLEMENTATION-PLAN.md` Phase 3, "PBS and snapshot-capable container disks"
+- `scripts/ops/patch-cadence.sh`
+- `documentation/PATCH-RINGS.md`

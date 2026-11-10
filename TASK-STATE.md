@@ -1,14 +1,14 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-09
+**Last updated:** 2026-11-10
 
 ---
 
 ## Current Task
-**Backups** — vzdump suspend froze a live container. PBS and zvol snapshots are the replacement (D-HOMELAB-020). Patch logs after 2026-10-17 are still unread.
+**Patch cadence** — container rings caught up. prox2 and prox3 host packages wait for their night windows because LXC live migration is not implemented.
 
 ### What I'm doing right now
-No new cluster work this session. Roadmap updated in `IMPLEMENTATION-PLAN.md`. Omada access-point migration is still the open adoption task.
+Script on prox1 matches `scripts/ops/patch-cadence.sh`. Wednesday 21:00 reboots prox2 in place. Thursday 21:00 reboots prox3. Do not reboot prox1 while CT131 is the Postgres primary.
 
 ### Recent completions
 - ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
@@ -19,8 +19,8 @@ No new cluster work this session. Roadmap updated in `IMPLEMENTATION-PLAN.md`. O
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Read `/var/log/patch-cadence/` since 2026-10-17, including `2026-10-24-saturday.log`. Confirm whether another promote ran.
-2. Confirm CT151 is still primary, VIP `10.92.3.23` is on it, and CT131 is streaming. Set HOLD only if a log shows a failure.
+1. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Guests stay on the node.
+2. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT131 is the primary.
 3. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
 4. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
 
@@ -28,7 +28,7 @@ No new cluster work this session. Roadmap updated in `IMPLEMENTATION-PLAN.md`. O
 - **HHV DNS/NPM + Next.js app**
 - **Cloudigan Mail Gateway** — NPM + GitHub push
 - **Cloudigan Vault MSP**
-- **TIP Generator Phase 1**
+- **TIP Generator** — removed from the patch rotation. CT190 and CT191 are stopped.
 - **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
 ---
@@ -36,7 +36,8 @@ No new cluster work this session. Roadmap updated in `IMPLEMENTATION-PLAN.md`. O
 ## Known Issues
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
-- **Postgres primary is CT151 on prox3** — VIP `10.92.3.23` was there on 2026-10-17. CT131 (`10.92.3.21`) was the streaming replica. Saturday's cron can promote again when the primary has packages. Do not restart the current primary outside the procedure. Recheck before assuming the roles are unchanged.
+- **Postgres primary is CT131 on prox1** — promoted 2026-11-07. CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
+- **No LXC live migration** — `pct migrate --online` dies with "lxc live migration is currently not implemented". `--restart` shuts the container down and starts it on the other node.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)

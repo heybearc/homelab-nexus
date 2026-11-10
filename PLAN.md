@@ -1,8 +1,8 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-09
+**Last updated:** 2026-11-10
 **Current phase:** Patch cadence after the first role switch. Omada adoption is still open.
-**Status:** Cron and n8n run the rings. Saturday 2026-10-17 promoted CT151 and the CT131 rebuild was repaired the same morning (`91b1596`). Logs after that, including Saturday 2026-10-24, are unread. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
+**Status:** Cron and n8n run the rings. Saturday 2026-11-07 promoted CT131; CT151 is the replica. TIP Generator is out of the patch rotation. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
 
 ---
 
@@ -15,7 +15,7 @@
 - [ ] Close the security, efficiency, and functionality gaps listed below.
 - [x] Patch cadence installed (2026-10-12). Cron on prox1 and n8n. Saturday promotes Postgres. See D-HOMELAB-019.
 - [x] First Saturday promote ran 2026-10-17. Rebuild failed on quoted replicator password, then CT131 was restored streaming. Script fix is `91b1596`.
-- [ ] Read patch logs after 2026-10-17, including Saturday 2026-10-24, and confirm CT151 primary / CT131 streaming.
+- [x] Read patch logs through 2026-11-09. Saturday 2026-11-07 promoted CT131. CT151 was rebuilt as the replica.
 
 ### Completed This Phase
 - ✅ Cluster NFS on vlan 922, server `10.92.2.200` (2026-09-30)
@@ -37,14 +37,14 @@
 - [ ] **PBS and snapshot-capable container disks** — D-HOMELAB-020. Details are in `IMPLEMENTATION-PLAN.md` Phase 3. Do not add more vzdump-to-NFS jobs.
 
 ### Medium Priority
-- [ ] **Postgres primary placement** — as of 2026-10-17 the primary is CT151 on prox3 and CT131 is the replica. Saturday's procedure can promote again. Do not restart the current primary outside that window. Confirm roles before acting.
+- [ ] **Postgres primary placement** — as of 2026-11-07 the primary is CT131 on prox1 and CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
 - [ ] **prox1 guest VLAN layout** — storage `10.92.2.5` is up, but guest VLAN 923 still shares `ens3f0` with storage.
 
 ### Low Priority
 - [ ] **HHV DNS/NPM + Next.js app**
 - [ ] **Cloudigan Mail Gateway** — NPM + GitHub push
 - [ ] **Cloudigan Vault MSP**
-- [ ] **TIP Generator Phase 1**
+- [x] **TIP Generator** — archived. CT190 and CT191 are stopped and removed from the patch rotation (2026-11-10).
 - [x] **Personal Ops Center** — live as Ops Hub, CT202, https://ops.cloudigan.net (D-065, 2026-10-06). Planner follow-up stays in the ops-hub repo.
 - [ ] **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
@@ -60,13 +60,13 @@ Functionality: access points still live on the other controller; SG3428XMP never
 
 ## Update train
 
-The cadence in `documentation/PATCH-RINGS.md` is the update train. Sunday patches blue-green standbys only. Saturday promotes Postgres when the primary has packages. TrueNAS is not applied by the cron. Skip a casual restart of the current primary.
+The cadence in `documentation/PATCH-RINGS.md` is the update train. Sunday patches blue-green standbys only, not TIP Generator. Saturday promotes Postgres when the primary has packages, and prox1's host packages wait for a Saturday when Postgres needs nothing. TrueNAS is not applied by the cron. Do not reboot prox1 while CT131 is the primary outside that procedure. Guest migrate failure does not cancel a prox2 or prox3 host update.
 
 ---
 
 ## Known Issues
 
-- **Postgres primary was CT151 on prox3** as of 2026-10-17, with CT131 streaming. A later Saturday promote may have moved it. Do not restart the current primary outside that procedure.
+- **Postgres primary is CT131 on prox1** as of 2026-11-07, with CT151 streaming. Do not restart the current primary outside Saturday's procedure.
 - **Five client VMs still have no SSH**
 - **joel-win11** — OS not installed
 - **Scrypted** — Baichuan disconnects under multi-stream load

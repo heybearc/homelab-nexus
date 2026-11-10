@@ -1,6 +1,6 @@
 # Patch rings
 
-**Updated:** 2026-10-06 (HAProxy failover tested; Saturday window for environment outages)  
+**Updated:** 2026-11-10 (TIP Generator removed; missed containers added; host migrate no longer aborts the node)  
 **Executor:** `scripts/ops/patch-cadence.sh` on prox1 (`/usr/local/sbin/patch-cadence.sh`)  
 **Scheduler:** n8n on CT188, thin workflow only. n8n does not run apt itself.
 
@@ -61,7 +61,7 @@ Saturday 02:00, and not on a TrueNAS Saturday:
 
 ### Vaultwarden
 
-CT171 is the HAProxy primary. CT172 is the backup server, with its own data directory. Patch CT172 only. Do not stop CT171 to “switch.”
+CT171 is the HAProxy primary. CT172 is the backup server, with its own data directory. Friday patches CT172 first, then CT171. Do not stop CT171 to switch data onto CT172. Each container keeps its own data directory.
 
 ## Ring 3 — Single containers
 
@@ -73,11 +73,11 @@ Each group is one evening. Reboot that container after apt. Confirm the service 
 | Business apps | Kimai 111, NetBox 141, Uptime Kuma 153, LibreNMS 152, Vikunja 189, Plane 184, Zammad 186, Ops Hub 202 | User-facing, but not the edge. |
 | Identity | Authentik 170 alone | Login path. |
 | Automation | n8n 188 alone, run from prox1, not from the n8n workflow | The scheduler cannot patch itself. |
-| Edge | AdGuard 140, then Technitium 145, then NPM 121 alone | DNS and HTTPS. One at a time. |
-| Data and lab | Redis 192, qa-01 115, Ansible 183, chapter-hub-dev 119 | Redis is shared. Do it on its own night if other apps are busy. |
+| Edge | AdGuard 140, Technitium 145, NPM 121, then Omada 142 | DNS and HTTPS one at a time. Omada apt does not change the pinned image `mbentley/omada-controller:6.3.0.45`. |
+| Data and lab | Redis 192, qa-01 115, Ansible 183, chapter-hub-dev 119, ai-companion-dev 110, monitoring 150 | Redis is shared. Monitoring 150 is the Postgres watchdog host. |
 | Cameras | Scrypted 180 alone | Reboot drops camera streams. |
-| GPU guests | Jellyfin 122 OS packages only. Plex 128 was already current. | Stop transcodes first. Do not install Jellyfin 12.1 here. |
-| Skip | Omada 142 has mongosh 2.12.0 → 2.13.0 only. The controller image stays `mbentley/omada-controller:6.3.0.45`. | Docker image updates are a separate change. |
+| GPU guests | Jellyfin 122 OS packages only. Plex 128. | Stop transcodes first. Do not install Jellyfin 12.1 here. |
+| Retired, still running | LDC Tools 133 and 135, QuantShift 137 and 138, QuantShift bots 100 and 101 | Not in the blue-green Sunday rotation. Apt both containers in place. Destroy is a separate approval. |
 
 ## Ring 4 — Proxmox hosts
 
@@ -89,7 +89,7 @@ Checked 2026-10-06. All three nodes are `pve-manager/9.2.20`, kernel `7.0.14-17-
 | prox3 | 38 | Second. Live HAProxy CT136 is here. Finish the HAProxy window first so CT139 can hold the VIP. |
 | prox1 | 53, including `pve-manager`. NVIDIA and a new kernel were not in this `upgrade` set. | Last. Postgres primary and the RTX 2080 SUPER are here. |
 
-One node per window. Drain guests that can move, update, reboot, confirm `vmbr0923` and the 10G link, then move the guests back.
+One node per window. The script tries to drain guests, then updates and reboots the node. `pct migrate --online` currently fails with "lxc live migration is currently not implemented", so guests stay and reboot with the host. That failure no longer aborts the host update. Pinned guests (GPU 100, 101, 122, 128, and the Postgres primary 131) are not migrated. prox1 stays on Saturday, and only when Postgres needs nothing, because CT131 is the primary there.
 
 prox2 and prox3 can use a scheduled evening when migration is clean. prox1 is Saturday 02:00. Jellyfin and Plex pin the GPU and cannot move. The Postgres primary is also there. Do not drain prox1 on a TrueNAS Saturday.
 
@@ -107,7 +107,7 @@ Not part of the weekly job.
 
 | Hardware | Policy |
 |---|---|
-| NVIDIA RTX 2080 SUPER on prox1 | Debian DKMS `nvidia-driver` **550.163.01-2**, passed into Jellyfin CT122 and Plex CT128 (also stopped CT100/CT101). Hold `nvidia-*` so a host apt run cannot bump it. A driver update is its own window: stop Jellyfin and Plex, install the pinned 550 update if one exists, reboot prox1, confirm `/dev/nvidia0` inside CT122. Do not jump to a new major branch for its own sake. |
+| NVIDIA RTX 2080 SUPER on prox1 | Debian DKMS `nvidia-driver` **550.163.01-2**, passed into Jellyfin CT122 and Plex CT128. CT100 and CT101 are running and get OS packages in the retired group. Hold `nvidia-*` so a host apt run cannot bump the driver. A driver update is its own window: stop Jellyfin and Plex, install the pinned 550 update if one exists, reboot prox1, confirm `/dev/nvidia0` inside CT122. Do not jump to a new major branch for its own sake. |
 | Dell iDRAC prox2 `10.92.0.16`, prox3 `10.92.0.17` | BIOS, iDRAC, and NIC firmware from Dell while the node is empty. |
 | prox1 | No BMC. Lenovo BIOS only when a specific fix is required. |
 | SX3016F, SG3428XMP, ER7206 | Omada or vendor firmware. The ER7206 is still standalone. Not this apt plan. |
@@ -122,11 +122,11 @@ Not part of the weekly job.
 | Tuesday 21:00 | `ring3` | That group's containers have packages. Empty group logs `no patches available` and the rotation still advances. |
 | Wednesday 21:00 | `host prox2` | prox2 has packages. Otherwise no drain and no reboot. |
 | Thursday 21:00 | `host prox3` | prox3 has packages. VIP moves to CT139 first and comes back to CT136 after the node returns. |
-| Friday 21:00 | `ring2` | HAProxy, Postgres replica CT151, or Vaultwarden backup CT172 has packages. |
+| Friday 21:00 | `ring2` | HAProxy, the Postgres replica, Vaultwarden backup CT172, then Vaultwarden primary CT171. |
 | Saturday 02:00 | `saturday` | If the current primary has packages, promote the replica so VIP `10.92.3.23` moves, then rebuild the old primary as the replica and patch that container. If the replica is not streaming, rebuild it from the primary and do not promote in that same broken state. If Postgres needs nothing, prox1 is next. If prox1 is clean, TrueNAS is checked and not rebooted. |
-| Sunday 02:10 | `patch-standby` | The HAProxy standby for an app has packages. Traffic is not switched. |
+| Sunday 02:10 | `patch-standby` | The HAProxy standby for an app has packages. Traffic is not switched. TIP Generator is not in this list. CT190 and CT191 stay stopped. |
 
-`promote <app>`, `vaultwarden-primary`, and `truenas-apply` are on the script and on the n8n SSH allow-list. They are not on the cron. `truenas-apply` does not reboot TrueNAS.
+`promote <app>` and `truenas-apply` are on the script and on the n8n SSH allow-list. They are not on the cron. `truenas-apply` does not reboot TrueNAS. Vaultwarden primary is on Friday's `ring2`. TIP Generator has no promote command.
 
 Hold: `touch /etc/patch-cadence/HOLD` on prox1. Apply modes log `HELD` and exit 0. `check` and `plan` still run. The boot helper that returns evacuated guests ignores the hold.
 
