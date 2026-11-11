@@ -74,7 +74,7 @@ Each group is one evening. Reboot that container after apt. Confirm the service 
 | Identity | Authentik 170 alone | Login path. |
 | Automation | n8n 188 alone, run from prox1, not from the n8n workflow | The scheduler cannot patch itself. |
 | Edge | AdGuard 140, Technitium 145, NPM 121, then Omada 142 | DNS and HTTPS one at a time. Omada apt does not change the pinned image `mbentley/omada-controller:6.3.0.45`. |
-| Data and lab | Redis 192, qa-01 115, Ansible 183, chapter-hub-dev 119, ai-companion-dev 110, monitoring 150 | Redis is shared. Monitoring 150 is the Postgres watchdog host. |
+| Data and lab | Redis 192, qa-01 115, Ansible 183, chapter-hub-dev 119, monitoring 150 | Redis is shared. Monitoring 150 is the Postgres watchdog host. |
 | Cameras | Scrypted 180 alone | Reboot drops camera streams. |
 | GPU guests | Jellyfin 122 OS packages only. Plex 128. | Stop transcodes first. Do not install Jellyfin 12.1 here. |
 | Retired, still running | LDC Tools 133 and 135, QuantShift 137 and 138, QuantShift bots 100 and 101 | Not in the blue-green Sunday rotation. Apt both containers in place. Destroy is a separate approval. |
