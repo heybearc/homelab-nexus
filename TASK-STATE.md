@@ -1,14 +1,14 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-10
+**Last updated:** 2026-11-14
 
 ---
 
 ## Current Task
-**Patch cadence** — container rings caught up. prox2 and prox3 host packages wait for their night windows because LXC live migration is not implemented.
+**Omada** — access points are on CT142 in the Home Network site. Move them into Cloudigan Lab, then match the ER7206 LAN and WAN on that site before any Adopt click.
 
 ### What I'm doing right now
-Script on prox1 matches `scripts/ops/patch-cadence.sh`. Wednesday 21:00 reboots prox2 in place. Thursday 21:00 reboots prox3. Do not reboot prox1 while CT131 is the Postgres primary.
+Alma already matches on both sites except the hidden password. Confirm that key, then Batch Config → Move to Site → Cloudigan Lab. Do not adopt the ER7206 until the controller LAN list matches the standalone router. DHCP DNS stays AdGuard `10.92.3.11` and `10.92.3.204`. Do not retag SX3016F ports while adding LANs.
 
 ### Recent completions
 - ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
@@ -21,8 +21,8 @@ Script on prox1 matches `scripts/ops/patch-cadence.sh`. Wednesday 21:00 reboots 
 ### Next steps
 1. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Guests stay on the node.
 2. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT131 is the primary.
-3. Site-migrate the access points onto CT142. Import creates a new site. Do not use Controller Migration.
-4. Point the SG3428XMP inform URL at `10.92.0.34`. Capture the ER7206 and adopt it last.
+3. Move the access points from Home Network into Cloudigan Lab after the Alma key matches.
+4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -42,7 +42,7 @@ Script on prox1 matches `scripts/ops/patch-cadence.sh`. Wednesday 21:00 reboots 
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
 - **joel-win11** — VM created; OS not installed
-- **Omada** — CT142 manages the SX3016F. SG3428XMP never appears for adoption. Access points are on the other controller. ER7206 is not adopted.
+- **Omada** — CT142 site Home Network has the access points (2026-11-14). Cloudigan Lab still has the SX3016F. SG3428XMP has not appeared. ER7206 is still standalone.
 - **Scrypted** — sustained Baichuan disconnect storm possible under multi-stream load; Garage `.remote` often empty; H.265 codec warnings; NFS EBUSY on prune
 - **TrueNAS media-pool** — interim; evacuate before disk rebuild
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation

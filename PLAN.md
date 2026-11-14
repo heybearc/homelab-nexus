@@ -1,15 +1,16 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-10
-**Current phase:** Patch cadence after the first role switch. Omada adoption is still open.
-**Status:** Cron and n8n run the rings. Saturday 2026-11-07 promoted CT131; CT151 is the replica. TIP Generator is out of the patch rotation. Access points are still on the other controller. SG3428XMP has never appeared for adoption.
+**Last updated:** 2026-11-14
+**Current phase:** Omada. Access points are on CT142. Gateway adopt is still open.
+**Status:** Site Migration put the access points on CT142 in Home Network. They still need to move into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone.
 
 ---
 
 ## Current Phase
 
 ### Active Work
-- [ ] Move access points with Site Migration onto CT142. Do not use Controller Migration.
+- [x] Move access points with Site Migration onto CT142 (2026-11-14). Site name is Home Network. Do not use Controller Migration.
+- [ ] Move those access points from Home Network into Cloudigan Lab. Alma already matches; confirm the key first.
 - [ ] Get the SG3428XMP to show Pending. Capture its standalone config before any Adopt click.
 - [ ] Capture the ER7206 and adopt it last, after the controller site matches.
 - [ ] Close the security, efficiency, and functionality gaps listed below.
@@ -30,7 +31,7 @@
 ## Prioritized Backlog
 
 ### High Priority
-- [ ] **AP site migration** — export the AP site, import it on CT142 as its own site, migrate only the access points, forget them on the old controller after they show Connected.
+- [x] **AP site migration** — access points are on CT142, site Home Network (2026-11-14). Next is Move to Site → Cloudigan Lab.
 - [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
@@ -56,7 +57,7 @@ Security: gateway password in git; expired NPM cert #30; five client VMs with no
 
 Efficiency: prox1 guest VLAN 923 still shares `ens3f0` with storage; Postgres primary is CT151 on prox3 as of 2026-10-17; `hdd-pool` degraded; TrueNAS media-pool is interim.
 
-Functionality: access points still live on the other controller; SG3428XMP never appears for adoption; Intro Skipper analysis not confirmed; joel-win11 has no OS; Scrypted disconnects under load. Keep empty `vmbr0925`. SX3016F stays on the controller.
+Functionality: access points are on CT142 site Home Network, not yet in Cloudigan Lab; SG3428XMP never appears for adoption; Intro Skipper analysis not confirmed; joel-win11 has no OS; Scrypted disconnects under load. Keep empty `vmbr0925`. SX3016F stays on the controller.
 
 ## Update train
 

@@ -25,3 +25,30 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - `scripts/ops/patch-cadence.sh`
 - `documentation/PATCH-RINGS.md`
+
+---
+date: 2026-11-14
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Finish the access-point move onto Cloudigan Lab, then prepare the ER7206 adopt.
+
+### Discoveries / Notes
+- Site Migration (Global View → Settings → Migration) put every AP on CT142. The site is Home Network. Controller Migration was not used.
+- Garage AP was powered off during the first wave, then brought over. All APs are on that site.
+- Alma on Home Network and Alma on Cloudigan Lab match on the visible fields. The key is hidden. VLAN is Default on both.
+- This Mac reached the internet after the AP move.
+- Adopting the ER7206 overwrites the live router with the Cloudigan Lab Internet and LAN. Copy the standalone LAN list first. DHCP DNS stays AdGuard `10.92.3.11` and `10.92.3.204`. Do not retag the SX3016F.
+
+### Decisions to Promote
+- None. Gateway stays unadopted until the controller LAN list matches the router.
+
+### Blockers / Risks
+- Move to Site replaces AP config with the destination site. A mismatched Alma key drops clients.
+- March `NETWORK-INFRASTRUCTURE.md` is older than the VLAN split. Do not type those VLAN IDs onto the controller without checking the router.
+
+### Links / Commands
+- CT142 `https://omada.cloudigan.net` (`10.92.0.34`)
