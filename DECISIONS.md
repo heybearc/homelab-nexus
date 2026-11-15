@@ -195,6 +195,11 @@
 **Decision:** Do not add more vzdump-to-NFS jobs. Stand up Proxmox Backup Server with its datastore on a dedicated TrueNAS ZFS dataset. Move LXC root disks to zvols (TrueNAS Proxmox plugin, TrueNAS 25.10+) so a backup can snapshot. Keep the live blue-green container out of any job that can suspend. Postgres dumps and git stay the consistent copy of app data and code.
 **Consequences:** Recorded on the Phase 3 roadmap in `IMPLEMENTATION-PLAN.md`. Jobs `c9d7131d` and `edc48ab7` stay until that cutover. Another NFS export does not enable Proxmox snapshots.
 
+## D-HOMELAB-021: Lab servers query Technitium directly
+**Date:** 2026-11-15
+**Context:** `deploy-proxmox-vm.yml` set guest DNS to `10.92.3.19`, which is not a resolver. Pointing servers at AdGuard makes them depend on the client filter.
+**Decision:** Proxmox guests use Technitium `10.92.3.10` and `10.92.3.203`. DHCP clients stay on AdGuard `10.92.3.11` and `10.92.3.204`. A published name in NPM resolves internally to `10.92.3.3`.
+
 ## D-HOMELAB-019: Patch cadence promotes Postgres instead of rebooting the primary
 **Date:** 2026-10-12  
 **Context:** A reboot of the writable primary drops RW VIP `10.92.3.23` while the replica is still in recovery. CT131 is on prox1.  

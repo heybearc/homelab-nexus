@@ -5,7 +5,7 @@
 ---
 
 ## Current Task
-**Omada** — access points are on CT142 in the Home Network site. Move them into Cloudigan Lab, then match the ER7206 LAN and WAN on that site before any Adopt click.
+**PBS** — VM 110 on prox2 (`10.92.3.35`) is running. `https://pbs.cloudigan.net` terminates on NPM `10.92.3.3`. Next is moving guest disks from `truenas-proxmox` NFS onto `truenas-zvol`, one guest at a time.
 
 ### What I'm doing right now
 Alma already matches on both sites except the hidden password. Confirm that key, then Batch Config → Move to Site → Cloudigan Lab. Do not adopt the ER7206 until the controller LAN list matches the standalone router. DHCP DNS stays AdGuard `10.92.3.11` and `10.92.3.204`. Do not retag SX3016F ports while adding LANs.
@@ -20,7 +20,8 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
+1. Move one stopped non-critical container onto `truenas-zvol` and confirm a PBS snapshot backup. Leave the live blue-green container alone.
+2. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
 2. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT131 is the primary.
 3. Move the access points from Home Network into Cloudigan Lab after the Alma key matches.
 4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.

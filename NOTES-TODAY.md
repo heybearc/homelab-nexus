@@ -3,6 +3,22 @@ date: 2026-11-10
 purpose: Scratchpad for today's discoveries (promote on /end-day)
 ---
 
+## 2026-11-15
+
+### Discoveries / Notes
+- TrueNAS updated 25.04.2.6 → 25.10.8. Pool stayed online. Internet path is the ER7206, not the NAS.
+- PBS is VM 110 on prox2, datastore `homelab` (4 TB sparse zvol, excluded from its own backup). UI `https://pbs.cloudigan.net` via NPM `10.92.3.3`.
+- Plugin 2.1.24 on prox1/2/3. Transport is iSCSI on `10.92.2.200`, not NVMe/TCP.
+- Lab servers use Technitium `.10` and `.203`. AdGuard stays on the DHCP path. `10.92.3.19` is not a resolver.
+- prox1 enterprise apt source returned 401 and is disabled. prox1 still has pending package upgrades.
+- Six abandoned vzdump working directories remain under the backup export.
+
+### Decisions to Promote
+- D-HOMELAB-021. Servers query Technitium. Published names point at NPM.
+
+### Blockers / Risks
+- Existing guest disks are still raw files on NFS. Snapshot backups of those LXCs can still suspend them.
+
 ## Today
 
 ### Focus

@@ -1,6 +1,6 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-14
+**Last updated:** 2026-11-15
 **Current phase:** Omada. Access points are on CT142. Gateway adopt is still open.
 **Status:** Site Migration put the access points on CT142 in Home Network. They still need to move into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone.
 
@@ -35,7 +35,7 @@
 - [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
-- [ ] **PBS and snapshot-capable container disks** — D-HOMELAB-020. Details are in `IMPLEMENTATION-PLAN.md` Phase 3. Do not add more vzdump-to-NFS jobs.
+- [ ] **PBS and snapshot-capable container disks** — PBS 4.2.11 is VM 110. Storage `truenas-zvol` is active (iSCSI). Guest disks are still on NFS. D-HOMELAB-020. Do not add more vzdump-to-NFS jobs.
 
 ### Medium Priority
 - [ ] **Postgres primary placement** — as of 2026-11-07 the primary is CT131 on prox1 and CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
