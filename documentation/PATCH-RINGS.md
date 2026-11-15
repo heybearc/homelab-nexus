@@ -89,7 +89,7 @@ Checked 2026-10-06. All three nodes are `pve-manager/9.2.20`, kernel `7.0.14-17-
 | prox3 | 38 | Second. Live HAProxy CT136 is here. Finish the HAProxy window first so CT139 can hold the VIP. |
 | prox1 | 53, including `pve-manager`. NVIDIA and a new kernel were not in this `upgrade` set. | Last. Postgres primary and the RTX 2080 SUPER are here. |
 
-One node per window. The script tries to drain guests, then updates and reboots the node. `pct migrate --online` currently fails with "lxc live migration is currently not implemented", so guests stay and reboot with the host. That failure no longer aborts the host update. Pinned guests (GPU 100, 101, 122, 128, and the Postgres primary 131) are not migrated. prox1 stays on Saturday, and only when Postgres needs nothing, because CT131 is the primary there.
+One node per window. The script drains guests, then updates and reboots the node. LXC live migration (`pct migrate --online`) is rejected by `pve-container` through 6.1.18 with "lxc live migration is currently not implemented". Containers move with `pct migrate --restart` (stop, move, start on the other node). QEMU guests move live with `qm migrate --online`. A guest that fails to move stays and reboots with the host; that no longer aborts the host update. Guests need `onboot=1` or `startall` after the reboot will leave them stopped. Pinned guests (GPU 100, 101, 122, 128, and the Postgres primary 131) are not migrated. prox1 stays on Saturday, and only when Postgres needs nothing, because CT131 is the primary there.
 
 prox2 and prox3 can use a scheduled evening when migration is clean. prox1 is Saturday 02:00. Jellyfin and Plex pin the GPU and cannot move. The Postgres primary is also there. Do not drain prox1 on a TrueNAS Saturday.
 

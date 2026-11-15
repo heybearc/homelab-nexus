@@ -115,14 +115,19 @@ truenas_ssh() {
 }
 
 ct_node() {
+  guest_node lxc "$1"
+}
+
+guest_node() {
+  local kind="$1" id="$2"
   pvesh get "/cluster/resources" --type vm --output-format json \
     | python3 -c 'import json,sys
-want=int(sys.argv[1])
+kind, want = sys.argv[1], int(sys.argv[2])
 for r in json.load(sys.stdin):
-    if r.get("type")=="lxc" and int(r.get("vmid",-1))==want:
+    if r.get("type")==kind and int(r.get("vmid",-1))==want:
         print(r.get("node",""))
         break
-' "$1"
+' "$kind" "$id"
 }
 
 ct_ip() {
@@ -788,7 +793,7 @@ is_pinned() {
   for pin in $PINS; do
     [[ "$pin" == "$id" ]] && return 0
   done
-  ha-manager status 2>/dev/null | grep -q "^service ct:${id} " && return 0
+  ha-manager status 2>/dev/null | grep -Eq "^service (ct|vm):${id} " && return 0
   return 1
 }
 
@@ -802,28 +807,58 @@ migrate_away() {
       log "PIN CT${id} stays on ${node}"
       continue
     fi
-    log "MIGRATE CT${id} ${node} -> ${dest}"
-    if ! run_node "$node" "pct migrate $id $dest --online"; then
-      log "STAY CT${id} on ${node} — migrate failed, it reboots with the host"
+    # pve-container rejects --online ("lxc live migration is currently not implemented"),
+    # including 6.1.18. --restart stops the CT, moves it, and starts it on the destination.
+    log "MIGRATE CT${id} ${node} -> ${dest} (restart)"
+    if ! run_node "$node" "pct migrate $id $dest --restart"; then
+      log "STAY CT${id} on ${node} — restart migration failed, it reboots with the host"
       continue
     fi
-    echo "$id" >> "$file"
+    echo "ct:$id" >> "$file"
   done < <(run_node "$node" "pct list" | awk 'NR>1 && $2=="running" {print $1}')
+
+  while read -r id; do
+    [[ -n "$id" ]] || continue
+    if is_pinned "$id"; then
+      log "PIN VM${id} stays on ${node}"
+      continue
+    fi
+    log "MIGRATE VM${id} ${node} -> ${dest} (live)"
+    if ! run_node "$node" "qm migrate $id $dest --online"; then
+      log "STAY VM${id} on ${node} — live migration failed, it reboots with the host"
+      continue
+    fi
+    echo "vm:$id" >> "$file"
+  done < <(run_node "$node" "qm list" | awk 'NR>1 && $3=="running" {print $1}')
 }
 
 migrate_back() {
-  local origin="$1" id cur
+  local origin="$1" line kind id cur
   local file
   file="$(evacuated_file "$origin")"
   [[ -f "$file" ]] || return 0
-  while read -r id; do
-    [[ -n "$id" ]] || continue
-    cur="$(ct_node "$id")"
-    log "MIGRATE CT${id} ${cur} -> ${origin}"
-    run_node "$cur" "pct migrate $id $origin --online" || {
-      log "ABORT could not return CT${id} to ${origin}"
-      return 1
-    }
+  while read -r line; do
+    [[ -n "$line" ]] || continue
+    case "$line" in
+      vm:*) kind=vm; id="${line#vm:}" ;;
+      ct:*) kind=ct; id="${line#ct:}" ;;
+      *) kind=ct; id="$line" ;;
+    esac
+    if [[ "$kind" == vm ]]; then
+      cur="$(guest_node qemu "$id")"
+      log "MIGRATE VM${id} ${cur} -> ${origin}"
+      run_node "$cur" "qm migrate $id $origin --online" || {
+        log "ABORT could not return VM${id} to ${origin}"
+        return 1
+      }
+    else
+      cur="$(guest_node lxc "$id")"
+      log "MIGRATE CT${id} ${cur} -> ${origin} (restart)"
+      run_node "$cur" "pct migrate $id $origin --restart" || {
+        log "ABORT could not return CT${id} to ${origin}"
+        return 1
+      }
+    fi
   done < "$file"
   rm -f "$file"
 }

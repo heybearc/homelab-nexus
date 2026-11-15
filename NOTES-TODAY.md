@@ -52,3 +52,31 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 
 ### Links / Commands
 - CT142 `https://omada.cloudigan.net` (`10.92.0.34`)
+
+---
+date: 2026-11-15
+purpose: Scratchpad for today's discoveries (promote on /end-day)
+---
+
+## Today
+
+### Focus
+- Explain stopped guests, then keep the next host reboot from leaving them down.
+
+### Discoveries / Notes
+- CT137 `quantshift-blue` and VM106 `cloudy-renvis01` were stopped by host `startall` because `onboot` was off. Both are running with `onboot=1`. CT190 `tip-blue` stays stopped with `onboot=0`. VM107 `cory-win` now has `onboot=1`.
+- `pve-container` 6.1.18 still rejects LXC live migration. prox1 `/usr/local/sbin/patch-cadence.sh` now uses `pct migrate --restart` and `qm migrate --online`.
+- VM106 booted with a warning: EFI 2011 certificates are expired. Enroll the 2023 keys only while the VM is shut down, and disable BitLocker protectors first.
+- Stripe MCP connects with the new agent key after a full Cursor restart. Account is Cloudigan IT Solutions LLC. Expire the old restricted key.
+- Proxmox MCP ticket refresh is in the local `mcp-server-proxmox` tree (not this repo). From this Mac, `10.92.0.5:8006` was unreachable (`EHOSTUNREACH`).
+
+### Decisions to Promote
+- None. Host migration behavior is in `documentation/PATCH-RINGS.md`.
+
+### Blockers / Risks
+- CT191 `tip-green` is still running. The Level B archive said both tip containers were stopped.
+- Next prox2/prox3 window will restart containers while they move. Pinned guests stay.
+
+### Links / Commands
+- `scripts/ops/patch-cadence.sh`
+- `documentation/PATCH-RINGS.md`

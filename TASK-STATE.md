@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-14
+**Last updated:** 2026-11-15
 
 ---
 
@@ -11,6 +11,7 @@
 Alma already matches on both sites except the hidden password. Confirm that key, then Batch Config → Move to Site → Cloudigan Lab. Do not adopt the ER7206 until the controller LAN list matches the standalone router. DHCP DNS stays AdGuard `10.92.3.11` and `10.92.3.204`. Do not retag SX3016F ports while adding LANs.
 
 ### Recent completions
+- ✅ **Host drain uses restart migration** — 2026-11-15. `pct migrate --online` still unimplemented through pve-container 6.1.18. `patch-cadence.sh` on prox1 uses `--restart` for containers and `qm migrate --online` for VMs. CT137 and VM106 started with `onboot=1`. CT190 `onboot=0`. VM107 `onboot=1`.
 - ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
 - ✅ **Patch cadence** — cron on prox1 and n8n workflow Homelab patch ring. Empty targets log and skip. HOLD file pauses apply mode (2026-10-12)
 - ✅ **Postgres role switch** — D-067 / D-HOMELAB-019. VIP `10.92.3.23` follows a promote. The old primary is rebuilt as the replica (2026-10-12)
@@ -19,7 +20,7 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Guests stay on the node.
+1. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
 2. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT131 is the primary.
 3. Move the access points from Home Network into Cloudigan Lab after the Alma key matches.
 4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
@@ -28,7 +29,7 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 - **HHV DNS/NPM + Next.js app**
 - **Cloudigan Mail Gateway** — NPM + GitHub push
 - **Cloudigan Vault MSP**
-- **TIP Generator** — removed from the patch rotation. CT190 and CT191 are stopped.
+- **TIP Generator** — removed from the patch rotation. CT190 `tip-blue` is stopped with `onboot=0`. CT191 `tip-green` is still running on prox3.
 - **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
 ---
@@ -37,7 +38,7 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
 - **Postgres primary is CT131 on prox1** — promoted 2026-11-07. CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
-- **No LXC live migration** — `pct migrate --online` dies with "lxc live migration is currently not implemented". `--restart` shuts the container down and starts it on the other node.
+- **No LXC live migration** — `pct migrate --online` still dies on pve-container 6.1.14 and 6.1.18 ("lxc live migration is currently not implemented"). Host patching uses `--restart` for containers and `qm migrate --online` for VMs. Guests without `onboot=1` stay stopped after the host `startall`.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
