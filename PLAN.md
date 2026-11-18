@@ -35,10 +35,10 @@
 - [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
-- [ ] **PBS and snapshot-capable container disks** — Blue-green pairs, HAProxy, AdGuard CT140, and replica CT131 are on `truenas-zvol` (2026-11-17). CT191 PBS snapshot succeeded. Technitium, single containers, CT100, and the VMs are still on NFS. D-HOMELAB-020.
+- [ ] **PBS and snapshot-capable container disks** — Container root disks are on `truenas-zvol` (2026-11-18), including Authentik, LibreNMS, and QuantShift bot CT100. Postgres primary CT151 and the VMs are still on NFS. D-HOMELAB-020.
 
 ### Medium Priority
-- [ ] **Postgres primary placement** — as of 2026-11-17 CT151 is the primary and CT131 is the streaming replica on `truenas-zvol`. Do not reboot the primary outside Saturday's procedure.
+- [ ] **Postgres primary placement** — as of 2026-11-18 CT151 is the primary on prox3 and CT131 is the streaming replica on prox1. Do not let Saturday promote CT131. Do not reboot the primary outside Saturday's procedure.
 - [ ] **prox1 guest VLAN layout** — storage `10.92.2.5` is up, but guest VLAN 923 still shares `ens3f0` with storage.
 
 ### Low Priority
@@ -67,7 +67,7 @@ The cadence in `documentation/PATCH-RINGS.md` is the update train. Sunday patche
 
 ## Known Issues
 
-- **Postgres primary is CT131 on prox1** as of 2026-11-07, with CT151 streaming. Do not restart the current primary outside Saturday's procedure.
+- **Postgres primary is CT151 on prox3** as of 2026-11-18, with CT131 streaming on prox1. Saturday's package promote would put the VIP back on CT131. Do not restart the current primary outside Saturday's procedure.
 - **Five client VMs still have no SSH**
 - **joel-win11** — OS not installed
 - **Scrypted** — Baichuan disconnects under multi-stream load

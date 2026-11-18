@@ -5,12 +5,14 @@
 ---
 
 ## Current Task
-**PBS / zvol** — Blue-green pairs, HAProxy, AdGuard CT140, and Postgres replica CT131 are on `truenas-zvol`. Next disk is Technitium CT145, then the single containers. CT151 is the Postgres primary and stays until Saturday.
+**PBS / zvol** — Container root disks are on `truenas-zvol` except Postgres primary CT151. That stays until Saturday, after a role switch makes it the replica.
 
 ### What I'm doing right now
-Leave the prox2 reboot at Wednesday 21:00 alone. Do not start another long disk copy that overlaps it. Technitium CT145 is the next move, in its own window, because guests query it directly.
+Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturday. Do not let Saturday promote CT131 back onto prox1.
 
 ### Recent completions
+- ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151 remains the Postgres primary on NFS.
+- ✅ **zvol waves 4–5** — 2026-11-18. Technitium CT145 and the single containers, including NPM CT121, are on `truenas-zvol`.
 - ✅ **zvol wave** — 2026-11-17. Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, and replica CT131 are on `truenas-zvol`. PBS snapshot of CT191 succeeded. VIP `10.92.3.33` is back on CT136.
 - ✅ **Host drain uses restart migration** — 2026-11-15. `pct migrate --online` still unimplemented through pve-container 6.1.18. `patch-cadence.sh` on prox1 uses `--restart` for containers and `qm migrate --online` for VMs. CT137 and VM106 started with `onboot=1`. CT190 `onboot=0`. VM107 `onboot=1`.
 - ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
@@ -21,11 +23,13 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not start another long disk 
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Move Technitium CT145, then wave 5 single containers, small disks first. NPM CT121 last.
-2. Leave CT100 on NFS. Failover monitor promotes CT101 only after every bot heartbeat is stale, and it does not stop CT100. Forcing it while CT100 is trading splits the books.
-3. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
-4. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT151 is the primary. Move CT151 only after a role switch makes it the replica.
-5. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
+1. Leave CT100 and CT101 on `truenas-zvol`. The failover monitor on CT101 is active again. It promotes CT101 only after every bot heartbeat is stale, and it does not stop CT100.
+2. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
+3. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT151 is the primary. `mode_postgres_primary` promotes the replica when the primary has packages, which would put the VIP back on CT131/prox1. Skip that promote. Move CT151 only after a role switch makes it the replica. Migrate CT131 off prox1 only in an explicit window (`pct migrate --restart`).
+4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
+
+### Queued
+- None. RLH University is in `.cloudy-work/_cloudy-ops/handoffs/rlh-university.md`.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
@@ -39,7 +43,7 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not start another long disk 
 ## Known Issues
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
-- **Postgres primary is CT151** — checked 2026-11-17. CT131 is the streaming replica on `truenas-zvol`. Do not reboot the primary outside Saturday's procedure.
+- **Postgres primary is CT151** — checked 2026-11-18. CT131 on prox1 is the streaming replica (`pg_is_in_recovery=t`, no VIP). VIP `10.92.3.23` is on CT151. Saturday's promote would reverse that. CT151 root disk is still NFS.
 - **No LXC live migration** — `pct migrate --online` still dies on pve-container 6.1.14 and 6.1.18 ("lxc live migration is currently not implemented"). Host patching uses `--restart` for containers and `qm migrate --online` for VMs. Guests without `onboot=1` stay stopped after the host `startall`.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
@@ -51,7 +55,7 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not start another long disk 
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation
 - **prox `hdd-pool` DEGRADED** (verify current status)
 - **NPM cert #30** — not attached to a live host. `adguard-2.cloudigan.net` cert is valid through 2027-01-02 (D-HOMELAB-007)
-- **Host packages** — prox1 about 60 (enterprise repo 401), prox2 42, prox3 42. PVE 9.2.20. NVIDIA on prox1 is held. TrueNAS 25.04.2.6 has no update. NPM OpenResty is held
+- **Host packages** — prox1 about 125 pending on 2026-11-18, including `pve-manager` 9.2.20 → 9.2.28. Simulated dist-upgrade showed no new `pve-kernel`. Running kernel `7.0.14-17-pve`. Enterprise repo 401. NVIDIA on prox1 is held. Pins in `scripts/ops/patch-cadence.sh`: `100 101 122 128 131`. TrueNAS 25.04.2.6 has no update. NPM OpenResty is held
 - **AP controller** — `10.92.0.10` UI ports were closed on 2026-10-04. Access points are still on that controller
 - **Intro Skipper** — installed; analysis completion not confirmed
 

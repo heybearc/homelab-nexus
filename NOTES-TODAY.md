@@ -112,5 +112,9 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 
 ### Blockers / Risks
 - Forcing a bot failover while CT100 is trading leaves both sides running.
-- Technitium CT145, CT100, single containers, and the VMs are still on NFS.
+- Technitium CT145 and wave 5 single containers, including NPM CT121, moved to `truenas-zvol` on 2026-11-18. `https://omada.cloudigan.net` returned HTTP/2 200 after NPM started.
+- Still on NFS after the afternoon moves: Postgres primary CT151 and the VMs. Authentik CT170, LibreNMS CT152, and QuantShift bot CT100 are on `truenas-zvol`. Bot equity and crypto services are active on CT100. The CT101 failover monitor is active. Standby bot services are inactive.
 - prox3 iSCSI portal login is now automatic. prox1 is still manual.
+- prox1 simulated dist-upgrade: ~125 packages, `pve-manager` 9.2.20 → 9.2.28, no new kernel. Saturday promote of CT131 would put Postgres back on prox1.
+- RLH University containers, DNS, NPM, and a blue/green switch are done. Details are in the `rlh-university` handoff. Ansible playbooks for that standup are still uncommitted in this repo. The DB password file is gitignored.
+- Incomplete vzdump working dirs remain for CT170 and CT152. Monitoring sync to CT150 failed (`scp: Connection closed`).
