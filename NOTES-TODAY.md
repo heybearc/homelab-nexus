@@ -96,3 +96,21 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Links / Commands
 - `scripts/ops/patch-cadence.sh`
 - `documentation/PATCH-RINGS.md`
+
+## 2026-11-18
+
+### Discoveries / Notes
+- Access points are in Cloudigan Lab. User confirmed the site move is done.
+- Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, replica CT131, and bot standby CT101 are on `truenas-zvol`.
+- CT151 is the Postgres primary. CT131 is in recovery and streaming from `10.92.3.21`.
+- HAProxy VIP `10.92.3.33` returned to CT136 after the disk move. Standby config was copied from CT136 before the move.
+- CT191 PBS snapshot used snapshot mode. The first clone delete hit EBUSY; a retry removed it.
+- Bot failover is `quantshift-failover-monitor` on CT101. It does not stop CT100. HAProxy trader backends are unused.
+
+### Decisions to Promote
+- None.
+
+### Blockers / Risks
+- Forcing a bot failover while CT100 is trading leaves both sides running.
+- Technitium CT145, CT100, single containers, and the VMs are still on NFS.
+- prox3 iSCSI portal login is now automatic. prox1 is still manual.

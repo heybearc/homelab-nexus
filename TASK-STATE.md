@@ -1,16 +1,17 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-18
 
 ---
 
 ## Current Task
-**PBS** — VM 110 on prox2 (`10.92.3.35`) is running. `https://pbs.cloudigan.net` terminates on NPM `10.92.3.3`. Next is moving guest disks from `truenas-proxmox` NFS onto `truenas-zvol`, one guest at a time.
+**PBS / zvol** — Blue-green pairs, HAProxy, AdGuard CT140, and Postgres replica CT131 are on `truenas-zvol`. Next disk is Technitium CT145, then the single containers. CT151 is the Postgres primary and stays until Saturday.
 
 ### What I'm doing right now
-Alma already matches on both sites except the hidden password. Confirm that key, then Batch Config → Move to Site → Cloudigan Lab. Do not adopt the ER7206 until the controller LAN list matches the standalone router. DHCP DNS stays AdGuard `10.92.3.11` and `10.92.3.204`. Do not retag SX3016F ports while adding LANs.
+Leave the prox2 reboot at Wednesday 21:00 alone. Do not start another long disk copy that overlaps it. Technitium CT145 is the next move, in its own window, because guests query it directly.
 
 ### Recent completions
+- ✅ **zvol wave** — 2026-11-17. Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, and replica CT131 are on `truenas-zvol`. PBS snapshot of CT191 succeeded. VIP `10.92.3.33` is back on CT136.
 - ✅ **Host drain uses restart migration** — 2026-11-15. `pct migrate --online` still unimplemented through pve-container 6.1.18. `patch-cadence.sh` on prox1 uses `--restart` for containers and `qm migrate --online` for VMs. CT137 and VM106 started with `onboot=1`. CT190 `onboot=0`. VM107 `onboot=1`.
 - ✅ **Postgres role switch repair** — 2026-10-17 02:00 promoted CT151 (`10.92.3.31`); VIP `10.92.3.23` stayed there. Quote-stripping bug aborted the CT131 rebuild. Replica restored the same morning (streaming, lag 0, slot `replica_131`). `replicator` password rotated. `max_wal_senders=10` on both. Script on prox1 and `origin/main` (`91b1596`)
 - ✅ **Patch cadence** — cron on prox1 and n8n workflow Homelab patch ring. Empty targets log and skip. HOLD file pauses apply mode (2026-10-12)
@@ -20,17 +21,17 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Move one stopped non-critical container onto `truenas-zvol` and confirm a PBS snapshot backup. Leave the live blue-green container alone.
-2. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
-2. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT131 is the primary.
-3. Move the access points from Home Network into Cloudigan Lab after the Alma key matches.
-4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
+1. Move Technitium CT145, then wave 5 single containers, small disks first. NPM CT121 last.
+2. Leave CT100 on NFS. Failover monitor promotes CT101 only after every bot heartbeat is stale, and it does not stop CT100. Forcing it while CT100 is trading splits the books.
+3. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
+4. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT151 is the primary. Move CT151 only after a role switch makes it the replica.
+5. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
 
 ### Paused (unchanged)
 - **HHV DNS/NPM + Next.js app**
 - **Cloudigan Mail Gateway** — NPM + GitHub push
 - **Cloudigan Vault MSP**
-- **TIP Generator** — removed from the patch rotation. CT190 `tip-blue` is stopped with `onboot=0`. CT191 `tip-green` is still running on prox3.
+- **TIP Generator** — removed from the patch rotation. CT190 and CT191 are stopped, `onboot=0`, root disks on `truenas-zvol`.
 - **LDC / QuantShift / chapter-hub-dev destroy** — approved retire later only
 
 ---
@@ -38,7 +39,7 @@ Alma already matches on both sites except the hidden password. Confirm that key,
 ## Known Issues
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
-- **Postgres primary is CT131 on prox1** — promoted 2026-11-07. CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
+- **Postgres primary is CT151** — checked 2026-11-17. CT131 is the streaming replica on `truenas-zvol`. Do not reboot the primary outside Saturday's procedure.
 - **No LXC live migration** — `pct migrate --online` still dies on pve-container 6.1.14 and 6.1.18 ("lxc live migration is currently not implemented"). Host patching uses `--restart` for containers and `qm migrate --online` for VMs. Guests without `onboot=1` stay stopped after the host `startall`.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.

@@ -1,8 +1,8 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-15
-**Current phase:** Omada. Access points are on CT142. Gateway adopt is still open.
-**Status:** Site Migration put the access points on CT142 in Home Network. They still need to move into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone.
+**Last updated:** 2026-11-18
+**Current phase:** Omada gateway. Access points are in Cloudigan Lab on CT142. Gateway adopt is still open.
+**Status:** Access points moved into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone. Zvol cutover is in progress.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### Active Work
 - [x] Move access points with Site Migration onto CT142 (2026-11-14). Site name is Home Network. Do not use Controller Migration.
-- [ ] Move those access points from Home Network into Cloudigan Lab. Alma already matches; confirm the key first.
+- [x] Move those access points from Home Network into Cloudigan Lab (2026-11-17).
 - [ ] Get the SG3428XMP to show Pending. Capture its standalone config before any Adopt click.
 - [ ] Capture the ER7206 and adopt it last, after the controller site matches.
 - [ ] Close the security, efficiency, and functionality gaps listed below.
@@ -31,14 +31,14 @@
 ## Prioritized Backlog
 
 ### High Priority
-- [x] **AP site migration** — access points are on CT142, site Home Network (2026-11-14). Next is Move to Site → Cloudigan Lab.
+- [x] **AP site migration** — access points are in Cloudigan Lab on CT142 (2026-11-17).
 - [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
-- [ ] **PBS and snapshot-capable container disks** — PBS 4.2.11 is VM 110. Storage `truenas-zvol` is active (iSCSI). Guest disks are still on NFS. D-HOMELAB-020. Do not add more vzdump-to-NFS jobs.
+- [ ] **PBS and snapshot-capable container disks** — Blue-green pairs, HAProxy, AdGuard CT140, and replica CT131 are on `truenas-zvol` (2026-11-17). CT191 PBS snapshot succeeded. Technitium, single containers, CT100, and the VMs are still on NFS. D-HOMELAB-020.
 
 ### Medium Priority
-- [ ] **Postgres primary placement** — as of 2026-11-07 the primary is CT131 on prox1 and CT151 is the replica. Do not reboot prox1 outside Saturday's procedure.
+- [ ] **Postgres primary placement** — as of 2026-11-17 CT151 is the primary and CT131 is the streaming replica on `truenas-zvol`. Do not reboot the primary outside Saturday's procedure.
 - [ ] **prox1 guest VLAN layout** — storage `10.92.2.5` is up, but guest VLAN 923 still shares `ens3f0` with storage.
 
 ### Low Priority
