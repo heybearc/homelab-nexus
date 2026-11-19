@@ -1,0 +1,107 @@
+---
+- name: Login to Nginx Proxy Manager
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/tokens"
+    method: POST
+    body_format: json
+    body:
+      identity: "{{ npm_email }}"
+      secret: "{{ npm_password }}"
+    status_code: [200]
+    return_content: true
+  register: npm_login
+  no_log: true
+
+- name: List NPM proxy hosts
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    return_content: true
+    status_code: [200]
+  register: npm_hosts
+  no_log: true
+
+- name: Find the sign.cloudigan.net proxy
+  ansible.builtin.set_fact:
+    documenso_npm_existing: "{{ npm_hosts.json | selectattr('domain_names', 'contains', documenso_domain) | list }}"
+
+- name: Create the NPM proxy host
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      domain_names: ["{{ documenso_domain }}"]
+      forward_scheme: http
+      forward_host: "{{ documenso_ip }}"
+      forward_port: "{{ documenso_port | int }}"
+      access_list_id: 0
+      certificate_id: 0
+      ssl_forced: false
+      caching_enabled: false
+      block_exploits: true
+      allow_websocket_upgrade: true
+      http2_support: true
+      enabled: true
+      meta:
+        letsencrypt_agree: true
+        dns_challenge: false
+    status_code: [201]
+    return_content: true
+  register: npm_create
+  when: documenso_npm_existing | length == 0
+
+- name: Remember the proxy id
+  ansible.builtin.set_fact:
+    documenso_npm_id: "{{ (npm_create.json.id if (documenso_npm_existing | length == 0) else documenso_npm_existing[0].id) }}"
+    documenso_npm_cert_id: "{{ (documenso_npm_existing[0].certificate_id | default(0) | int) if (documenso_npm_existing | length > 0) else 0 }}"
+
+- name: Request a Let's Encrypt certificate
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/certificates"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      provider: letsencrypt
+      domain_names: ["{{ documenso_domain }}"]
+      meta:
+        letsencrypt_email: "{{ npm_email }}"
+        letsencrypt_agree: true
+        dns_challenge: false
+    status_code: [200, 201]
+    return_content: true
+  register: npm_cert
+  failed_when: false
+  when:
+    - npm_ssl | bool
+    - documenso_npm_cert_id | int == 0
+
+- name: Choose the certificate id
+  ansible.builtin.set_fact:
+    documenso_cert_id: "{{ (npm_cert.json.id | default(documenso_npm_cert_id)) | int }}"
+
+- name: Point the proxy at Documenso
+  ansible.builtin.uri:
+    url: "{{ npm_url }}/api/nginx/proxy-hosts/{{ documenso_npm_id }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ npm_login.json.token }}"
+    body_format: json
+    body:
+      domain_names: ["{{ documenso_domain }}"]
+      forward_scheme: http
+      forward_host: "{{ documenso_ip }}"
+      forward_port: "{{ documenso_port | int }}"
+      certificate_id: "{{ documenso_cert_id | int }}"
+      ssl_forced: "{{ (documenso_cert_id | int) > 0 }}"
+      allow_websocket_upgrade: true
+      http2_support: true
+      enabled: true
+      block_exploits: true
+    status_code: [200]

@@ -1,0 +1,17 @@
+services:
+  mail-relay:
+    build: /opt/documenso/mail-relay
+    image: documenso-mail-relay:local
+    container_name: documenso-mail-relay
+    restart: unless-stopped
+    env_file: /opt/documenso/mail-relay.env
+
+  documenso:
+    image: "{{ documenso_image }}"
+    container_name: documenso
+    restart: unless-stopped
+    env_file: /opt/documenso/.env
+    ports:
+      - "{{ documenso_port }}:3000"
+    volumes:
+      - /opt/documenso/cert.p12:/opt/documenso/cert.p12:ro

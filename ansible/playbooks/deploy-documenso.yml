@@ -1,0 +1,87 @@
+---
+- name: Deploy Documenso
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/documenso_deploy.yml
+  tasks:
+    - name: Require Netbox and NPM credentials
+      ansible.builtin.assert:
+        that:
+          - netbox_token | length > 0
+          - npm_password | length > 0
+        fail_msg: "Set NETBOX_TOKEN and NPM_PASSWORD in homelab-nexus/.env and source it before this playbook."
+
+    - name: Show the plan
+      ansible.builtin.debug:
+        msg:
+          - "CT{{ documenso_ctid }} {{ documenso_name }} @ {{ documenso_ip }} on {{ documenso_node }} storage {{ documenso_storage }}"
+          - "https://{{ documenso_domain }} → NPM → {{ documenso_ip }}:{{ documenso_port }}"
+          - "Postgres {{ documenso_db_name }} on {{ documenso_db_host }} (primary CT{{ documenso_pg_ctid }})"
+
+    - name: Create the LXC
+      ansible.builtin.include_tasks: tasks/create-documenso-lxc.yml
+
+    - name: Register in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ documenso_name }}"
+        nb_ctid: "{{ documenso_ctid }}"
+        nb_ip: "{{ documenso_ip }}"
+        nb_function: "{{ documenso_function }}"
+        nb_cores: "{{ documenso_cores }}"
+        nb_memory: "{{ documenso_memory }}"
+        nb_disk: "{{ documenso_disk }}"
+        nb_netbox_comment: "Documenso | {{ documenso_domain }} | CT{{ documenso_ctid }}"
+        nb_dns_name: "{{ documenso_domain }}"
+
+    - name: Load or create secrets before the database
+      ansible.builtin.include_tasks: tasks/configure-documenso-secrets.yml
+
+    - name: Create the database
+      ansible.builtin.include_tasks: tasks/create-documenso-database.yml
+
+    - name: Install and start Documenso
+      ansible.builtin.include_tasks: tasks/configure-documenso-node.yml
+
+    - name: Configure NPM
+      ansible.builtin.include_tasks: tasks/configure-documenso-npm.yml
+
+    - name: Keep the internal A record pointed at NPM
+      ansible.builtin.uri:
+        url: "{{ technitium_url }}/api/zones/records/add"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          token: "{{ technitium_api_token }}"
+          domain: "{{ documenso_domain }}"
+          type: A
+          ipAddress: "{{ documenso_dns_target_ip }}"
+          ttl: 300
+          overwrite: "true"
+          ptr: "false"
+        return_content: true
+        status_code: [200]
+      when: technitium_api_token | length > 8
+      no_log: true
+
+    - name: Add an SSH alias
+      ansible.builtin.blockinfile:
+        path: "{{ homelab_ssh_config }}"
+        marker: "# {mark} ANSIBLE MANAGED DOCUMENSO"
+        block: |
+          Host documenso sign
+              HostName {{ documenso_ip }}
+              Port 22
+              User root
+              IdentityFile ~/.ssh/homelab_root
+              IdentitiesOnly yes
+              AddKeysToAgent yes
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Documenso CT{{ documenso_ctid }} is at http://{{ documenso_ip }}:{{ documenso_port }}"
+          - "Public URL https://{{ documenso_domain }}"
+          - "First account must use @cloudigan.com or @cloudigan.net"
+          - "Signing mail is not wired. Cloudigan Mail is an HTTP API, and this container has no SMTP relay."

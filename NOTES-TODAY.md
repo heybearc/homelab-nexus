@@ -118,3 +118,20 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - prox1 simulated dist-upgrade: ~125 packages, `pve-manager` 9.2.20 → 9.2.28, no new kernel. Saturday promote of CT131 would put Postgres back on prox1.
 - RLH University containers, DNS, NPM, and a blue/green switch are done. Details are in the `rlh-university` handoff. Ansible playbooks for that standup are still uncommitted in this repo. The DB password file is gitignored.
 - Incomplete vzdump working dirs remain for CT170 and CT152. Monitoring sync to CT150 failed (`scp: Connection closed`).
+
+## 2026-11-19
+
+### Discoveries / Notes
+- Documenso is CT205 at 10.92.3.5 on `truenas-zvol`. https://sign.cloudigan.net returns the sign-in redirect.
+- Database `documenso` is on the Postgres VIP 10.92.3.23 (primary CT151). Signup is limited to cloudigan.com and cloudigan.net.
+- Outbound mail is a container SMTP relay that posts to Cloudigan Mail as noreply@cloudigan.com. A `documenso` API key is on mail blue and green.
+- Graph accepted "Please confirm your email" at 2026-11-19 12:32Z and a plain "Your Documenso confirmation link" at 12:37Z, both to cory@cloudigan.com.
+- Mail.Read is denied on the Graph app, so inbox, junk, and sent items could not be read.
+
+### Decisions to Promote
+- None.
+
+### Blockers / Risks
+- Confirmation messages are accepted by Graph and still not seen in the mailbox. Check Junk and Quarantine.
+- Relay source sits in `ansible/playbooks/files/`, which `.gitignore` ignores, so a fresh clone does not contain it. The running copy is on CT205.
+- Saturday must not promote CT131. CT151 stays the primary until it is the replica, then its disk can move off NFS.

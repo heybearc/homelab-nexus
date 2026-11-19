@@ -1,6 +1,6 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-19
 **Current phase:** Omada gateway. Access points are in Cloudigan Lab on CT142. Gateway adopt is still open.
 **Status:** Access points moved into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone. Zvol cutover is in progress.
 
@@ -36,6 +36,7 @@
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
 - [ ] **PBS and snapshot-capable container disks** — Container root disks are on `truenas-zvol` (2026-11-18), including Authentik, LibreNMS, and QuantShift bot CT100. Postgres primary CT151 and the VMs are still on NFS. D-HOMELAB-020.
+- [x] **Documenso** — CT205 https://sign.cloudigan.net (2026-11-18). Confirmation mail is accepted by Graph and not yet seen in the mailbox.
 
 ### Medium Priority
 - [ ] **Postgres primary placement** — as of 2026-11-18 CT151 is the primary on prox3 and CT131 is the streaming replica on prox1. Do not let Saturday promote CT131. Do not reboot the primary outside Saturday's procedure.

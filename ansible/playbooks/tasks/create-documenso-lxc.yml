@@ -1,0 +1,121 @@
+---
+- name: Check if Documenso CT already exists
+  ansible.builtin.command: >-
+    ssh -F {{ homelab_ssh_config }} -o ConnectTimeout=15 {{ documenso_node }}
+    test -f /etc/pve/lxc/{{ documenso_ctid }}.conf
+  register: documenso_ct_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create Documenso LXC
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - -o
+      - ConnectTimeout=20
+      - "{{ documenso_node }}"
+      - pct
+      - create
+      - "{{ documenso_ctid }}"
+      - "{{ documenso_template }}"
+      - --hostname
+      - "{{ documenso_name }}"
+      - --memory
+      - "{{ documenso_memory }}"
+      - --cores
+      - "{{ documenso_cores }}"
+      - --net0
+      - "name=eth0,bridge={{ documenso_bridge }},ip={{ documenso_ip }}/{{ documenso_cidr }},gw={{ documenso_gateway }}"
+      - --nameserver
+      - "{{ documenso_nameserver }}"
+      - --searchdomain
+      - "{{ documenso_searchdomain }}"
+      - --storage
+      - "{{ documenso_storage }}"
+      - --rootfs
+      - "{{ documenso_storage }}:{{ documenso_disk }}"
+      - --unprivileged
+      - "1"
+      - --features
+      - nesting=1
+      - --onboot
+      - "1"
+      - --start
+      - "1"
+  register: documenso_pct_create
+  changed_when: documenso_pct_create.rc == 0
+  when: documenso_ct_exists.rc != 0
+
+- name: Wait until pct exec works
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - "{{ documenso_node }}"
+      - pct
+      - exec
+      - "{{ documenso_ctid }}"
+      - --
+      - hostname
+  register: documenso_pct_exec_wait
+  until: documenso_pct_exec_wait.rc == 0
+  retries: 36
+  delay: 5
+  changed_when: false
+
+- name: Install OpenSSH in the LXC
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - "{{ documenso_node }}"
+      - pct
+      - exec
+      - "{{ documenso_ctid }}"
+      - --
+      - bash
+      - -c
+      - export DEBIAN_FRONTEND=noninteractive; apt-get update -qq; apt-get install -y -qq openssh-server; systemctl enable --now ssh
+  changed_when: true
+
+- name: Install homelab_root authorized key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct exec {{ documenso_ctid }} -- mkdir -p /root/.ssh && chmod 700 /root/.ssh"
+    scp -F {{ homelab_ssh_config }} {{ lookup('env', 'HOME') }}/.ssh/homelab_root.pub {{ documenso_node }}:/tmp/documenso-homelab_root.pub
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct push {{ documenso_ctid }} /tmp/documenso-homelab_root.pub /root/.ssh/authorized_keys && pct exec {{ documenso_ctid }} -- chmod 600 /root/.ssh/authorized_keys"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Drop stale known_hosts for the Documenso IP
+  ansible.builtin.command:
+    argv: ["ssh-keygen", "-R", "{{ documenso_ip }}"]
+  changed_when: true
+  failed_when: false
+
+- name: Wait for SSH
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - -i
+      - "{{ lookup('env', 'HOME') }}/.ssh/homelab_root"
+      - -o
+      - BatchMode=yes
+      - -o
+      - ConnectTimeout=5
+      - -o
+      - StrictHostKeyChecking=accept-new
+      - "root@{{ documenso_ip }}"
+      - hostname
+  register: documenso_ssh_wait
+  until: documenso_ssh_wait.rc == 0
+  retries: 24
+  delay: 5
+  changed_when: false

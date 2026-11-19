@@ -1,16 +1,19 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-19
 
 ---
 
 ## Current Task
+**Documenso** — CT205 `10.92.3.5` is live at https://sign.cloudigan.net. Graph accepted confirmation mail to cory@cloudigan.com (2026-11-19 12:32Z and a plain link at 12:37Z). The mailbox view is still missing. Mail.Read is denied, so junk and quarantine were not checked.
+
 **PBS / zvol** — Container root disks are on `truenas-zvol` except Postgres primary CT151. That stays until Saturday, after a role switch makes it the replica.
 
 ### What I'm doing right now
 Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturday. Do not let Saturday promote CT131 back onto prox1.
 
 ### Recent completions
+- ✅ **Documenso** — 2026-11-18. CT205 on `truenas-zvol`, database `documenso` on VIP `10.92.3.23`, NPM `sign.cloudigan.net`. Outbound mail is a local SMTP relay into Cloudigan Mail (`noreply@cloudigan.com`). Signup limited to cloudigan.com and cloudigan.net.
 - ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151 remains the Postgres primary on NFS.
 - ✅ **zvol waves 4–5** — 2026-11-18. Technitium CT145 and the single containers, including NPM CT121, are on `truenas-zvol`.
 - ✅ **zvol wave** — 2026-11-17. Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, and replica CT131 are on `truenas-zvol`. PBS snapshot of CT191 succeeded. VIP `10.92.3.33` is back on CT136.

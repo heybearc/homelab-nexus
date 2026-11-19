@@ -1,0 +1,47 @@
+---
+# Documenso e-sign (single LXC, not blue-green)
+# Subnet 10.92.3.0/24 + vmbr0923 (D-020). Root disk on truenas-zvol (D-HOMELAB-020).
+# Public name sign.cloudigan.net already resolves to NPM 10.92.3.3.
+
+documenso_name: documenso
+documenso_ctid: 205
+documenso_function: utility
+documenso_ip: "10.92.3.5"
+documenso_cidr: 24
+documenso_gateway: "10.92.3.1"
+documenso_bridge: vmbr0923
+documenso_memory: 2048
+documenso_cores: 2
+documenso_disk: 16
+documenso_port: 3000
+documenso_domain: sign.cloudigan.net
+documenso_image: "documenso/documenso:v2.22.0"
+documenso_template: local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+documenso_storage: truenas-zvol
+documenso_node: prox1
+
+documenso_nameserver: "10.92.3.10"
+documenso_nameserver_secondary: "10.92.3.203"
+documenso_searchdomain: cloudigan.net
+
+documenso_dns_target_ip: "10.92.3.3"
+documenso_db_host: "10.92.3.23"
+documenso_db_name: documenso
+documenso_db_user: documenso
+documenso_pg_node: prox3
+documenso_pg_ctid: 151
+
+documenso_secrets_file: "{{ playbook_dir }}/../secrets/documenso.env"
+
+technitium_url: "{{ lookup('env', 'TECHNITIUM_URL') | default('http://10.92.3.10:5380', true) }}"
+technitium_api_token: "{{ lookup('env', 'TECHNITIUM_API_TOKEN') | default('', true) }}"
+
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+npm_ssl: true
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"

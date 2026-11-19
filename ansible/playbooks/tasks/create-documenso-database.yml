@@ -1,0 +1,33 @@
+---
+- name: Create Documenso role and database on the Postgres primary
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_pg_node }} "pct exec {{ documenso_pg_ctid }} -- su -s /bin/bash postgres -c 'psql -v ON_ERROR_STOP=1'" <<EOSQL
+    DO \$\$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ documenso_db_user }}') THEN
+        CREATE ROLE {{ documenso_db_user }} WITH LOGIN PASSWORD '{{ documenso_db_password }}';
+      END IF;
+    END
+    \$\$;
+    SELECT 'CREATE DATABASE {{ documenso_db_name }} OWNER {{ documenso_db_user }}'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ documenso_db_name }}')\gexec
+    GRANT ALL PRIVILEGES ON DATABASE {{ documenso_db_name }} TO {{ documenso_db_user }};
+    EOSQL
+  args:
+    executable: /bin/bash
+  no_log: true
+  register: documenso_db_create
+  changed_when: "'CREATE DATABASE' in documenso_db_create.stdout or 'CREATE ROLE' in documenso_db_create.stdout"
+
+- name: Grant schema privileges
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_pg_node }} "pct exec {{ documenso_pg_ctid }} -- su -s /bin/bash postgres -c 'psql -v ON_ERROR_STOP=1 -d {{ documenso_db_name }}'" <<EOSQL
+    GRANT ALL ON SCHEMA public TO {{ documenso_db_user }};
+    ALTER DATABASE {{ documenso_db_name }} OWNER TO {{ documenso_db_user }};
+    EOSQL
+  args:
+    executable: /bin/bash
+  no_log: true
+  changed_when: false

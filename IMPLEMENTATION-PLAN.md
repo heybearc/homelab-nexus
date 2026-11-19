@@ -143,7 +143,7 @@
     - [ ] Research Entra ID compatibility for each service
   - **Phase 2: Core Operations** (Priority 2)
     - [x] Zammad - Ticketing system (customer-facing, CRITICAL) ✅ DEPLOYED (CT186)
-    - [ ] ~~Documenso~~ - E-signature platform (DEFERRED - evaluating DocuSeal as alternative)
+    - [x] Documenso - E-signature platform ✅ DEPLOYED (CT205, https://sign.cloudigan.net, 2026-11-18)
     - [ ] Twenty CRM - Customer relationship management
     - [x] Kimai - Time tracking ✅ DEPLOYED (CT111)
   - **Phase 3: Automation & Integration** (Priority 3) - ✅ COMPLETED Apr 8-9

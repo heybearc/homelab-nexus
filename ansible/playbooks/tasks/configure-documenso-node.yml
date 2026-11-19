@@ -1,0 +1,90 @@
+---
+- name: Install Docker in the LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct exec {{ documenso_ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq ca-certificates curl openssl
+      if ! command -v docker >/dev/null; then
+        curl -fsSL https://get.docker.com | sh
+        systemctl enable --now docker
+      fi
+      mkdir -p /opt/documenso
+    '"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Load Documenso secrets
+  ansible.builtin.include_vars: "{{ documenso_secrets_file }}"
+
+- name: Render compose and env locally
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0600"
+  loop:
+    - src: ../templates/documenso-compose.yml.j2
+      dest: /tmp/documenso-compose.yml
+    - src: ../templates/documenso.env.j2
+      dest: /tmp/documenso.env
+  no_log: true
+
+- name: Copy compose and env into the LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    scp -F {{ homelab_ssh_config }} /tmp/documenso-compose.yml /tmp/documenso.env {{ documenso_node }}:/tmp/
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct push {{ documenso_ctid }} /tmp/documenso-compose.yml /opt/documenso/docker-compose.yml && pct push {{ documenso_ctid }} /tmp/documenso.env /opt/documenso/.env && pct exec {{ documenso_ctid }} -- chmod 600 /opt/documenso/.env && rm -f /tmp/documenso.env /tmp/documenso-compose.yml"
+    rm -f /tmp/documenso.env /tmp/documenso-compose.yml
+  args:
+    executable: /bin/bash
+  no_log: true
+
+- name: Copy the mail relay into the LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} -i {{ lookup('env', 'HOME') }}/.ssh/homelab_root root@{{ documenso_ip }} 'mkdir -p /opt/documenso/mail-relay'
+    scp -F {{ homelab_ssh_config }} -i {{ lookup('env', 'HOME') }}/.ssh/homelab_root \
+      {{ playbook_dir }}/files/documenso-mail-relay/Dockerfile \
+      {{ playbook_dir }}/files/documenso-mail-relay/package.json \
+      {{ playbook_dir }}/files/documenso-mail-relay/server.js \
+      root@{{ documenso_ip }}:/opt/documenso/mail-relay/
+  args:
+    executable: /bin/bash
+
+- name: Create the signing certificate if it is missing
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct exec {{ documenso_ctid }} -- bash -c '
+      if [ -f /opt/documenso/cert.p12 ]; then exit 0; fi
+      set -a
+      . /opt/documenso/.env
+      set +a
+      tmp=\$(mktemp -d)
+      openssl req -x509 -newkey rsa:2048 -keyout \$tmp/key.pem -out \$tmp/cert.pem -days 3650 -nodes -subj \"/CN={{ documenso_domain }}\"
+      openssl pkcs12 -export -out /opt/documenso/cert.p12 -inkey \$tmp/key.pem -in \$tmp/cert.pem -passout pass:\$NEXT_PRIVATE_SIGNING_PASSPHRASE
+      rm -rf \$tmp
+      chmod 644 /opt/documenso/cert.p12
+    '"
+  args:
+    executable: /bin/bash
+  no_log: true
+  changed_when: true
+
+- name: Start Documenso
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ documenso_node }} "pct exec {{ documenso_ctid }} -- bash -c 'cd /opt/documenso && docker compose up -d --build'"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Wait for Documenso HTTP
+  ansible.builtin.uri:
+    url: "http://{{ documenso_ip }}:{{ documenso_port }}/"
+    status_code: [200, 302, 307]
+  register: documenso_http
+  until: documenso_http.status in [200, 302, 307]
+  retries: 36
+  delay: 10
