@@ -135,3 +135,19 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - Confirmation messages are accepted by Graph and still not seen in the mailbox. Check Junk and Quarantine.
 - Relay source sits in `ansible/playbooks/files/`, which `.gitignore` ignores, so a fresh clone does not contain it. The running copy is on CT205.
 - Saturday must not promote CT131. CT151 stays the primary until it is the replica, then its disk can move off NFS.
+
+## 2026-11-20
+
+### Discoveries / Notes
+- Fleet OS work is one container at a time. TheoShift green is the active app. See the `theoshift` handoff.
+- CT132 is Ubuntu 26.04.1. The first attempt replaced Node 18 and was rolled back. The held retry kept Node 18, then Node 26 was installed beside it.
+- `pct snapshot` is unavailable on `truenas-zvol`. Snapshots go through the TrueNAS plugin. Rollback only works for the newest snapshot.
+- Proxmox hosts are already 9.2.0. Pending work is a package dist-upgrade, not a major version jump. Not applied.
+- Postgres CT131 and CT151 stay on Debian 12. A Debian 13 upgrade would jump the Postgres major.
+
+### Decisions to Promote
+- None.
+
+### Blockers / Risks
+- Do not switch TheoShift traffic until green is accepted. Blue is still the live node.
+- Ubuntu `npm` metapackage is the wrong package on app containers. Node and npm must ship together.
