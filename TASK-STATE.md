@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-19
+**Last updated:** 2026-11-21
 
 ---
 
@@ -13,6 +13,7 @@
 Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturday. Do not let Saturday promote CT131 back onto prox1.
 
 ### Recent completions
+- ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
 - ✅ **Documenso** — 2026-11-18. CT205 on `truenas-zvol`, database `documenso` on VIP `10.92.3.23`, NPM `sign.cloudigan.net`. Outbound mail is a local SMTP relay into Cloudigan Mail (`noreply@cloudigan.com`). Signup limited to cloudigan.com and cloudigan.net.
 - ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151 remains the Postgres primary on NFS.
 - ✅ **zvol waves 4–5** — 2026-11-18. Technitium CT145 and the single containers, including NPM CT121, are on `truenas-zvol`.
@@ -77,7 +78,7 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturd
 ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1t /var/log/patch-cadence | head -20'
 ```
 
-**Next action:** Confirm CT132 is thawed and blue is still live. Then read patch logs since 2026-10-17 and confirm the Postgres roles. Omada site migration stays the next manual adoption step.
+**Next action:** Read patch logs since 2026-10-17 and confirm the Postgres roles. Do not switch TheoShift traffic. Omada site migration stays the next manual adoption step.
 
 ---
 

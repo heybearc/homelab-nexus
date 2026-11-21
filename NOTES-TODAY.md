@@ -149,5 +149,17 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - None.
 
 ### Blockers / Risks
-- Do not switch TheoShift traffic until green is accepted. Blue is still the live node.
-- Ubuntu `npm` metapackage is the wrong package on app containers. Node and npm must ship together.
+- Superseded 2026-11-21. TheoShift traffic is on green. See the `theoshift` handoff.
+
+## 2026-11-21
+
+### Discoveries / Notes
+- TheoShift cutover is done. LIVE is green CT132. STANDBY is blue CT134. Both are Ubuntu 26.04.1 and Node 26. Details are in the `theoshift` handoff.
+- NodeSource Node 18 and the three pre-upgrade ZFS snapshots were removed. There is no disk rollback to the old OS.
+- Green `pm2 update` stopped the live app for about two minutes. The app was restored on Node 26 before Node 18 was removed.
+
+### Decisions to Promote
+- None.
+
+### Blockers / Risks
+- Do not switch TheoShift traffic unless asked. Notify-blast work is still open in the handoff.
