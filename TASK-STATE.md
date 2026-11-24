@@ -1,16 +1,14 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-21
+**Last updated:** 2026-11-24
 
 ---
 
 ## Current Task
-**Documenso** — CT205 `10.92.3.5` is live at https://sign.cloudigan.net. Graph accepted confirmation mail to cory@cloudigan.com (2026-11-19 12:32Z and a plain link at 12:37Z). The mailbox view is still missing. Mail.Read is denied, so junk and quarantine were not checked.
-
-**PBS / zvol** — Container root disks are on `truenas-zvol` except Postgres primary CT151. That stays until Saturday, after a role switch makes it the replica.
+**Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturday. Do not let Saturday promote CT131 back onto prox1.
+OS is done on the guests that were started. App upgrades are done for Kimai, BookStack, Vikunja, Documenso, API blue, FactorPoint blue, and Mail green. The rest of the finished OS guests still need their app update. HHV's broken build is in the `hhv` handoff.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -27,10 +25,11 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturd
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Leave CT100 and CT101 on `truenas-zvol`. The failover monitor on CT101 is active again. It promotes CT101 only after every bot heartbeat is stale, and it does not stop CT100.
-2. Let Wednesday 21:00 reboot prox2 and Thursday 21:00 reboot prox3. Containers move with `pct migrate --restart`. VMs move live. Pinned guests stay.
-3. Saturday 02:00 may patch prox1 only when Postgres needs nothing. CT151 is the primary. `mode_postgres_primary` promotes the replica when the primary has packages, which would put the VIP back on CT131/prox1. Skip that promote. Move CT151 only after a role switch makes it the replica. Migrate CT131 off prox1 only in an explicit window (`pct migrate --restart`).
-4. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. Adopt only after the lists match. SG3428XMP inform URL is `10.92.0.34`.
+1. Upgrade the app on each guest whose OS is already 13 or 26.04. Health-check before any traffic switch. Live sides still on the old OS: LDC CT133, QuantShift CT138, Chapter Hub CT193, Quote Builder CT200, HHV CT199, Vaultwarden CT171, QuantShift bot CT100. Switch only after the upgraded standby is healthy. HHV stays on green until the handoff build is fixed.
+2. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
+3. Critical serial window, one at a time, only when nothing else is upgrading: Technitium CT145, AdGuard CT140, HAProxy CT139 then CT136, NPM CT121 (already Trixie; app only if needed).
+4. Postgres last. CT151 is the primary on NFS. Do not promote it back onto CT131/prox1. RLH CT203/CT204 need a file backup before any OS hop.
+5. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34`.
 
 ### Queued
 - None. RLH University is in `.cloudy-work/_cloudy-ops/handoffs/rlh-university.md`.
@@ -75,10 +74,10 @@ Leave the prox2 reboot at Wednesday 21:00 alone. Do not move CT151 before Saturd
 ## Exact Next Command
 
 ```text
-ssh -F .cloudy-work/ssh_config_master.conf prox1 'test ! -f /etc/patch-cadence/HOLD && echo HOLD_ABSENT || echo HOLD_SET; ls -1t /var/log/patch-cadence | head -20'
+ssh prox 'grep RESULT_OS_OK /var/log/os-upgrade/ct135.log | tail -1'
 ```
 
-**Next action:** Read patch logs since 2026-10-17 and confirm the Postgres roles. Do not switch TheoShift traffic. Omada site migration stays the next manual adoption step.
+**Next action:** Upgrade the LDC Tools app on standby CT135, health-check, then switch traffic before touching live CT133. Do not switch TheoShift. Do not start Postgres or DNS while any other upgrade is running.
 
 ---
 

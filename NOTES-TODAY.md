@@ -163,3 +163,19 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 
 ### Blockers / Risks
 - Do not switch TheoShift traffic unless asked. Notify-blast work is still open in the handoff.
+
+## 2026-11-24
+
+### Discoveries / Notes
+- Fleet OS wave from 2026-11-21 finished. Logs on prox1 under `/var/log/os-upgrade/`. Debian media CT120, CT124, CT125, CT127, CT129 are Trixie. Scrypted CT180 is 26.04.
+- `pct snapshot` fails when a guest has an `mp0` bind. Rollback for those disks is the TrueNAS zvol snapshot `pre-os-20261121`.
+- Plex CT128 stayed on Ubuntu 24.04. NVIDIA 550 userspace packages are not installable after third-party apt sources are set aside. The service stayed up.
+- App updates after the OS hop are still open except Kimai, BookStack, Vikunja, Documenso, API blue, FactorPoint blue, and Mail green.
+- Traffic already switched: API live CT181, FactorPoint live CT185, Mail live CT197.
+
+### Decisions to Promote
+- Postgres OS and major upgrade are last. NVIDIA stays at 550.163.01-2. Node target for this wave is 26.13.1.
+
+### Blockers / Risks
+- HHV blue CT198 builds fail on missing `@/components/Footer` and `@/components/Hero`. Traffic stays on green. See the `hhv` handoff.
+- Live blue-green sides, Vaultwarden primary, bot primary, DNS, AdGuard, HAProxy, and Postgres were not started.
