@@ -8,7 +8,7 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-OS is done on the guests that were started. App upgrades are done for Kimai, BookStack, Vikunja, Documenso, API blue, FactorPoint blue, and Mail green. The rest of the finished OS guests still need their app update. HHV's broken build is in the `hhv` handoff.
+Quote Builder is parked. Vaultwarden CT171 and CT172 are Ubuntu 26.04 and both `/alive` checks return 200. HAProxy CT136 and CT139 are Ubuntu 26.04.1. The VIP `10.92.3.33` is on CT136. Public sites checked after the move return 200.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -25,11 +25,13 @@ OS is done on the guests that were started. App upgrades are done for Kimai, Boo
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Upgrade the app on each guest whose OS is already 13 or 26.04. Health-check before any traffic switch. Live sides still on the old OS: LDC CT133, QuantShift CT138, Chapter Hub CT193, Quote Builder CT200, HHV CT199, Vaultwarden CT171, QuantShift bot CT100. Switch only after the upgraded standby is healthy. HHV stays on green until the handoff build is fixed.
-2. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
-3. Critical serial window, one at a time, only when nothing else is upgrading: Technitium CT145, AdGuard CT140, HAProxy CT139 then CT136, NPM CT121 (already Trixie; app only if needed).
-4. Postgres last. CT151 is the primary on NFS. Do not promote it back onto CT131/prox1. RLH CT203/CT204 need a file backup before any OS hop.
-5. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34`.
+1. Leave Quote Builder CT200/CT201 alone.
+2. Vaultwarden is done. Both nodes are Ubuntu 26.04. Docker lost its NAT rules across the OS hop; `systemctl restart docker` puts them back. `/alive` returns 200 on CT171 and CT172.
+3. QuantShift bot CT100 is still Ubuntu 24.04 and is trading. CT101 is already Ubuntu 26.04, stopped, `onboot=0`. Trading units on CT101 are disabled. Do not upgrade CT100 while it is the running copy.
+4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.
+5. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
+6. Postgres last. CT151 is the primary on NFS. Do not promote it back onto CT131/prox1. RLH CT203/CT204 need a file backup before any OS hop.
+7. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34`.
 
 ### Queued
 - None. RLH University is in `.cloudy-work/_cloudy-ops/handoffs/rlh-university.md`.
@@ -74,10 +76,10 @@ OS is done on the guests that were started. App upgrades are done for Kimai, Boo
 ## Exact Next Command
 
 ```text
-ssh prox 'grep RESULT_OS_OK /var/log/os-upgrade/ct135.log | tail -1'
+curl -sk -o /dev/null -w "%{http_code}\n" --max-time 8 https://hub.cloudigan.net/api/auth/providers
 ```
 
-**Next action:** Upgrade the LDC Tools app on standby CT135, health-check, then switch traffic before touching live CT133. Do not switch TheoShift. Do not start Postgres or DNS while any other upgrade is running.
+**Next action:** Upgrade Technitium CT145 only after confirming the second resolver at `10.92.3.203` is serving. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
 
 ---
 

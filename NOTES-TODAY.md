@@ -177,5 +177,11 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - Postgres OS and major upgrade are last. NVIDIA stays at 550.163.01-2. Node target for this wave is 26.13.1.
 
 ### Blockers / Risks
-- HHV blue CT198 builds fail on missing `@/components/Footer` and `@/components/Hero`. Traffic stays on green. See the `hhv` handoff.
-- Live blue-green sides, Vaultwarden primary, bot primary, DNS, AdGuard, HAProxy, and Postgres were not started.
+- Jellyfin CT122 was stopped in HA error because `/dev/nvidia-uvm` was missing. `nvidia-modprobe -u` created the nodes, HA was cleared, and the container started. `https://jellyfin.cloudigan.net/health` returns 200. OS is Ubuntu 26.04.
+- LDC green CT135 had no address: `systemd-networkd` exited 243 on `ImportCredential`. A drop-in clears that, and the service is active on `10.92.3.25`. App rebuilt from `b0adbf1`, migrations applied, PM2 restarted by hand after `pm2 jlist` came back empty. Traffic switched to green. `https://ldctools.com/api/auth/providers` returns 200.
+- QuantShift blue CT137 is Ubuntu 26.04 and Node 26.13.1. Traffic switched to blue. `https://quantshift.io/api/system/server-info` returns 200. Green CT138 was upgraded later the same day.
+- Chapter Hub traffic switched to green CT194. Standby blue CT193 was then upgraded to Ubuntu 26.04.1 and Node 26.13.1. The first attempt rolled back because `npm` was not on PATH after the tarball extract. The prox1 script now calls `/usr/local/bin/npm` and keeps an existing `pre-os-20261121` snapshot. `https://hub.cloudigan.net/api/auth/providers` returns 200.
+- HHV traffic switched to blue CT198. Standby green CT199 is Ubuntu 26.04.1 and Node 26.13.1. `https://helpfulhirschventures.com/` returns 200.
+- LDC standby blue CT133 and QuantShift standby green CT138 are Ubuntu 26.04.1 and Node 26.13.1. Both health checks return 200. Quote Builder was not touched.
+- CT172 `/alive` was a Docker NAT failure. Restarting Docker restored it. CT171 was upgraded to Ubuntu 26.04.1 and its Docker daemon was restarted the same way. Both `/alive` checks and `https://vault.cloudigan.com/alive` return 200. Bot CT100 is still Ubuntu 24.04 and trading. CT101 is already 26.04 and stopped.
+- HAProxy standby CT139 is Ubuntu 26.04.1. Live CT136 was upgraded 22.04 → 24.04 → 26.04.1 while keepalived was masked and the VIP stayed on CT139. The first live attempt rolled back: `curl` was missing, then the disk was 508 MB short, then DNS had no nameservers. Disk was freed, `/etc/resolv.conf` is static (`10.92.3.10`, `10.92.3.203`), and the VIP is back on CT136. Public checks return 200.
