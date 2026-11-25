@@ -185,3 +185,22 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - LDC standby blue CT133 and QuantShift standby green CT138 are Ubuntu 26.04.1 and Node 26.13.1. Both health checks return 200. Quote Builder was not touched.
 - CT172 `/alive` was a Docker NAT failure. Restarting Docker restored it. CT171 was upgraded to Ubuntu 26.04.1 and its Docker daemon was restarted the same way. Both `/alive` checks and `https://vault.cloudigan.com/alive` return 200. Bot CT100 is still Ubuntu 24.04 and trading. CT101 is already 26.04 and stopped.
 - HAProxy standby CT139 is Ubuntu 26.04.1. Live CT136 was upgraded 22.04 → 24.04 → 26.04.1 while keepalived was masked and the VIP stayed on CT139. The first live attempt rolled back: `curl` was missing, then the disk was 508 MB short, then DNS had no nameservers. Disk was freed, `/etc/resolv.conf` is static (`10.92.3.10`, `10.92.3.203`), and the VIP is back on CT136. Public checks return 200.
+
+## 2026-11-25
+
+### Discoveries / Notes
+- Plane on CT184 was crash-looping. Compose had started without `plane.env`, so the API looked for `plane-db`. Postgres `10.92.3.23` was up. Stack restarted with that env file. `space` health check now uses `wget`.
+- theoshift-blue CT134 had `eth0` down. `systemd-networkd` exited 243 on credentials. Drop-in restored `10.92.3.24`.
+- nginx-proxy CT121 was 92% full. Yarn cache, apt cache, journals, and old logs. Now 45%, journal capped at 50M.
+- ops-stack CT202 and postgres-replica CT151 had no node_exporter. Both now answer on 9100.
+- n8n CT188 could not reach Postgres because Docker NAT rules were gone. Restarting Docker restored masquerade. The public webhook is no longer 503.
+- Watchdog only asked prox1, then tried to start containers that were already running on prox3. It now uses the cluster resource list and starts a container only when Proxmox says it is stopped. Service runs on system Python 3.14. The 3.12 venv is dead.
+- `ContainerDown` is now `HostMetricsDown` (warning). TIP monitors are paused. ntfy test to `homelab-alerts` returned 200. The CT150 email relay still has an empty journal.
+- LibreNMS CT152 is up with one never-polled device (`10.92.0.1`) and no alert rules.
+
+### Decisions to Promote
+- D-HOMELAB-022. Outbound mail uses Cloudigan Mail. `noreply@` does not take replies. Documenso stays `sales@`. Ops alerts use `notifications@cloudigan.com`.
+
+### Blockers / Risks
+- Email to `cory@cloudigan.com` is not proven. ntfy is the path that worked.
+- Subscribe the phone to `https://push.cloudigan.net/homelab-alerts`. The topic is still world-readable.

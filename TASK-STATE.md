@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-24
+**Last updated:** 2026-11-25
 
 ---
 
@@ -8,7 +8,7 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-Quote Builder is parked. Vaultwarden CT171 and CT172 are Ubuntu 26.04 and both `/alive` checks return 200. HAProxy CT136 and CT139 are Ubuntu 26.04.1. The VIP `10.92.3.33` is on CT136. Public sites checked after the move return 200.
+Monitoring repair, then point ops mail at Cloudigan Mail as `notifications@cloudigan.com` (D-HOMELAB-022). Quote Builder stays parked. Vaultwarden and HAProxy OS hops from 2026-11-24 are done.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -25,7 +25,8 @@ Quote Builder is parked. Vaultwarden CT171 and CT172 are Ubuntu 26.04 and both `
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Leave Quote Builder CT200/CT201 alone.
+1. Wire the CT150 Alertmanager relay to Cloudigan Mail as `notifications@cloudigan.com`. Leave Documenso on `sales@`. Keep `noreply@` for mail that must not be replied to.
+2. Leave Quote Builder CT200/CT201 alone.
 2. Vaultwarden is done. Both nodes are Ubuntu 26.04. Docker lost its NAT rules across the OS hop; `systemctl restart docker` puts them back. `/alive` returns 200 on CT171 and CT172.
 3. QuantShift bot CT100 is still Ubuntu 24.04 and is trading. CT101 is already Ubuntu 26.04, stopped, `onboot=0`. Trading units on CT101 are disabled. Do not upgrade CT100 while it is the running copy.
 4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.

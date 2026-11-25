@@ -206,6 +206,12 @@
 **Decision:** One ring per window. Saturday 02:00 is the only environment-down slot, and it runs the Postgres role switch when the current primary has packages: read-only, stop, promote the replica, wait for the VIP, rebuild the old primary from the new primary's node IP, then patch it. prox2 is Wednesday 21:00. prox3 is Thursday 21:00. Empty targets are logged and left running. TrueNAS is not applied by this cron.  
 **Consequences:** Same rule as Cloudy-Work D-067. Do not restart the current primary outside that procedure. `touch /etc/patch-cadence/HOLD` on prox1 pauses apply mode.
 
+## D-HOMELAB-022: Outbound mail goes through Cloudigan Mail, one mailbox per reply path
+**Date:** 2026-11-25
+**Context:** Apps send through a mix of direct Microsoft Graph logins and Cloudigan Mail. `noreply@cloudigan.com` cannot take a reply. Documenso already sends as `sales@`.
+**Decision:** Every outbound message goes through Cloudigan Mail (`POST /v1/send`). `noreply@cloudigan.com` is only for mail that must not be replied to. An app that must handle a reply sends as its own mailbox. Monitoring and ops alerts send as `notifications@cloudigan.com`.
+**Consequences:** The Alertmanager relay on CT150 stops calling Graph directly. Each sender has its own API key and from-address. Inbound mail (Zammad `support@`) and ntfy stay off this path.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation
