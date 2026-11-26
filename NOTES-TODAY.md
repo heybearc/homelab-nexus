@@ -218,6 +218,7 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - `controller discover` and re-saving the inform URL both succeed and emit no UDP. A MAC capture during discover showed only RSTP. ECS faults are empty. Install state is 35. Uptime was about two hours, so a boot today did not start discovery.
 - UDP from the switch works. A temporary syslog host to `10.92.0.34:514` produced one packet from `10.92.0.2`, then that host was removed. The remote-log table is empty.
 - Ports 29810–29817 and 8043 are closed on the switch. A UDP 29810 probe from CT142 arrived and got no reply. There is no device key in the CLI or system info.
+- LibreNMS login 419 is a second POST. The 6:47 POST to `https://netmon.cloudigan.net/login` returned 302 and saved a session. Laravel then rotates the CSRF token. A second POST two seconds later, and refreshes of that error page, return 419. A fresh GET of `/` is the way back in. One login POST with a matching cookie succeeds.
 
 ### Decisions to Promote
 - Do not adopt the SG3428XMP until it transmits discovery. Firmware 3.20.28 did not fix that.
