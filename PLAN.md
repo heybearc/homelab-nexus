@@ -1,6 +1,6 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-19
+**Last updated:** 2026-11-26
 **Current phase:** Omada gateway. Access points are in Cloudigan Lab on CT142. Gateway adopt is still open.
 **Status:** Access points moved into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone. Zvol cutover is in progress.
 
@@ -32,7 +32,7 @@
 
 ### High Priority
 - [x] **AP site migration** — access points are in Cloudigan Lab on CT142 (2026-11-17).
-- [ ] **SG3428XMP discovery** — inform URL must be CT142 `10.92.0.34`, not the old `10.92.3.34`. Adopt only after port and VLAN profiles exist on the controller.
+- [ ] **SG3428XMP discovery** — firmware 3.20.28 (2026-11-26). Inform URL is CT142 `10.92.0.34` with the real omadac id. The switch still sends no UDP 29810. Adopt only after it announces and port/VLAN profiles exist.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
 - [ ] **PBS and snapshot-capable container disks** — Container root disks are on `truenas-zvol` (2026-11-18), including Authentik, LibreNMS, and QuantShift bot CT100. Postgres primary CT151 and the VMs are still on NFS. D-HOMELAB-020.

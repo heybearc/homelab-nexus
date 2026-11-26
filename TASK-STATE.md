@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-25
+**Last updated:** 2026-11-26
 
 ---
 
@@ -8,7 +8,7 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-Monitoring repair, then point ops mail at Cloudigan Mail as `notifications@cloudigan.com` (D-HOMELAB-022). Quote Builder stays parked. Vaultwarden and HAProxy OS hops from 2026-11-24 are done.
+SG3428XMP still does not announce to Omada. Firmware is 3.20.28, NTP is set, and the inform URL is CT142. The switch sends no UDP 29810, so the Discovery Utility stays empty. SSH to the switch is timing out. Monitoring mail (D-HOMELAB-022) is still next after this. Quote Builder stays parked.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -32,7 +32,7 @@ Monitoring repair, then point ops mail at Cloudigan Mail as `notifications@cloud
 4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.
 5. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
 6. Postgres last. CT151 is the primary on NFS. Do not promote it back onto CT131/prox1. RLH CT203/CT204 need a file backup before any OS hop.
-7. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34`.
+7. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34?dPort=29810&mPort=29814&omadacId=a23a83fab1d245662222e987420d81e7`. Do not adopt until it actually sends discovery.
 
 ### Queued
 - None. RLH University is in `.cloudy-work/_cloudy-ops/handoffs/rlh-university.md`.
@@ -55,7 +55,7 @@ Monitoring repair, then point ops mail at Cloudigan Mail as `notifications@cloud
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
 - **joel-win11** — VM created; OS not installed
-- **Omada** — CT142 site Home Network has the access points (2026-11-14). Cloudigan Lab still has the SX3016F. SG3428XMP has not appeared. ER7206 is still standalone.
+- **Omada** — SG3428XMP `10.92.0.2` is on 3.20.28 and still sends no UDP 29810 (checked 2026-11-26, including `controller discover`). Inform URL is CT142 with omadacId `a23a83fab1d245662222e987420d81e7`. Cloud management is off. `ssh switch` was working, then port 22 started timing out while HTTPS stayed up. Do not adopt yet. ER7206 is still standalone and SNMPv3 is authNoPriv/MD5 only.
 - **Scrypted** — sustained Baichuan disconnect storm possible under multi-stream load; Garage `.remote` often empty; H.265 codec warnings; NFS EBUSY on prune
 - **TrueNAS media-pool** — interim; evacuate before disk rebuild
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation
@@ -77,10 +77,10 @@ Monitoring repair, then point ops mail at Cloudigan Mail as `notifications@cloud
 ## Exact Next Command
 
 ```text
-curl -sk -o /dev/null -w "%{http_code}\n" --max-time 8 https://hub.cloudigan.net/api/auth/providers
+python3 -c 'import socket; s=socket.create_connection(("10.92.0.2",22),4); print("open")'
 ```
 
-**Next action:** Upgrade Technitium CT145 only after confirming the second resolver at `10.92.3.203` is serving. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
+**Next action:** Get SSH back on the SG3428XMP. HTTPS is up and the inform URL is already the controller. Confirm it still sends no UDP 29810 before any adopt. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
 
 ---
 

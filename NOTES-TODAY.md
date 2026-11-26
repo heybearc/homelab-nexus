@@ -204,3 +204,19 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Blockers / Risks
 - Email to `cory@cloudigan.com` is not proven. ntfy is the path that worked.
 - Subscribe the phone to `https://push.cloudigan.net/homelab-alerts`. The topic is still world-readable.
+
+## 2026-11-26
+
+### Discoveries / Notes
+- SG3428XMP is running 3.20.28. Backup image is 3.20.16. NTP is Cloudflare `162.159.200.1` and `162.159.200.123`, UTC-05:00. A 2006 clock was not why discovery was missing.
+- Inform URL is `10.92.0.34` with dPort 29810, mPort 29814, omadacId `a23a83fab1d245662222e987420d81e7`. `omada.cloudigan.net` is NPM `10.92.3.3`, not the controller.
+- `controller discover` is supposed to send an announcement. A capture on CT142 saw no UDP from `10.92.0.2`. The Mac Discovery Utility listens on UDP 29810 and stayed at zero devices. Its search box only filters that list.
+- The stock Discovery Utility jar has Windows and Linux JavaFX only. A Mac copy with JavaFX 17 mac-aarch64 libraries opened the window.
+- SSH as `ssh switch` (key `~/.ssh/sg3428xmp`) worked, then port 22 timed out. HTTPS still works. SSH is still enabled on port 22 with max 5 sessions.
+- ER7206 2.3.1 SNMPv3 stays authNoPriv and MD5. 2.3.6 and 2.3.10 do not add AuthPriv.
+
+### Decisions to Promote
+- Do not adopt the SG3428XMP until it transmits discovery. Firmware 3.20.28 did not fix that.
+
+### Blockers / Risks
+- Switch SSH is down while the web UI is up. Do not reboot the core switch unless asked.
