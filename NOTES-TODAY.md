@@ -212,11 +212,16 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - Inform URL is `10.92.0.34` with dPort 29810, mPort 29814, omadacId `a23a83fab1d245662222e987420d81e7`. `omada.cloudigan.net` is NPM `10.92.3.3`, not the controller.
 - `controller discover` is supposed to send an announcement. A capture on CT142 saw no UDP from `10.92.0.2`. The Mac Discovery Utility listens on UDP 29810 and stayed at zero devices. Its search box only filters that list.
 - The stock Discovery Utility jar has Windows and Linux JavaFX only. A Mac copy with JavaFX 17 mac-aarch64 libraries opened the window.
-- SSH as `ssh switch` (key `~/.ssh/sg3428xmp`) worked, then port 22 timed out. HTTPS still works. SSH is still enabled on port 22 with max 5 sessions.
+- SSH as `ssh switch` (key `~/.ssh/sg3428xmp`) worked, then port 22 timed out. HTTPS still works. SSH is still enabled on port 22 with max 5 sessions. The web API can toggle SSH off and on; that brings port 22 back. It wedges again after CLI use.
 - ER7206 2.3.1 SNMPv3 stays authNoPriv and MD5. 2.3.6 and 2.3.10 do not add AuthPriv.
+- Hardware is SG3428XMP 3.20, MAC `B0-19-21-40-9C-65`, serial `2247460000486`. `V3.36` firmware `3.30.7` is a different hardware line. `3.20.28 Build 20260509` is the latest image for 3.20, 3.26, and 3.28.
+- `controller discover` and re-saving the inform URL both succeed and emit no UDP. A MAC capture during discover showed only RSTP. ECS faults are empty. Install state is 35. Uptime was about two hours, so a boot today did not start discovery.
+- UDP from the switch works. A temporary syslog host to `10.92.0.34:514` produced one packet from `10.92.0.2`, then that host was removed. The remote-log table is empty.
+- Ports 29810–29817 and 8043 are closed on the switch. A UDP 29810 probe from CT142 arrived and got no reply. There is no device key in the CLI or system info.
 
 ### Decisions to Promote
 - Do not adopt the SG3428XMP until it transmits discovery. Firmware 3.20.28 did not fix that.
+- Do not cron `controller discover`. A device-key or serial preconfig does not make this switch announce.
 
 ### Blockers / Risks
-- Switch SSH is down while the web UI is up. Do not reboot the core switch unless asked.
+- The discovery sender on 3.20.28 does not transmit. Do not reboot the core switch unless asked.

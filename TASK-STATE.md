@@ -8,7 +8,7 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-SG3428XMP still does not announce to Omada. Firmware is 3.20.28, NTP is set, and the inform URL is CT142. The switch sends no UDP 29810, so the Discovery Utility stays empty. SSH to the switch is timing out. Monitoring mail (D-HOMELAB-022) is still next after this. Quote Builder stays parked.
+SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28, which is the latest for that hardware. `controller discover` succeeds and sends no UDP. The inform URL is CT142. Ports 29810–29817 are closed on the switch. No device key in software; serial is `2247460000486`. Monitoring mail (D-HOMELAB-022) is still next after this. Quote Builder stays parked.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -55,7 +55,7 @@ SG3428XMP still does not announce to Omada. Firmware is 3.20.28, NTP is set, and
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
 - **Five client VMs still no SSH** — ak1-ifw03-p001 `172.22.240.2` no route; GEO-ETL-D001 `10.60.148.101` no route; ak1-rtr03-p001 / DGG-UB-P002 / GEO-KALI-P001 vault password fail (guest ops also failed)
 - **joel-win11** — VM created; OS not installed
-- **Omada** — SG3428XMP `10.92.0.2` is on 3.20.28 and still sends no UDP 29810 (checked 2026-11-26, including `controller discover`). Inform URL is CT142 with omadacId `a23a83fab1d245662222e987420d81e7`. Cloud management is off. `ssh switch` was working, then port 22 started timing out while HTTPS stayed up. Do not adopt yet. ER7206 is still standalone and SNMPv3 is authNoPriv/MD5 only.
+- **Omada** — SG3428XMP `10.92.0.2` hardware 3.20, firmware 3.20.28 Build 20260509, MAC `B0-19-21-40-9C-65`, serial `2247460000486`. Inform URL is CT142. `controller discover` and re-saving the URL send no UDP (checked 2026-11-26, including a MAC capture). A syslog test to `10.92.0.34:514` did leave the switch; that host was removed. UDP 29810 to the switch gets no reply. No device key in software. SSH port 22 wedges; toggling it from the web API brings it back. Do not adopt. Do not cron discover. ER7206 is still standalone and SNMPv3 is authNoPriv/MD5 only.
 - **Scrypted** — sustained Baichuan disconnect storm possible under multi-stream load; Garage `.remote` often empty; H.265 codec warnings; NFS EBUSY on prune
 - **TrueNAS media-pool** — interim; evacuate before disk rebuild
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation
@@ -80,7 +80,7 @@ SG3428XMP still does not announce to Omada. Firmware is 3.20.28, NTP is set, and
 python3 -c 'import socket; s=socket.create_connection(("10.92.0.2",22),4); print("open")'
 ```
 
-**Next action:** Get SSH back on the SG3428XMP. HTTPS is up and the inform URL is already the controller. Confirm it still sends no UDP 29810 before any adopt. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
+**Next action:** Leave the SG3428XMP unadopted. `controller discover` does not transmit on 3.20.28. Do not unrack it for a device key and do not cron discover. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
 
 ---
 

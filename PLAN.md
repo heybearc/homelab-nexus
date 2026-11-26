@@ -32,7 +32,7 @@
 
 ### High Priority
 - [x] **AP site migration** — access points are in Cloudigan Lab on CT142 (2026-11-17).
-- [ ] **SG3428XMP discovery** — firmware 3.20.28 (2026-11-26). Inform URL is CT142 `10.92.0.34` with the real omadac id. The switch still sends no UDP 29810. Adopt only after it announces and port/VLAN profiles exist.
+- [ ] **SG3428XMP discovery** — hardware 3.20, firmware 3.20.28 Build 20260509 (2026-11-26). `V3.36` `3.30.7` does not apply. Inform URL is CT142. `controller discover` sends no UDP. Serial `2247460000486` is in software; the device key is only on the sticker and does not make it announce. Adopt only after it transmits and port/VLAN profiles exist.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
 - [ ] **PBS and snapshot-capable container disks** — Container root disks are on `truenas-zvol` (2026-11-18), including Authentik, LibreNMS, and QuantShift bot CT100. Postgres primary CT151 and the VMs are still on NFS. D-HOMELAB-020.

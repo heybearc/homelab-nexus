@@ -212,6 +212,12 @@
 **Decision:** Every outbound message goes through Cloudigan Mail (`POST /v1/send`). `noreply@cloudigan.com` is only for mail that must not be replied to. An app that must handle a reply sends as its own mailbox. Monitoring and ops alerts send as `notifications@cloudigan.com`.
 **Consequences:** The Alertmanager relay on CT150 stops calling Graph directly. Each sender has its own API key and from-address. Inbound mail (Zammad `support@`) and ntfy stay off this path.
 
+## D-HOMELAB-023: SG3428XMP discovery sender does not transmit on 3.20.28
+**Date:** 2026-11-26
+**Context:** Inform URL is set to CT142. `controller discover` succeeds. Captures show no UDP. A syslog packet to the controller does leave the switch. Ports 29810–29817 are closed on the switch.
+**Decision:** Do not adopt, cron `controller discover`, or pull the chassis for a device key to force the controller to see it. Adopt only after the switch transmits discovery.
+**Consequences:** Serial `2247460000486` can be stored on the controller. A preconfigured entry stays offline until the switch sends UDP 29810 and opens TCP 29814.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation
