@@ -220,6 +220,8 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - Ports 29810–29817 and 8043 are closed on the switch. A UDP 29810 probe from CT142 arrived and got no reply. There is no device key in the CLI or system info.
 - LibreNMS login 419 is a second POST. The 6:47 POST to `https://netmon.cloudigan.net/login` returned 302 and saved a session. Laravel then rotates the CSRF token. A second POST two seconds later, and refreshes of that error page, return 419. A fresh GET of `/` is the way back in. One login POST with a matching cookie succeeds.
 - Documenso already hosts multiple organisations on CT205. Each org sets logo, website link, email footer, and document defaults. Teams inherit those and can override them. Signing links stay on `sign.cloudigan.net`. Outbound mail stays the instance SMTP sender. Custom From domains and per-org SSO are Enterprise. Signup is still limited to cloudigan.com and cloudigan.net.
+- Outbound mail is on Cloudigan Mail. Alertmanager CT150 posts to `/v1/send` as `notifications@cloudigan.com`. Documenso sends as `sales@cloudigan.com`. Cloudigan API `edebd54` is live on green CT182; customer mail is `noreply@` and ops alerts are `notifications@`. Tests to `cory@cloudigan.com` were accepted.
+- TheoShift and LDC Tools still use the SMTP account stored in each app. They do not call Graph.
 
 ### Decisions to Promote
 - Do not adopt the SG3428XMP until it transmits discovery. Firmware 3.20.28 did not fix that.

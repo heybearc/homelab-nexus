@@ -8,11 +8,11 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28, which is the latest for that hardware. `controller discover` succeeds and sends no UDP. The inform URL is CT142. Ports 29810–29817 are closed on the switch. No device key in software; serial is `2247460000486`. Monitoring mail (D-HOMELAB-022) is still next after this. Quote Builder stays parked.
+SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28, which is the latest for that hardware. `controller discover` succeeds and sends no UDP. The inform URL is CT142. Ports 29810–29817 are closed on the switch. No device key in software; serial is `2247460000486`. Quote Builder stays parked.
 
 ### Recent completions
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
-- ✅ **Documenso** — 2026-11-18. CT205 on `truenas-zvol`, database `documenso` on VIP `10.92.3.23`, NPM `sign.cloudigan.net`. Outbound mail is a local SMTP relay into Cloudigan Mail (`noreply@cloudigan.com`). Signup limited to cloudigan.com and cloudigan.net.
+- ✅ **Documenso** — 2026-11-18. CT205 on `truenas-zvol`, database `documenso` on VIP `10.92.3.23`, NPM `sign.cloudigan.net`. Outbound mail is a local SMTP relay into Cloudigan Mail as `sales@cloudigan.com` (2026-11-25). Signup limited to cloudigan.com and cloudigan.net.
 - ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151 remains the Postgres primary on NFS.
 - ✅ **zvol waves 4–5** — 2026-11-18. Technitium CT145 and the single containers, including NPM CT121, are on `truenas-zvol`.
 - ✅ **zvol wave** — 2026-11-17. Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, and replica CT131 are on `truenas-zvol`. PBS snapshot of CT191 succeeded. VIP `10.92.3.33` is back on CT136.
@@ -25,8 +25,7 @@ SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28
 - ✅ **adguard-2** — TrueNAS Docker `adguard-standby` renamed to `adguard-2` at `10.92.3.204` without a restart (2026-10-04)
 
 ### Next steps
-1. Wire the CT150 Alertmanager relay to Cloudigan Mail as `notifications@cloudigan.com`. Leave Documenso on `sales@`. Keep `noreply@` for mail that must not be replied to.
-2. Leave Quote Builder CT200/CT201 alone.
+1. Leave Quote Builder CT200/CT201 alone.
 2. Vaultwarden is done. Both nodes are Ubuntu 26.04. Docker lost its NAT rules across the OS hop; `systemctl restart docker` puts them back. `/alive` returns 200 on CT171 and CT172.
 3. QuantShift bot CT100 is still Ubuntu 24.04 and is trading. CT101 is already Ubuntu 26.04, stopped, `onboot=0`. Trading units on CT101 are disabled. Do not upgrade CT100 while it is the running copy.
 4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.
