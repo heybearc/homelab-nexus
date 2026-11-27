@@ -11,6 +11,7 @@
 Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Authentik is back on 2024.12.1. Uptime Kuma stays 2.2.1 until CT153 has more than 1 GB. SG3428XMP is unchanged.
 
 ### Recent completions
+- ✅ **Leantime Cloudigan Internal** — 2026-11-27. Project 40 under Cloudigan IT Solutions LLC. Zammad, alerts, capture, bills, and timelog gaps write there (D-HOMELAB-025). n8n and ops-sync CT202 are live. Repo copies are not committed. Vikunja Inbox was not migrated.
 - ✅ **prox1 GPU + rebalance** — 2026-11-26. Kernel `7.0.14-30-pve` had no NVIDIA module. DKMS 550.163.01 rebuilt after `proxmox-headers-7.0.14-30-pve`. Jellyfin HA recovered. Moved VM106/107/108 and 16 CTs from prox3 to prox1 (greens and HAProxy standby CT139). VIP stayed on CT136. prox1 apt upgrade set was empty.
 - ✅ **Postgres replica rebuild** — 2026-11-26. CT151 datadir was empty. Rebuilt from CT131 with slot `replica_151`. Streaming, async. VIP stays on the writable primary. Cluster remains 17.12.
 - ✅ **Third-party stable upgrades** — 2026-11-26. Media, monitoring, Kimai 2.73.0, NetBox 4.7.6, n8n 2.49.7, Zammad 7.3.0, Plane v1.5.1, NPM 2.17.1, Omada 6.3.0.112, Vaultwarden 1.37.5, Semaphore 2.20.23, AdGuard 1.0.0. Redis stays the Ubuntu 8.0.5 package.

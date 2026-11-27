@@ -243,8 +243,13 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 - NetBox 4.7.6 is serving. `API_TOKEN_PEPPERS` is unset, so v2 API tokens do not work.
 - Zammad 7.3.0 and n8n 2.49.7 are up. NPM is 2.17.1 with the existing proxy hosts and certificates. Plane is v1.5.1.
 
+- Zammad and alert tasks no longer land in Vikunja Inbox. n8n creates them on Leantime project 40, Cloudigan Internal, client Cloudigan IT Solutions LLC. Live on n8n and on ops-sync CT202. Old Inbox tasks were not moved.
+- Prometheus opens the Zammad ticket only. The Zammad create trigger makes the Leantime task. Close on either side completes the other.
+- homelab-nexus workflow scripts and ops-hub ops-sync are deployed and not committed.
+
 ### Decisions to Promote
 - D-HOMELAB-024. Do not upgrade this cluster to PostgreSQL 19.
+- D-HOMELAB-025. Machine-created tasks go to Leantime Cloudigan Internal (project 40).
 
 ### Blockers / Risks
 - LibreNMS web was still unhealthy while schema migrations ran. Recheck before treating it as finished.

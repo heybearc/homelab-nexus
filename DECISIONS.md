@@ -224,6 +224,12 @@
 **Decision:** Do not upgrade the cluster to PostgreSQL 19. Stay on 17.12 until n8n documents 19.
 **Consequences:** A major upgrade still needs dump or `pg_upgrade`. MD5 auth still works and warns. `standard_conforming_strings` is already on.
 
+## D-HOMELAB-025: Machine-created tasks go to Leantime Cloudigan Internal
+**Date:** 2026-11-27
+**Context:** n8n wrote every new Zammad ticket, and Prometheus alerts, into Vikunja Inbox (project 1). Ops Hub capture, bills, and timelog already wrote Leantime.
+**Decision:** Those writers create Leantime tickets on Cloudigan Internal (project 40) under Cloudigan IT Solutions LLC. Prometheus opens the Zammad ticket only. The Zammad create trigger makes the one Leantime task. Closing either side completes the other. Existing Vikunja Inbox tasks stay there.
+**Consequences:** Ops Sync `LEANTIME_PROJECT_ID=40` on CT202. Onboarding tasks stay on the new client's own project.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation
