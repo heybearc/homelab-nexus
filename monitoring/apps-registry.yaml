@@ -68,6 +68,7 @@ apps:
 
   - id: tip-generator
     tier: production
+    state: archived
     instances:
       - { instance: tip-blue, ctid: 190, ip: 10.92.3.91 }
       - { instance: tip-green, ctid: 191, ip: 10.92.3.92 }
@@ -81,6 +82,12 @@ apps:
       - { instance: cloudigan-quote-builder-green, ctid: 201, ip: 10.92.3.101 }
     uptime:
       - { name: "cloudigan-quote-builder (Public)", url: "https://quotes.cloudigan.net" }
+
+  - id: rlh-university
+    tier: production
+    instances:
+      - { instance: rlh-university-blue, ctid: 203, ip: 10.92.3.102 }
+      - { instance: rlh-university-green, ctid: 204, ip: 10.92.3.103 }
 
   # ── Archived / decommissioned (kept for history + cleanup checklist) ───
   - id: quantshift
@@ -158,13 +165,6 @@ apps:
       - { instance: netbox, ctid: 141, ip: 10.92.3.18 }
     uptime:
       - { name: "Netbox (Public)", url: "https://netbox.cloudigan.net" }
-
-  - id: authentik
-    tier: infrastructure
-    instances:
-      - { instance: authentik, ctid: 170, ip: 10.92.3.75 }
-    uptime:
-      - { name: "Authentik (Public)", url: "https://auth.cloudigan.net" }
 
   - id: n8n
     tier: infrastructure
@@ -248,26 +248,6 @@ apps:
     instances:
       - { instance: calibre-web, ctid: 129, ip: 10.92.3.19 }
 
-  - id: bookstack
-    tier: media
-    instances:
-      - { instance: bookstack, ctid: 130, ip: 10.92.3.50 }
-
-  - id: kimai
-    tier: media
-    instances:
-      - { instance: kimai, ctid: 111, ip: 10.92.3.76 }
-
-  - id: plane
-    tier: media
-    instances:
-      - { instance: plane, ctid: 184, ip: 10.92.3.51 }
-
-  - id: vikunja
-    tier: media
-    instances:
-      - { instance: vikunja, ctid: 189, ip: 10.92.3.80 }
-
   - id: ops-stack
     tier: media
     instances:
@@ -320,13 +300,6 @@ apps:
         labels: { instance: justin-win11, os: windows, vm_id: "105", monitor: "false" }
 
 decommission_checklist:
-  - Remove or set state: archived in monitoring/apps-registry.yaml
-  - Run ./scripts/monitoring/sync-monitoring-stack.sh
-  - Run Uptime Kuma sync (n8n workflow or POST /sync on CT153)
-  - Remove HAProxy backends + ACLs (app-specific Ansible task)
-  - Remove NPM proxy host + SSL cert
-  - Remove AdGuard/DC-01 DNS records
-  - Remove Netbox IP/device entries (proxmox-netbox-sync or manual)
-  - Remove Prometheus/Grafana dashboards if app-specific
-  - Stop and destroy Proxmox CT/VM
-  - Update MCP homelab-blue-green server.js if blue-green app
+  - Run ./scripts/ops/offboard-app.sh <app-id> --fqdn <name> [--database <name>] --apply
+  - Confirm public Wix DNS separately (.cursor/commands/offboard.md)
+  - Remove a blue-green entry from MCP homelab-blue-green if the app had one

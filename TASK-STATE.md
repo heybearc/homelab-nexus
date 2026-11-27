@@ -8,9 +8,11 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Authentik is back on 2024.12.1. Uptime Kuma stays 2.2.1 until CT153 has more than 1 GB. SG3428XMP is unchanged.
+Unused apps are off the homelab (D-HOMELAB-026). Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Uptime Kuma is 2.5.12 on CT153 with 2 GB. LibreNMS is 26.11.0. SG3428XMP is unchanged.
 
 ### Recent completions
+- ✅ **Offboard unused apps** — 2026-11-27. Authentik CT170, Kimai CT111, Plane CT184, Vikunja CT189, BookStack CT130. Containers, disks, NetBox, NPM, Technitium, Wix aliases, and their databases are gone. Workflow is `/offboard` (`scripts/ops/offboard-app.sh`).
+- ✅ **Uptime Kuma 2.5.12** — 2026-11-27. CT153 memory raised to 2 GB. Frontend installed from the published bundle.
 - ✅ **Leantime Cloudigan Internal** — 2026-11-27. Project 40 under Cloudigan IT Solutions LLC. Zammad, alerts, capture, bills, and timelog gaps write there (D-HOMELAB-025). n8n and ops-sync CT202 are live. Repo copies are not committed. Vikunja Inbox was not migrated.
 - ✅ **prox1 GPU + rebalance** — 2026-11-26. Kernel `7.0.14-30-pve` had no NVIDIA module. DKMS 550.163.01 rebuilt after `proxmox-headers-7.0.14-30-pve`. Jellyfin HA recovered. Moved VM106/107/108 and 16 CTs from prox3 to prox1 (greens and HAProxy standby CT139). VIP stayed on CT136. prox1 apt upgrade set was empty.
 - ✅ **Postgres replica rebuild** — 2026-11-26. CT151 datadir was empty. Rebuilt from CT131 with slot `replica_151`. Streaming, async. VIP stays on the writable primary. Cluster remains 17.12.
@@ -52,7 +54,7 @@ Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from pr
 ## Known Issues
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
-- **Postgres primary is CT131** — rebuilt 2026-11-26. CT151 is the streaming replica (`pg_is_in_recovery=t`, slot `replica_151`, no VIP). Cluster is 17.12. Do not upgrade to 19. Replicator lines in `pg_hba.conf` are `scram-sha-256`. App logins are still `md5`. CT151 root disk is still NFS. NetBox 4.7.6 has no `API_TOKEN_PEPPERS`, so v2 API tokens do not work. Authentik cannot skip 2024.12.1 → 2026.8.7. Uptime Kuma 2.5.12 OOM'd on the 1 GB CT. LibreNMS schema migrations were still running when last checked. Plex apt is still broken on NVIDIA 550; the 1.43.5 deb is installed.
+- **Postgres primary is CT131** — rebuilt 2026-11-26. CT151 is the streaming replica (`pg_is_in_recovery=t`, slot `replica_151`, no VIP). Cluster is 17.12. Do not upgrade to 19. Replicator lines in `pg_hba.conf` are `scram-sha-256`. App logins are still `md5`. CT151 root disk is still NFS. NetBox 4.7.6 has no `API_TOKEN_PEPPERS`, so v2 API tokens do not work. Plex apt is still broken on NVIDIA 550; the 1.43.5 deb is installed. Ops Hub still has a Kimai timer button.
 - **No LXC live migration** — `pct migrate --online` still dies on pve-container 6.1.14 and 6.1.18 ("lxc live migration is currently not implemented"). Host patching uses `--restart` for containers and `qm migrate --online` for VMs. Guests without `onboot=1` stay stopped after the host `startall`.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
@@ -72,7 +74,7 @@ Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from pr
 
 ## Uncommitted work
 
-- None after this end-day commit.
+- `scripts/ops/patch-cadence.sh` still has uncommitted inventory checks plus the ring edit that drops the offboarded CTs.
 - Do not force-push.
 
 ---
@@ -80,10 +82,10 @@ Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from pr
 ## Exact Next Command
 
 ```text
-ssh -n root@10.92.3.81 'docker ps --filter name=librenms --format "{{.Names}} {{.Status}}"'
+# Ops Hub Kimai timer still calls the removed app
 ```
 
-**Next action:** Confirm LibreNMS web is healthy. Leave Authentik on 2024.12.1 unless stepping one major at a time. Leave Uptime Kuma on 2.2.1 until CT153 has more RAM. Leave Postgres on 17.12. Leave the SG3428XMP unadopted.
+**Next action:** Point or remove the Ops Hub Kimai timer. Leave Postgres on 17.12. Leave the SG3428XMP unadopted.
 
 ---
 

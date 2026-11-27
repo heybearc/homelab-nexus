@@ -230,6 +230,12 @@
 **Decision:** Those writers create Leantime tickets on Cloudigan Internal (project 40) under Cloudigan IT Solutions LLC. Prometheus opens the Zammad ticket only. The Zammad create trigger makes the one Leantime task. Closing either side completes the other. Existing Vikunja Inbox tasks stay there.
 **Consequences:** Ops Sync `LEANTIME_PROJECT_ID=40` on CT202. Onboarding tasks stay on the new client's own project.
 
+## D-HOMELAB-026: Offboard apps that nothing logs into
+**Date:** 2026-11-27
+**Context:** Authentik had no login since 2026-06-24. Kimai, Plane, Vikunja, and BookStack were replaced or unused. n8n still cannot use PostgreSQL 19.
+**Decision:** Remove those five apps with `/offboard`. Stay on PostgreSQL 17.12.
+**Consequences:** Containers, disks, NetBox, NPM, Technitium, and the Wix aliases are gone. The Ops Hub Kimai timer still points at the removed app.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

@@ -254,3 +254,11 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Blockers / Risks
 - LibreNMS web was still unhealthy while schema migrations ran. Recheck before treating it as finished.
 - Authentik needs every major release between 2024.12.1 and 2026.8.7. Do not jump the tag again.
+
+### Mid-day
+- n8n `master` still tests Postgres 16, 17, and 18. No release supports 19. Cluster stays 17.12.
+- CT131 had a stuck `snapshot-delete` lock from a busy TrueNAS vzdump clone. Clone and lock are gone. Replica is streaming.
+- Uptime Kuma is 2.5.12. CT153 is 2 GB. LibreNMS is already 26.11.0; the image pull did not change.
+- Offboarded Authentik, Kimai, Plane, Vikunja, and BookStack. Public aliases removed. Workflow is `/offboard`.
+- Ops Hub Kimai timer still calls the removed app.
+- CT170 backup archives finished deleting. Other offboard archive deletes were started in the background.

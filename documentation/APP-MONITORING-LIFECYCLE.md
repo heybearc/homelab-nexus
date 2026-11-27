@@ -76,25 +76,15 @@ ssh prox "pct exec 150 -- amtool config routes --alertmanager.url=http://127.0.0
 
 ---
 
-## Decommission checklist
+## Offboard
 
 ```bash
-./scripts/monitoring/decommission-app.sh quantshift
+./scripts/ops/offboard-app.sh quantshift --fqdn quantshift.example --apply
 ```
 
-This sets `state: archived` and runs sync (removes Prometheus/Watchdog entries).
+Cursor command: `/offboard <app-id>`. The script removes monitoring, Technitium, NPM, NetBox, Uptime Kuma, backups, snapshots, the container, the app-map section, and an optional database. Public Wix DNS is confirmed separately. See `.cursor/commands/offboard.md`.
 
-**Manual steps** (same order every time):
-
-1. Archive in `monitoring/apps-registry.yaml` + sync (automated by script above)
-2. Uptime Kuma sync (remove stale monitors)
-3. HAProxy backends + ACLs
-4. NPM proxy host + SSL cert
-5. AdGuard / DC-01 DNS
-6. Netbox IPAM
-7. App-specific Grafana dashboards
-8. Destroy Proxmox CT/VM
-9. MCP `homelab-blue-green` server.js if blue-green app
+`scripts/monitoring/decommission-app.sh` only archives the registry entry and syncs Prometheus. Use offboard when the app is leaving.
 
 Archived apps stay in the registry for history but are **not scraped** and **not restarted** by Watchdog.
 
