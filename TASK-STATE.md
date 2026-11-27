@@ -1,6 +1,6 @@
 # Task State - homelab-nexus
 
-**Last updated:** 2026-11-26
+**Last updated:** 2026-11-27
 
 ---
 
@@ -8,12 +8,14 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28, which is the latest for that hardware. `controller discover` succeeds and sends no UDP. The inform URL is CT142. Ports 29810–29817 are closed on the switch. No device key in software; serial is `2247460000486`. Quote Builder stays parked.
+Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Authentik is back on 2024.12.1. Uptime Kuma stays 2.2.1 until CT153 has more than 1 GB. SG3428XMP is unchanged.
 
 ### Recent completions
+- ✅ **Postgres replica rebuild** — 2026-11-26. CT151 datadir was empty. Rebuilt from CT131 with slot `replica_151`. Streaming, async. VIP stays on the writable primary. Cluster remains 17.12.
+- ✅ **Third-party stable upgrades** — 2026-11-26. Media, monitoring, Kimai 2.73.0, NetBox 4.7.6, n8n 2.49.7, Zammad 7.3.0, Plane v1.5.1, NPM 2.17.1, Omada 6.3.0.112, Vaultwarden 1.37.5, Semaphore 2.20.23, AdGuard 1.0.0. Redis stays the Ubuntu 8.0.5 package.
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
 - ✅ **Documenso** — 2026-11-18. CT205 on `truenas-zvol`, database `documenso` on VIP `10.92.3.23`, NPM `sign.cloudigan.net`. Outbound mail is a local SMTP relay into Cloudigan Mail as `sales@cloudigan.com` (2026-11-25). Signup limited to cloudigan.com and cloudigan.net.
-- ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151 remains the Postgres primary on NFS.
+- ✅ **zvol leftovers** — 2026-11-18. Stopped the stuck vzdump jobs, then moved Authentik CT170, LibreNMS CT152, and QuantShift bot primary CT100 onto `truenas-zvol`. Failover monitor on CT101 was stopped for the bot copy and is active again. CT151's root disk remains on NFS.
 - ✅ **zvol waves 4–5** — 2026-11-18. Technitium CT145 and the single containers, including NPM CT121, are on `truenas-zvol`.
 - ✅ **zvol wave** — 2026-11-17. Blue-green both colors, HAProxy CT136/CT139, AdGuard CT140, and replica CT131 are on `truenas-zvol`. PBS snapshot of CT191 succeeded. VIP `10.92.3.33` is back on CT136.
 - ✅ **Host drain uses restart migration** — 2026-11-15. `pct migrate --online` still unimplemented through pve-container 6.1.18. `patch-cadence.sh` on prox1 uses `--restart` for containers and `qm migrate --online` for VMs. CT137 and VM106 started with `onboot=1`. CT190 `onboot=0`. VM107 `onboot=1`.
@@ -30,7 +32,7 @@ SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28
 3. QuantShift bot CT100 is still Ubuntu 24.04 and is trading. CT101 is already Ubuntu 26.04, stopped, `onboot=0`. Trading units on CT101 are disabled. Do not upgrade CT100 while it is the running copy.
 4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.
 5. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
-6. Postgres last. CT151 is the primary on NFS. Do not promote it back onto CT131/prox1. RLH CT203/CT204 need a file backup before any OS hop.
+6. Postgres stays 17.12 (D-HOMELAB-024). Primary is CT131 `10.92.3.21`. Replica is CT151 `10.92.3.31`, streaming. Do not promote CT151 while it is the replica. RLH CT203/CT204 need a file backup before any OS hop.
 7. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34?dPort=29810&mPort=29814&omadacId=a23a83fab1d245662222e987420d81e7`. Do not adopt until it actually sends discovery.
 
 ### Queued
@@ -48,7 +50,7 @@ SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28
 ## Known Issues
 
 - **vzdump can freeze a live LXC** — 2026-10-30 job `c9d7131d` suspended CT132 (theoshift-green) after a day-long rsync. Live was switched to blue CT134. The final rsync was still stuck when checked. Confirm the cgroup is thawed before treating green as standby.
-- **Postgres primary is CT151** — checked 2026-11-18. CT131 on prox1 is the streaming replica (`pg_is_in_recovery=t`, no VIP). VIP `10.92.3.23` is on CT151. Saturday's promote would reverse that. CT151 root disk is still NFS.
+- **Postgres primary is CT131** — rebuilt 2026-11-26. CT151 is the streaming replica (`pg_is_in_recovery=t`, slot `replica_151`, no VIP). Cluster is 17.12. Do not upgrade to 19. Replicator lines in `pg_hba.conf` are `scram-sha-256`. App logins are still `md5`. CT151 root disk is still NFS. NetBox 4.7.6 has no `API_TOKEN_PEPPERS`, so v2 API tokens do not work. Authentik cannot skip 2024.12.1 → 2026.8.7. Uptime Kuma 2.5.12 OOM'd on the 1 GB CT. LibreNMS schema migrations were still running when last checked. Plex apt is still broken on NVIDIA 550; the 1.43.5 deb is installed.
 - **No LXC live migration** — `pct migrate --online` still dies on pve-container 6.1.14 and 6.1.18 ("lxc live migration is currently not implemented"). Host patching uses `--restart` for containers and `qm migrate --online` for VMs. Guests without `onboot=1` stay stopped after the host `startall`.
 - **prox1 storage VLAN is up** — `10.92.2.5` on `vmbr0922`. `ens3f0` still carries guest VLAN 923 as well as storage VLAN 922.
 - **prox2 guest trunk is on `enp4s0f1`** — `vmbr0923/924/925` left 1G `eno1`. `vmbr0925` has no guests; its bridge MTU is pinned to 1500.
@@ -76,10 +78,10 @@ SG3428XMP still does not announce to Omada. Hardware is 3.20 on firmware 3.20.28
 ## Exact Next Command
 
 ```text
-python3 -c 'import socket; s=socket.create_connection(("10.92.0.2",22),4); print("open")'
+ssh -n root@10.92.3.81 'docker ps --filter name=librenms --format "{{.Names}} {{.Status}}"'
 ```
 
-**Next action:** Leave the SG3428XMP unadopted. `controller discover` does not transmit on 3.20.28. Do not unrack it for a device key and do not cron discover. Leave Quote Builder, the live QuantShift bot, Plex's NVIDIA driver, and Postgres.
+**Next action:** Confirm LibreNMS web is healthy. Leave Authentik on 2024.12.1 unless stepping one major at a time. Leave Uptime Kuma on 2.2.1 until CT153 has more RAM. Leave Postgres on 17.12. Leave the SG3428XMP unadopted.
 
 ---
 

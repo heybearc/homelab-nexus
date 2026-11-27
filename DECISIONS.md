@@ -218,6 +218,12 @@
 **Decision:** Do not adopt, cron `controller discover`, or pull the chassis for a device key to force the controller to see it. Adopt only after the switch transmits discovery.
 **Consequences:** Serial `2247460000486` can be stored on the controller. A preconfigured entry stays offline until the switch sends UDP 29810 and opens TCP 29814.
 
+## D-HOMELAB-024: Stay on PostgreSQL 17
+**Date:** 2026-11-26
+**Context:** Cluster is 17.12. PostgreSQL 19.0 is current. `cloudigan_n8n` is on this cluster. n8n supports only 16, 17, and 18.
+**Decision:** Do not upgrade the cluster to PostgreSQL 19. Stay on 17.12 until n8n documents 19.
+**Consequences:** A major upgrade still needs dump or `pg_upgrade`. MD5 auth still works and warns. `standard_conforming_strings` is already on.
+
 ## D-HOMELAB-002: TIP Generator Template Management Approach
 **Date:** 2026-04-17
 **Context:** Word template needs to be reusable across projects with style preservation

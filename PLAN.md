@@ -1,6 +1,6 @@
 # homelab-nexus Plan
 
-**Last updated:** 2026-11-26
+**Last updated:** 2026-11-27
 **Current phase:** Omada gateway. Access points are in Cloudigan Lab on CT142. Gateway adopt is still open.
 **Status:** Access points moved into Cloudigan Lab. SG3428XMP has never appeared. ER7206 is still standalone. Zvol cutover is in progress.
 
@@ -17,6 +17,7 @@
 - [x] Patch cadence installed (2026-10-12). Cron on prox1 and n8n. Saturday promotes Postgres. See D-HOMELAB-019.
 - [x] First Saturday promote ran 2026-10-17. Rebuild failed on quoted replicator password, then CT131 was restored streaming. Script fix is `91b1596`.
 - [x] Read patch logs through 2026-11-09. Saturday 2026-11-07 promoted CT131. CT151 was rebuilt as the replica.
+- [x] CT151 datadir was empty on 2026-11-26. Rebuilt again from CT131. Streaming. Stay on PostgreSQL 17.12 (D-HOMELAB-024).
 
 ### Completed This Phase
 - ✅ Cluster NFS on vlan 922, server `10.92.2.200` (2026-09-30)

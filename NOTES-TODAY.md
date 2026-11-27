@@ -229,3 +229,20 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 
 ### Blockers / Risks
 - The discovery sender on 3.20.28 does not transmit. Do not reboot the core switch unless asked.
+
+## 2026-11-27
+
+### Discoveries / Notes
+- CT151's Postgres datadir was empty. Rebuilt from CT131. Replica is streaming on 17.12. Slot `replica_151`.
+- PostgreSQL 19 would break the documented n8n support window (16, 17, 18). Cluster stays 17.12. D-HOMELAB-024.
+- Authentik 2026.8.7 refused the skip from 2024.12.1 and was rolled back. Server is healthy on 2024.12.1.
+- Uptime Kuma 2.5.12 died in the Vite build (container max 1 GB). Restored to 2.2.1, service active.
+- NetBox 4.7.6 is serving. `API_TOKEN_PEPPERS` is unset, so v2 API tokens do not work.
+- Zammad 7.3.0 and n8n 2.49.7 are up. NPM is 2.17.1 with the existing proxy hosts and certificates. Plane is v1.5.1.
+
+### Decisions to Promote
+- D-HOMELAB-024. Do not upgrade this cluster to PostgreSQL 19.
+
+### Blockers / Risks
+- LibreNMS web was still unhealthy while schema migrations ran. Recheck before treating it as finished.
+- Authentik needs every major release between 2024.12.1 and 2026.8.7. Do not jump the tag again.
