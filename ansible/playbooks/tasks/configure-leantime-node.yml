@@ -1,0 +1,60 @@
+---
+- name: Install Docker in the LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ leantime_node }} "pct exec {{ leantime_ctid }} -- bash -c '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq ca-certificates curl
+      if ! command -v docker >/dev/null; then
+        curl -fsSL https://get.docker.com | sh
+        systemctl enable --now docker
+      fi
+      mkdir -p /opt/leantime
+    '"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Load Leantime secrets
+  ansible.builtin.include_vars: "{{ leantime_secrets_file }}"
+
+- name: Render compose and env locally
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0600"
+  loop:
+    - src: ../templates/leantime-compose.yml.j2
+      dest: /tmp/leantime-compose.yml
+    - src: ../templates/leantime.env.j2
+      dest: /tmp/leantime.env
+  no_log: true
+
+- name: Copy compose and env into the LXC
+  ansible.builtin.shell: |
+    set -euo pipefail
+    scp -F {{ homelab_ssh_config }} /tmp/leantime-compose.yml /tmp/leantime.env {{ leantime_node }}:/tmp/
+    ssh -F {{ homelab_ssh_config }} {{ leantime_node }} "pct push {{ leantime_ctid }} /tmp/leantime-compose.yml /opt/leantime/docker-compose.yml && pct push {{ leantime_ctid }} /tmp/leantime.env /opt/leantime/.env && pct exec {{ leantime_ctid }} -- chmod 600 /opt/leantime/.env && rm -f /tmp/leantime.env /tmp/leantime-compose.yml"
+    rm -f /tmp/leantime.env /tmp/leantime-compose.yml
+  args:
+    executable: /bin/bash
+  no_log: true
+
+- name: Start Leantime
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ leantime_node }} "pct exec {{ leantime_ctid }} -- bash -c 'cd /opt/leantime && docker compose pull && docker compose up -d'"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Wait for Leantime HTTP
+  ansible.builtin.uri:
+    url: "http://{{ leantime_ip }}:{{ leantime_port }}/"
+    status_code: [200, 302, 303, 307]
+    follow_redirects: none
+  register: leantime_http
+  until: leantime_http.status in [200, 302, 303, 307]
+  retries: 40
+  delay: 15

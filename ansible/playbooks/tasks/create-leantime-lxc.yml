@@ -1,0 +1,136 @@
+---
+- name: Download the Ubuntu 26.04 template when it is missing
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - -o
+      - ConnectTimeout=20
+      - "{{ leantime_node }}"
+      - bash
+      - -c
+      - "test -f /var/lib/vz/template/cache/{{ leantime_template_file }} || pveam download local {{ leantime_template_file }}"
+  register: leantime_template_download
+  changed_when: "'downloading' in (leantime_template_download.stdout | lower) or '200 OK' in leantime_template_download.stderr"
+
+- name: Check if the Leantime CT already exists
+  ansible.builtin.command: >-
+    ssh -F {{ homelab_ssh_config }} -o ConnectTimeout=15 {{ leantime_node }}
+    test -f /etc/pve/lxc/{{ leantime_ctid }}.conf
+  register: leantime_ct_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create the Leantime LXC
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - -o
+      - ConnectTimeout=20
+      - "{{ leantime_node }}"
+      - pct
+      - create
+      - "{{ leantime_ctid }}"
+      - "{{ leantime_template }}"
+      - --hostname
+      - "{{ leantime_name }}"
+      - --memory
+      - "{{ leantime_memory }}"
+      - --cores
+      - "{{ leantime_cores }}"
+      - --net0
+      - "name=eth0,bridge={{ leantime_bridge }},ip={{ leantime_ip }}/{{ leantime_cidr }},gw={{ leantime_gateway }}"
+      - --nameserver
+      - "{{ leantime_nameserver }}"
+      - --searchdomain
+      - "{{ leantime_searchdomain }}"
+      - --storage
+      - "{{ leantime_storage }}"
+      - --rootfs
+      - "{{ leantime_storage }}:{{ leantime_disk }}"
+      - --unprivileged
+      - "1"
+      - --features
+      - nesting=1
+      - --onboot
+      - "1"
+      - --start
+      - "1"
+  register: leantime_pct_create
+  changed_when: leantime_pct_create.rc == 0
+  when: leantime_ct_exists.rc != 0
+
+- name: Wait until pct exec works
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - "{{ leantime_node }}"
+      - pct
+      - exec
+      - "{{ leantime_ctid }}"
+      - --
+      - hostname
+  register: leantime_pct_exec_wait
+  until: leantime_pct_exec_wait.rc == 0
+  retries: 36
+  delay: 5
+  changed_when: false
+
+- name: Install OpenSSH in the LXC
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - "{{ leantime_node }}"
+      - pct
+      - exec
+      - "{{ leantime_ctid }}"
+      - --
+      - bash
+      - -c
+      - export DEBIAN_FRONTEND=noninteractive; apt-get update -qq; apt-get install -y -qq openssh-server; systemctl enable --now ssh
+  changed_when: true
+
+- name: Install the homelab_root authorized key
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ssh -F {{ homelab_ssh_config }} {{ leantime_node }} "pct exec {{ leantime_ctid }} -- mkdir -p /root/.ssh && chmod 700 /root/.ssh"
+    scp -F {{ homelab_ssh_config }} {{ lookup('env', 'HOME') }}/.ssh/homelab_root.pub {{ leantime_node }}:/tmp/leantime-homelab_root.pub
+    ssh -F {{ homelab_ssh_config }} {{ leantime_node }} "pct push {{ leantime_ctid }} /tmp/leantime-homelab_root.pub /root/.ssh/authorized_keys && pct exec {{ leantime_ctid }} -- chmod 600 /root/.ssh/authorized_keys"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Drop a stale known_hosts entry for the Leantime IP
+  ansible.builtin.command:
+    argv: ["ssh-keygen", "-R", "{{ leantime_ip }}"]
+  changed_when: true
+  failed_when: false
+
+- name: Wait for SSH
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -F
+      - "{{ homelab_ssh_config }}"
+      - -i
+      - "{{ lookup('env', 'HOME') }}/.ssh/homelab_root"
+      - -o
+      - BatchMode=yes
+      - -o
+      - ConnectTimeout=5
+      - -o
+      - StrictHostKeyChecking=accept-new
+      - "root@{{ leantime_ip }}"
+      - hostname
+  register: leantime_ssh_wait
+  until: leantime_ssh_wait.rc == 0
+  retries: 24
+  delay: 5
+  changed_when: false

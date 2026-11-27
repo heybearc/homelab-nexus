@@ -1,0 +1,87 @@
+---
+- name: Deploy Leantime
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/leantime_deploy.yml
+  tasks:
+    - name: Require Netbox and NPM credentials
+      ansible.builtin.assert:
+        that:
+          - netbox_token | length > 0
+          - npm_password | length > 0
+        fail_msg: "Set NETBOX_TOKEN and NPM_PASSWORD in homelab-nexus/.env and source it before this playbook."
+
+    - name: Show the plan
+      ansible.builtin.debug:
+        msg:
+          - "CT{{ leantime_ctid }} {{ leantime_name }} @ {{ leantime_ip }} on {{ leantime_node }} storage {{ leantime_storage }}"
+          - "Guest {{ leantime_template_file }}"
+          - "https://{{ leantime_domain }} → NPM → {{ leantime_ip }}:{{ leantime_port }}"
+          - "Image {{ leantime_image }} with {{ leantime_mysql_image }} on the same container"
+
+    - name: Create the LXC
+      ansible.builtin.include_tasks: tasks/create-leantime-lxc.yml
+
+    - name: Register in Netbox
+      ansible.builtin.include_tasks: tasks/netbox-register-container.yml
+      vars:
+        nb_container_name: "{{ leantime_name }}"
+        nb_ctid: "{{ leantime_ctid }}"
+        nb_ip: "{{ leantime_ip }}"
+        nb_function: "{{ leantime_function }}"
+        nb_cores: "{{ leantime_cores }}"
+        nb_memory: "{{ leantime_memory }}"
+        nb_disk: "{{ leantime_disk }}"
+        nb_netbox_comment: "Leantime | {{ leantime_domain }} | CT{{ leantime_ctid }}"
+        nb_dns_name: "{{ leantime_domain }}"
+
+    - name: Load or create secrets
+      ansible.builtin.include_tasks: tasks/configure-leantime-secrets.yml
+
+    - name: Install and start Leantime
+      ansible.builtin.include_tasks: tasks/configure-leantime-node.yml
+
+    - name: Schedule the database dump
+      ansible.builtin.include_tasks: tasks/configure-leantime-backup.yml
+
+    - name: Configure NPM
+      ansible.builtin.include_tasks: tasks/configure-leantime-npm.yml
+
+    - name: Keep the internal A record pointed at NPM
+      ansible.builtin.uri:
+        url: "{{ technitium_url }}/api/zones/records/add"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          token: "{{ technitium_api_token }}"
+          domain: "{{ leantime_domain }}"
+          type: A
+          ipAddress: "{{ leantime_dns_target_ip }}"
+          ttl: 300
+          overwrite: "true"
+          ptr: "false"
+        return_content: true
+        status_code: [200]
+      when: technitium_api_token | length > 8
+      no_log: true
+
+    - name: Add an SSH alias
+      ansible.builtin.blockinfile:
+        path: "{{ homelab_ssh_config }}"
+        marker: "# {mark} ANSIBLE MANAGED LEANTIME"
+        block: |
+          Host leantime work
+              HostName {{ leantime_ip }}
+              Port 22
+              User root
+              IdentityFile ~/.ssh/homelab_root
+              IdentitiesOnly yes
+              AddKeysToAgent yes
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Leantime CT{{ leantime_ctid }} is at http://{{ leantime_ip }}:{{ leantime_port }}"
+          - "Public URL https://{{ leantime_domain }}"
+          - "Kimai, Vikunja, and Plane stay up until their data is moved."

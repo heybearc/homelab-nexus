@@ -1,0 +1,45 @@
+services:
+  leantime_db:
+    image: "{{ leantime_mysql_image }}"
+    container_name: mysql_leantime
+    restart: unless-stopped
+    env_file: /opt/leantime/.env
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 180s
+    networks:
+      - leantime-net
+
+  leantime:
+    image: "{{ leantime_image }}"
+    container_name: leantime
+    restart: unless-stopped
+    env_file: /opt/leantime/.env
+    depends_on:
+      leantime_db:
+        condition: service_healthy
+    ports:
+      - "{{ leantime_port }}:8080"
+    volumes:
+      - userfiles:/var/www/html/userfiles
+      - public_userfiles:/var/www/html/public/userfiles
+      - plugins:/var/www/html/app/Plugins
+      - logs:/var/www/html/storage/logs
+    networks:
+      - leantime-net
+
+volumes:
+  db_data:
+  userfiles:
+  public_userfiles:
+  plugins:
+  logs:
+
+networks:
+  leantime-net:

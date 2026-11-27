@@ -1,0 +1,48 @@
+---
+# Leantime (single LXC, not blue-green).
+# Replaces Kimai (time), Vikunja (tasks), and Plane (projects) once data is moved.
+# Public name work.cloudigan.net — one desk for projects, tasks, and time.
+# Subnet 10.92.3.0/24 + vmbr0923. Root disk on truenas-zvol.
+# Guest is the current Ubuntu LTS template (26.04). App image is pinned.
+
+leantime_name: leantime
+leantime_ctid: 206
+leantime_function: utility
+leantime_ip: "10.92.3.84"
+leantime_cidr: 24
+leantime_gateway: "10.92.3.1"
+leantime_bridge: vmbr0923
+leantime_memory: 4096
+leantime_cores: 2
+leantime_disk: 32
+leantime_port: 8080
+leantime_domain: work.cloudigan.net
+leantime_app_url: "https://work.cloudigan.net"
+leantime_image: "leantime/leantime:3.17.0"
+leantime_mysql_image: "mysql:8.4"
+leantime_template: local:vztmpl/ubuntu-26.04-standard_26.04-1_amd64.tar.zst
+leantime_template_file: ubuntu-26.04-standard_26.04-1_amd64.tar.zst
+leantime_storage: truenas-zvol
+leantime_node: prox2
+
+leantime_nameserver: "10.92.3.10"
+leantime_searchdomain: cloudigan.net
+
+leantime_dns_target_ip: "10.92.3.3"
+leantime_db_name: leantime
+leantime_db_user: lean
+
+leantime_secrets_file: "{{ playbook_dir }}/../secrets/leantime.env"
+
+technitium_url: "{{ lookup('env', 'TECHNITIUM_URL') | default('http://10.92.3.10:5380', true) }}"
+technitium_api_token: "{{ lookup('env', 'TECHNITIUM_API_TOKEN') | default('', true) }}"
+
+npm_url: "{{ lookup('env', 'NPM_URL') | default('http://10.92.3.3:81', true) }}"
+npm_email: "{{ lookup('env', 'NPM_EMAIL') | default('admin@cloudigan.net', true) }}"
+npm_password: "{{ lookup('env', 'NPM_PASSWORD') | default('', true) }}"
+npm_ssl: true
+
+netbox_url: "{{ lookup('env', 'NETBOX_URL') | default('http://10.92.3.18', true) }}"
+netbox_token: "{{ lookup('env', 'NETBOX_TOKEN') | default('', true) }}"
+
+homelab_ssh_config: "{{ playbook_dir }}/../../.cloudy-work/ssh_config_master.conf"
