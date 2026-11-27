@@ -11,6 +11,7 @@
 Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Authentik is back on 2024.12.1. Uptime Kuma stays 2.2.1 until CT153 has more than 1 GB. SG3428XMP is unchanged.
 
 ### Recent completions
+- ✅ **prox1 GPU + rebalance** — 2026-11-26. Kernel `7.0.14-30-pve` had no NVIDIA module. DKMS 550.163.01 rebuilt after `proxmox-headers-7.0.14-30-pve`. Jellyfin HA recovered. Moved VM106/107/108 and 16 CTs from prox3 to prox1 (greens and HAProxy standby CT139). VIP stayed on CT136. prox1 apt upgrade set was empty.
 - ✅ **Postgres replica rebuild** — 2026-11-26. CT151 datadir was empty. Rebuilt from CT131 with slot `replica_151`. Streaming, async. VIP stays on the writable primary. Cluster remains 17.12.
 - ✅ **Third-party stable upgrades** — 2026-11-26. Media, monitoring, Kimai 2.73.0, NetBox 4.7.6, n8n 2.49.7, Zammad 7.3.0, Plane v1.5.1, NPM 2.17.1, Omada 6.3.0.112, Vaultwarden 1.37.5, Semaphore 2.20.23, AdGuard 1.0.0. Redis stays the Ubuntu 8.0.5 package.
 - ✅ **TheoShift OS cutover** — 2026-11-21. LIVE green CT132, STANDBY blue CT134. Record is the `theoshift` handoff. Node 18 and the pre-upgrade snapshots are gone.
@@ -62,7 +63,7 @@ Third-party upgrade sweep is paused. Postgres replica CT151 is streaming from pr
 - **Technitium** — production passwords (not `admin`/`admin`); API token for automation
 - **prox `hdd-pool` DEGRADED** (verify current status)
 - **NPM cert #30** — not attached to a live host. `adguard-2.cloudigan.net` cert is valid through 2027-01-02 (D-HOMELAB-007)
-- **Host packages** — prox1 about 125 pending on 2026-11-18, including `pve-manager` 9.2.20 → 9.2.28. Simulated dist-upgrade showed no new `pve-kernel`. Running kernel `7.0.14-17-pve`. Enterprise repo 401. NVIDIA on prox1 is held. Pins in `scripts/ops/patch-cadence.sh`: `100 101 122 128 131`. TrueNAS 25.04.2.6 has no update. NPM OpenResty is held
+- **Host packages** — prox1 `apt-get -s upgrade` was empty on 2026-11-26. Running kernel `7.0.14-30-pve`. NVIDIA 550.163.01 DKMS is built for that kernel. Enterprise repo 401. NVIDIA is not apt-held. Pins in `scripts/ops/patch-cadence.sh`: `100 101 122 128 131`. TrueNAS 25.04.2.6 has no update. NPM OpenResty is held
 - **AP controller** — `10.92.0.10` UI ports were closed on 2026-10-04. Access points are still on that controller
 - **Intro Skipper** — installed; analysis completion not confirmed
 
@@ -97,6 +98,6 @@ ssh -n root@10.92.3.81 'docker ps --filter name=librenms --format "{{.Names}} {{
 | SX3016F | `10.92.0.4` | jumbo 9216; TrueNAS LAG; host ports unbonded (D-HOMELAB-017) |
 | Omada | CT142 `10.92.0.34` | **8 GB** RAM; `omada.cloudigan.net` |
 | Scrypted | CT180 `10.92.3.15` | Driveway `.184`, Garage `.189`, Front Porch `.190` |
-| Quote Builder | CT200/201 `.100`/`.101` | blue on prox2, green on prox3 |
+| Quote Builder | CT200/201 `.100`/`.101` | blue CT200 on prox3, green CT201 on prox1 |
 | Jellyfin | CT122 `10.92.3.20` | Intro Skipper 1.10.11.24; `jellyfin.cloudigan.net` |
 | Plan | `.cursor/plans/3-node_cluster_architecture_*.plan.md` | Hybrid NFS + local |

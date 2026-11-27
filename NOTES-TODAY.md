@@ -233,6 +233,9 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ## 2026-11-27
 
 ### Discoveries / Notes
+- prox1 rebooted onto kernel `7.0.14-30-pve` with no NVIDIA module. Installed `proxmox-headers-7.0.14-30-pve` and rebuilt DKMS `nvidia-current` 550.163.01. NVENC works in Jellyfin CT122 and Plex CT128. `apt-get -s upgrade` on prox1 was empty.
+- Jellyfin HA was `error` because `/dev/nvidia-uvm` was missing at boot. Cleared with `ha-manager set ct:122 --state disabled`, then `started`.
+- Rebalanced off prox3 onto prox1. Live: VM106, VM107, VM108. Restart: CT150, CT152, CT184, CT186, CT188, CT202, CT142, and greens CT172, CT182, CT187, CT194, CT197, CT199, CT201, CT204, plus HAProxy standby CT139. VIP `10.92.3.33` stayed on CT136. GPU guests, CT131, CT151, NPM, and AdGuard were not moved.
 - CT151's Postgres datadir was empty. Rebuilt from CT131. Replica is streaming on 17.12. Slot `replica_151`.
 - PostgreSQL 19 would break the documented n8n support window (16, 17, 18). Cluster stays 17.12. D-HOMELAB-024.
 - Authentik 2026.8.7 refused the skip from 2024.12.1 and was rolled back. Server is healthy on 2024.12.1.
