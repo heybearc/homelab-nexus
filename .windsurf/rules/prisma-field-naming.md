@@ -1,1 +1,0 @@
-../../.cloudy-work/.windsurf/rules/prisma-field-naming.md
