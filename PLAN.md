@@ -36,7 +36,7 @@
 - [ ] **SG3428XMP discovery** — hardware 3.20, firmware 3.20.28 Build 20260509 (2026-11-26). `V3.36` `3.30.7` does not apply. Inform URL is CT142. `controller discover` sends no UDP. Serial `2247460000486` is in software; the device key is only on the sticker and does not make it announce. Adopt only after it transmits and port/VLAN profiles exist.
 - [ ] **ER7206 capture and adopt** — last. Pre-build WAN, VLAN, DHCP, and firewall on the controller first.
 - [ ] **Rotate the ER7206 password** stored in `documentation/SWITCH-SSH-KEY-SETUP.md` and remove it from git.
-- [ ] **PBS and snapshot-capable container disks** — Container root disks are on `truenas-zvol` (2026-11-18), including LibreNMS and QuantShift bot CT100. Authentik CT170 was destroyed 2026-11-27. Postgres primary CT151 and the VMs are still on NFS. D-HOMELAB-020.
+- [ ] **PBS and snapshot-capable container disks** — 85 disks are on iSCSI `truenas-zvol`. Still on NFS `truenas-proxmox`: VM105–108, CT151, CT203, CT204, and the PBS cloud-init image. Backup jobs target PBS. NFS `truenas-backups` still holds the old archives. Do not remove either export yet. D-HOMELAB-027.
 - [x] **Documenso** — CT205 https://sign.cloudigan.net (2026-11-18). Confirmation mail is accepted by Graph and not yet seen in the mailbox.
 
 ### Medium Priority

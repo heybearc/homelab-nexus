@@ -8,7 +8,7 @@
 **Fleet OS upgrade** — launched 2026-11-21. Stable targets only: Debian 13, Ubuntu 26.04, Node 26.13.1. Postgres is last. NVIDIA 550.163.01-2 stays. Bind-mount guests use a TrueNAS zvol snapshot (`pre-os-20261121`), not `pct snapshot`.
 
 ### What I'm doing right now
-Unused apps are off the homelab (D-HOMELAB-026). Postgres replica CT151 is streaming from primary CT131 (17.12). Do not move the cluster to PostgreSQL 19 (D-HOMELAB-024). Uptime Kuma is 2.5.12 on CT153 with 2 GB. LibreNMS is 26.11.0. SG3428XMP is unchanged.
+PBS datastore `homelab` is the 4 TB iSCSI zvol `media-pool/proxmox/vm-110-disk-1`. Guest disks are mostly `truenas-zvol`. NFS `truenas-proxmox` still has VM105–108, CT151, CT203, and CT204. Do not remove either NFS export until those disks move and each guest has a PBS snapshot (D-HOMELAB-027).
 
 ### Recent completions
 - ✅ **Offboard unused apps** — 2026-11-27. Authentik CT170, Kimai CT111, Plane CT184, Vikunja CT189, BookStack CT130. Containers, disks, NetBox, NPM, Technitium, Wix aliases, and their databases are gone. Workflow is `/offboard` (`scripts/ops/offboard-app.sh`).
@@ -36,7 +36,7 @@ Unused apps are off the homelab (D-HOMELAB-026). Postgres replica CT151 is strea
 3. QuantShift bot CT100 is still Ubuntu 24.04 and is trading. CT101 is already Ubuntu 26.04, stopped, `onboot=0`. Trading units on CT101 are disabled. Do not upgrade CT100 while it is the running copy.
 4. Critical serial window, one at a time: Technitium CT145 is still Ubuntu 22.04. AdGuard CT140 is still Debian 12. NPM CT121 is already Trixie. HAProxy CT139 and CT136 are done.
 5. Plex CT128 is still Ubuntu 24.04 and serving. The release upgrader stops on unmet NVIDIA 550 dependencies. Leave the driver. Snapshot `media-pool/proxmox/vm-128-disk-0@pre-os-20261121` is the rollback.
-6. Postgres stays 17.12 (D-HOMELAB-024). Primary is CT131 `10.92.3.21`. Replica is CT151 `10.92.3.31`, streaming. Do not promote CT151 while it is the replica. RLH CT203/CT204 need a file backup before any OS hop.
+6. Postgres stays 17.12 (D-HOMELAB-024). Primary is CT131. Replica CT151 is streaming and its root disk is still NFS. RLH is enrolled on Cloudigan Lab Management. Public URL was 503. Neither color has a Next build. Read the live color from HAProxy at check time.
 7. Leave CT100 and CT101 on `truenas-zvol`. Pre-build ER7206 WAN, LAN, DHCP, and leave ACLs at defaults. SG3428XMP inform URL is `10.92.0.34?dPort=29810&mPort=29814&omadacId=a23a83fab1d245662222e987420d81e7`. Do not adopt until it actually sends discovery.
 
 ### Queued

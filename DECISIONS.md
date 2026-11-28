@@ -230,6 +230,12 @@
 **Decision:** Those writers create Leantime tickets on Cloudigan Internal (project 40) under Cloudigan IT Solutions LLC. Prometheus opens the Zammad ticket only. The Zammad create trigger makes the one Leantime task. Closing either side completes the other. Existing Vikunja Inbox tasks stay there.
 **Consequences:** Ops Sync `LEANTIME_PROJECT_ID=40` on CT202. Onboarding tasks stay on the new client's own project.
 
+## D-HOMELAB-027: PBS zvol is the backup store. NFS stays until it is empty of guests and snapshots
+**Date:** 2026-11-27
+**Context:** PBS datastore `homelab` is `/mnt/datastore` on zvol `media-pool/proxmox/vm-110-disk-1` over iSCSI. The 29 vzdump jobs were still aimed at NFS `truenas-backups`. PBS itself only had CT191 and VM110 from 2026-11-15.
+**Decision:** Jobs write to storage `pbs` (snapshot, zstd, keep 7 daily / 4 weekly / 3 monthly / 1 yearly). Do not delete `truenas-backups` until each guest has a PBS snapshot. Do not delete `truenas-proxmox` until VM105–108, CT151, CT203, and CT204 are on `truenas-zvol`.
+**Consequences:** The monthly NFS cron line is commented out. Old archives stay. Live color is read from HAProxy at check time.
+
 ## D-HOMELAB-026: Offboard apps that nothing logs into
 **Date:** 2026-11-27
 **Context:** Authentik had no login since 2026-06-24. Kimai, Plane, Vikunja, and BookStack were replaced or unused. n8n still cannot use PostgreSQL 19.

@@ -230,6 +230,22 @@ purpose: Scratchpad for today's discoveries (promote on /end-day)
 ### Blockers / Risks
 - The discovery sender on 3.20.28 does not transmit. Do not reboot the core switch unless asked.
 
+## 2026-11-27 mid-day
+
+### Discoveries / Notes
+- PBS backups already land on iSCSI zvol `media-pool/proxmox/vm-110-disk-1` (4 TB, mounted `/mnt/datastore`). The OS disk is `vm-110-disk-0`.
+- 85 guest disks are on `truenas-zvol`. NFS `truenas-proxmox` still has VM105, VM106, VM107, VM108, CT151, CT203, CT204, and the PBS cloud-init image.
+- NFS `truenas-backups` is idle. It holds 510 vzdump archives, about 2.6 TB, plus logs, four failed `.tmp` dirs, two RLH file copies, and three tiny Leantime dumps.
+- All 29 vzdump jobs now target `pbs` with the same retention. Schedules are not uniform: 24 daily, plus duplicate `02:00` and `sun 03:00` sets, one Saturday, and one monthly.
+- `https://university.cloudigan.net` returned 503. Neither RLH container listens on 3001. No `node_modules` or `.next` build. Blue has no Node binary.
+- Live color is not stored. Read HAProxy when checking. RLH is enrolled on Cloudigan Lab Management.
+
+### Decisions to Promote
+- D-HOMELAB-027. PBS is the backup target. Do not remove either NFS export until the move is proven.
+
+### Blockers / Risks
+- PBS has no snapshot yet for the guests that only exist on the NFS backup export.
+
 ## 2026-11-27
 
 ### Discoveries / Notes
